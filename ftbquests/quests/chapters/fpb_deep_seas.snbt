@@ -2,13 +2,13 @@
 	default_hide_dependency_lines: false
 	default_quest_shape: "circle"
 	filename: "fpb_deep_seas"
-	group: "AD7E4E8A10A10001"
+	group: "5D7E4E8A10A10001"
 	icon: {
 		id: "create_submarine:submarine_propeller"
 	}
 	id: "723CD0BDFFF3D894"
 	images: [ ]
-	order_index: 1
+	order_index: 3
 	quest_links: [ ]
 	quests: [
 		{

@@ -4,7 +4,7 @@
 	filename: "industry_power_grid"
 	group: "6DEDA2F315449415"
 	icon: { id: "powergrid:power_gauge" }
-	id: "B0A3E00000000001"
+	id: "30A3E00000000001"
 	images: [ ]
 	order_index: 11
 	quest_links: [ ]

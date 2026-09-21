@@ -2,11 +2,11 @@
 	default_hide_dependency_lines: false
 	default_quest_shape: "circle"
 	filename: "adventure_archaeology"
-	group: "AD7E4E8A10A10001"
+	group: "5D7E4E8A10A10001"
 	icon: {
 		id: "betterarcheology:archeology_table"
 	}
-	id: "A8C4AE0109F01001"
+	id: "28C4AE0109F01001"
 	images: [ ]
 	order_index: 0
 	quest_links: [ ]

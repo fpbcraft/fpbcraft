@@ -6,7 +6,7 @@
 	icon: {
 		id: "minecraft:iron_sword"
 	}
-	id: "C0B47BA51C500001"
+	id: "40B47BA51C500001"
 	images: [ ]
 	order_index: 0
 	quest_links: [ ]
@@ -78,7 +78,7 @@
 				type: "item"
 			}]
 			x: 0d
-			y: 3.0d
+			y: 3d
 		}
 		{
 			dependencies: ["584BA74E1682DBD2"]
@@ -94,7 +94,7 @@
 				item: { count: 1, id: "simplyswords:netherfused_gem" }
 				type: "item"
 			}]
-			x: -1.0d
+			x: -1d
 			y: 4.5d
 		}
 		{
@@ -111,7 +111,7 @@
 				item: { count: 1, id: "simplyswords:runefused_gem" }
 				type: "item"
 			}]
-			x: 1.0d
+			x: 1d
 			y: 4.5d
 		}
 	]

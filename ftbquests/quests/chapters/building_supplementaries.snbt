@@ -2,9 +2,9 @@
 	default_hide_dependency_lines: false
 	default_quest_shape: "circle"
 	filename: "building_supplementaries"
-	group: "B17DDEC0A7E6F001"
+	group: "517DDEC0A7E6F001"
 	icon: {
-		id: "supplementaries:globe"
+		id: "supplementaries:wrench"
 	}
 	id: "51A9AEEA7D5D1001"
 	images: [ ]
@@ -25,8 +25,8 @@
 				item: { components: { "ftbfiltersystem:filter": "or(mod(supplementaries))" }, count: 1, id: "ftbfiltersystem:smart_filter" }
 				type: "item"
 			}]
-			x: 0.0d
-			y: 0.0d
+			x: 0d
+			y: 0d
 		}
 		{
 			dependencies: ["1F020B868C41BB41"]
@@ -42,8 +42,8 @@
 				item: { count: 1, id: "supplementaries:crank" }
 				type: "item"
 			}]
-			x: 0.5d
-			y: 2.0d
+			x: -3d
+			y: -1d
 		}
 		{
 			dependencies: ["1F020B868C41BB41"]
@@ -59,8 +59,8 @@
 				item: { count: 1, id: "supplementaries:wrench" }
 				type: "item"
 			}]
-			x: -1.5d
-			y: 1.0d
+			x: -3d
+			y: 1d
 		}
 		{
 			dependencies: ["1F020B868C41BB41"]
@@ -76,8 +76,8 @@
 				item: { count: 1, id: "supplementaries:bamboo_spikes" }
 				type: "item"
 			}]
-			x: 0.5d
-			y: 3.0d
+			x: -1d
+			y: -2d
 		}
 		{
 			dependencies: ["1F020B868C41BB41"]
@@ -93,8 +93,8 @@
 				item: { count: 1, id: "supplementaries:cage" }
 				type: "item"
 			}]
-			x: -1.5d
-			y: 3.0d
+			x: -1d
+			y: 2d
 		}
 		{
 			dependencies: ["1F020B868C41BB41"]
@@ -110,8 +110,8 @@
 				item: { count: 1, id: "supplementaries:speaker_block" }
 				type: "item"
 			}]
-			x: -0.5d
-			y: 2.0d
+			x: 1d
+			y: -2d
 		}
 		{
 			dependencies: ["1F020B868C41BB41"]
@@ -127,8 +127,8 @@
 				item: { count: 1, id: "supplementaries:turn_table" }
 				type: "item"
 			}]
-			x: -0.5d
-			y: 3.0d
+			x: 1d
+			y: 2d
 		}
 		{
 			dependencies: ["1F020B868C41BB41"]
@@ -144,8 +144,8 @@
 				item: { count: 1, id: "supplementaries:key" }
 				type: "item"
 			}]
-			x: -0.5d
-			y: 1.0d
+			x: 3d
+			y: -2d
 		}
 		{
 			dependencies: ["1F020B868C41BB41"]
@@ -169,8 +169,8 @@
 					type: "item"
 				}
 			]
-			x: -1.5d
-			y: 4.0d
+			x: 5d
+			y: -2d
 		}
 		{
 			dependencies: ["1F020B868C41BB41"]
@@ -186,8 +186,8 @@
 				item: { count: 1, id: "supplementaries:sack" }
 				type: "item"
 			}]
-			x: 1.5d
-			y: 1.0d
+			x: 3d
+			y: 0d
 		}
 		{
 			dependencies: ["1F020B868C41BB41"]
@@ -203,8 +203,8 @@
 				item: { count: 1, id: "supplementaries:safe" }
 				type: "item"
 			}]
-			x: 0.5d
-			y: 1.0d
+			x: 5d
+			y: 0d
 		}
 		{
 			dependencies: ["1F020B868C41BB41"]
@@ -220,8 +220,8 @@
 				item: { count: 1, id: "supplementaries:notice_board" }
 				type: "item"
 			}]
-			x: -1.5d
-			y: 2.0d
+			x: 3d
+			y: 2d
 		}
 		{
 			dependencies: ["1F020B868C41BB41"]
@@ -237,8 +237,8 @@
 				item: { count: 1, id: "supplementaries:blackboard" }
 				type: "item"
 			}]
-			x: 1.5d
-			y: 2.0d
+			x: 5d
+			y: 2d
 		}
 	]
 }

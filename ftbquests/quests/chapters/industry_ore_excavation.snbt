@@ -4,7 +4,7 @@
 	filename: "industry_ore_excavation"
 	group: "6DEDA2F315449415"
 	icon: { id: "createoreexcavation:vein_finder" }
-	id: "C0E0A11A00000001"
+	id: "40E0A11A00000001"
 	images: [ ]
 	order_index: 5
 	quest_links: [ ]

@@ -2,13 +2,13 @@
 	default_hide_dependency_lines: false
 	default_quest_shape: "circle"
 	filename: "fpb_photography"
-	group: "AD7E4E8A10A10001"
+	group: "5D7E4E8A10A10001"
 	icon: {
 		id: "exposure:camera"
 	}
 	id: "16C5FD7375E8F1C9"
 	images: [ ]
-	order_index: 2
+	order_index: 7
 	quest_links: [ ]
 	quests: [
 		{
