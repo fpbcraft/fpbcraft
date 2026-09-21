@@ -18,18 +18,21 @@ The shared **RPG Foundations** chapter now covers:
 
 The Skill Tree checkmark is intentional: the installed Skill Tree mod exposes the reset item but does not expose spent-point state as an FTB-detectable advancement or inventory condition.
 
-## Class chapters
+## Radial class tree
 
-Separate visual trees now exist for:
+All class progression now lives on a single **RPG Classes** page, visually inspired by the RPG Skill Tree:
 
-- **Archer** — Composite Longbow, Archer armor, Ranger armor, Battle Quiver, native class/mastery advancements;
-- **Rogue** — dagger/sickle progression, Rogue armor, Assassin armor, native class/mastery advancements;
-- **Warrior** — double-axe/glaive progression, Warrior armor, Berserker armor, native class/mastery advancements;
-- **Paladin** — mace/shield progression, Paladin armor, Crusader armor, native class/mastery advancements;
-- **Priest** — holy wand/staff progression, Priest and Prior robes, native class/mastery advancements;
-- **Wizard** — one apprentice root splitting visibly into Arcane, Fire, and Frost paths, each with its own book, staff, full robe set, and native mastery advancement.
+- **Choose a Path** is the central hub;
+- **Wizard** radiates north and then splits into Arcane, Fire, and Frost sub-branches;
+- **Archer** radiates northeast;
+- **Rogue** radiates southeast;
+- **Warrior** radiates south;
+- **Paladin** radiates southwest;
+- **Priest** radiates northwest.
 
-Full equipment sets use four concrete item tasks rather than informational or manual completion nodes.
+Each spoke keeps its class-specific equipment and native class/mastery advancements. Full equipment sets still use four concrete item tasks rather than informational or manual completion nodes.
+
+The old per-class chapter files were removed after their quests were merged into `fpb_classes.snbt`. Quest IDs, task IDs, rewards, and localization keys were preserved so the layout change does not unnecessarily invalidate progress.
 
 ## Shared RPG end game
 
@@ -52,7 +55,7 @@ Armory uses its actual namespace, `armory_rpgs`, and the crystal branches follow
 
 Phase 6 audit after implementation:
 
-- **8 RPG chapter files**;
+- **2 RPG chapter files** — one radial class page plus the shared end-game page;
 - **157 item tasks**;
 - **17 advancement tasks**;
 - **1 manual checkmark**;
