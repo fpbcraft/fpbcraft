@@ -41,10 +41,9 @@
 				item: { components: { "ftbfiltersystem:filter": "or(mod(another_furniture))" }, count: 1, id: "ftbfiltersystem:smart_filter" }
 				type: "item"
 			}]
-			x: 0d
+			x: -2d
 			y: 1.5d
 		}
-	
 		{
 			dependencies: ["1B17D90D4096418D"]
 			id: "7D1CF44DC79D46C1"
@@ -59,7 +58,210 @@
 				item: { count: 1, id: "measurements:tape_measure" }
 				type: "item"
 			}]
-			x: 2.0d
-			y: 0.0d
-		}]
+			x: 0d
+			y: 1.5d
+		}
+		{
+			dependencies: ["2C167EF3B2484CBE"]
+			id: "4DAA0A4DF5A7A575"
+			rewards: [{
+				id: "02635A1F832A8DEA"
+				type: "xp"
+				xp: 100
+			}]
+			tasks: [{
+				id: "3FE43E38D39B31C1"
+				item: { components: { "ftbfiltersystem:filter": "or(mod(additional_lights))" }, count: 1, id: "ftbfiltersystem:smart_filter" }
+				type: "item"
+			}]
+			x: 2d
+			y: 1.5d
+		}
+		{
+			dependencies: ["2C167EF3B2484CBE"]
+			id: "3E5AC888381F061B"
+			rewards: [{
+				id: "2CA24FB575C3582D"
+				type: "xp"
+				xp: 100
+			}]
+			tasks: [{
+				id: "29ACA5329463FB81"
+				item: { components: { "ftbfiltersystem:filter": "or(mod(handcrafted))" }, count: 1, id: "ftbfiltersystem:smart_filter" }
+				type: "item"
+			}]
+			x: 4d
+			y: 1.5d
+		}
+		{
+			dependencies: ["2C167EF3B2484CBE"]
+			id: "7DB46C70468F2CFE"
+			rewards: [{
+				id: "4F3BD2150DD2836D"
+				type: "xp"
+				xp: 100
+			}]
+			tasks: [{
+				id: "4C3461F74027CDFC"
+				item: { components: { "ftbfiltersystem:filter": "or(mod(reddensstonelantern))" }, count: 1, id: "ftbfiltersystem:smart_filter" }
+				type: "item"
+			}]
+			x: 6d
+			y: 1.5d
+		}
+		{
+			dependencies: ["2C167EF3B2484CBE"]
+			id: "1A39F6601A18F853"
+			rewards: [
+				{
+					count: 3
+					id: "5B5FECC599D45CEE"
+					item: {
+						count: 1
+						id: "minecraft:red_dye"
+					}
+					type: "item"
+				}
+				{
+					count: 3
+					id: "16DAAA231B63363B"
+					item: {
+						count: 1
+						id: "minecraft:blue_dye"
+					}
+					type: "item"
+				}
+				{
+					count: 3
+					id: "6D854095A2A9910E"
+					item: {
+						count: 1
+						id: "minecraft:lime_dye"
+					}
+					type: "item"
+				}
+				{
+					count: 3
+					id: "32A53B51E5659790"
+					item: {
+						count: 1
+						id: "minecraft:brown_dye"
+					}
+					type: "item"
+				}
+				{
+					count: 3
+					id: "583418F06753CDD1"
+					item: {
+						count: 1
+						id: "minecraft:pink_dye"
+					}
+					type: "item"
+				}
+			]
+			tasks: [{
+				id: "608C25F06F87558A"
+				item: { count: 1, id: "multibeds:bed_kit" }
+				type: "item"
+			}]
+			x: 0d
+			y: 3.5d
+		}
+		{
+			dependencies: ["1A39F6601A18F853"]
+			id: "38B254719B73C3C0"
+			rewards: [{
+				id: "113B7ADBA2F5D5F7"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "72AD325B4348FEF2"
+				item: { count: 1, id: "multibeds:embroidery_thread" }
+				type: "item"
+			}]
+			x: -2d
+			y: 5d
+		}
+		{
+			dependencies: ["1A39F6601A18F853"]
+			id: "7D3E8B0BF58569BC"
+			rewards: [{
+				id: "3EEBDFD1528E23FD"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "3922787442F39BB9"
+				item: { count: 1, id: "multibeds:sheet" }
+				type: "item"
+			}]
+			x: -1d
+			y: 5d
+		}
+		{
+			dependencies: ["1A39F6601A18F853"]
+			id: "1B347195A701040C"
+			rewards: [{
+				id: "0C344E3A6A9731D3"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "2C481E99CC733D01"
+				item: { count: 1, id: "multibeds:blanket_white" }
+				type: "item"
+			}]
+			x: 0d
+			y: 5d
+		}
+		{
+			dependencies: ["1A39F6601A18F853"]
+			id: "39EF0966EB556EF0"
+			rewards: [{
+				id: "48E9E58777588BB0"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "71FC661D4D984C27"
+				item: { count: 1, id: "multibeds:bedding_package" }
+				type: "item"
+			}]
+			x: 1d
+			y: 5d
+		}
+		{
+			dependencies: ["1A39F6601A18F853"]
+			id: "4BCF0C28B6C31364"
+			rewards: [{
+				id: "72CB58D85CDE1806"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "0712F8C5AC1F0F39"
+				item: { count: 1, id: "multibeds:pillow" }
+				type: "item"
+			}]
+			x: 2d
+			y: 5d
+		}
+		{
+			dependencies: ["1A39F6601A18F853"]
+			id: "69590A923D5ED05A"
+			rewards: [{
+				id: "48D7D3AE4E25D3A5"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "7DDCD2B024DFEB91"
+				item: { count: 1, id: "multibeds:ladder_tools" }
+				type: "item"
+			}]
+			x: 3d
+			y: 5d
+		}
+	]
 }
