@@ -1,0 +1,94 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "adventure_naturalist"
+	group: "5D7E4E8A10A10001"
+	icon: { id: "minecraft:spyglass" }
+	id: "5B2000000000C001"
+	images: [ ]
+	order_index: 6
+	quest_links: [ ]
+	quests: [
+		{
+			id: "5B20000000000001"
+			rewards: [{
+				id: "5B20000000002001"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "5B20000000001001"
+				item: { components: { "ftbfiltersystem:filter": "or(mod(naturalist))" }, count: 1, id: "ftbfiltersystem:smart_filter" }
+				type: "item"
+			}]
+			x: 0d
+			y: 0d
+		},
+		{
+			dependencies: ["5B20000000000001"]
+			id: "5B20000000000002"
+			rewards: [{
+				id: "5B20000000002002"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "5B20000000001002"
+				type: "checkmark"
+			}]
+			x: -2d
+			y: 2d
+		},
+		{
+			dependencies: ["5B20000000000001"]
+			id: "5B20000000000003"
+			rewards: [{
+				id: "5B20000000002003"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "5B20000000001003"
+				item: { count: 1, id: "naturalist:shellstone" }
+				type: "item"
+			}]
+			x: 0d
+			y: 2d
+		},
+		{
+			dependencies: ["5B20000000000001"]
+			id: "5B20000000000004"
+			rewards: [{
+				id: "5B20000000002004"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "5B20000000001004"
+				item: { components: { "ftbfiltersystem:filter": "or(mod(naturalist))" }, count: 1, id: "ftbfiltersystem:smart_filter" }
+				type: "item"
+			}]
+			x: 2d
+			y: 2d
+		},
+		{
+			dependencies: ["5B20000000000002", "5B20000000000003", "5B20000000000004"]
+			id: "5B20000000000005"
+			shape: "hexagon"
+			rewards: [{
+				id: "5B20000000002005"
+				type: "xp"
+				xp: 35
+			}]
+			tasks: [{
+				id: "5B20000000001005"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 4d
+		}
+	]
+}
