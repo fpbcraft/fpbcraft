@@ -4,200 +4,149 @@
 	filename: "rpg_rogue"
 	group: "4A93CDBE321781DA"
 	icon: { id: "rogues:iron_dagger" }
-	id: "5E2000000000C001"
+	id: "5F2000000000C001"
 	images: [ ]
 	order_index: 2
 	quest_links: [ ]
 	quests: [
 		{
-			id: "55435CD08A02A1FF"
-			rewards: [{
-				id: "7E0000000000000E"
-				type: "xp"
-				xp: 10
-			}]
-			tasks: [{
+			id: "5F20000000000001"
+			shape: "hexagon"
+			rewards: [{ id: "7F20000000000001", type: "xp", xp: 10 }]
+			tasks: [
+				{
 				consume_items: false
-				id: "6E0000000000001D"
-				item: { count: 1, id: "rogues:arms_workbench" }
+				id: "6F20000000000000"
+				item: { count: 1, id: "rogues:iron_dagger" }
 				type: "item"
-			}]
+			}
+				{
+				consume_items: false
+				id: "6F20000000000000"
+				item: { count: 1, id: "rogues:iron_sickle" }
+				type: "item"
+			}
+			]
 			x: 0d
 			y: 0d
 		},
 		{
-			dependencies: ["55435CD08A02A1FF"]
-			id: "39F13BA17DD246F8"
-			rewards: [{
-				id: "60EC2BCD26D3CE71"
-				type: "xp"
-				xp: 10
-			}]
-			tasks: [{
-				consume_items: false
-				id: "00385BC3392F59F7"
-				item: { count: 1, id: "rogues:iron_dagger" }
-				type: "item"
-			}]
+			dependencies: ["5F20000000000001"]
+			id: "5F20000000000002"
+			rewards: [{ id: "7F20000000000002", type: "xp", xp: 20 }]
+			tasks: [
+				{
+				advancement: "rpg_series:path_choose_rogue"
+				criterion: ""
+				id: "6F20000000000000"
+				type: "advancement"
+			}
+			]
 			x: 0d
 			y: 2d
 		},
 		{
-			dependencies: ["39F13BA17DD246F8"]
-			id: "5E20000000000001"
-			rewards: [{
-				id: "7E0000000000000F"
-				type: "xp"
-				xp: 15
-			}]
-			tasks: [{
-				advancement: "rpg_series:path_choose_rogue"
-				criterion: ""
-				id: "6E0000000000001E"
-				type: "advancement"
-			}]
-			x: -2d
-			y: 4d
-		},
-		{
-			dependencies: ["5E20000000000001"]
-			id: "5E20000000000002"
-			rewards: [{
-				id: "7E00000000000010"
-				type: "xp"
-				xp: 20
-			}]
-			tasks: [{
-				advancement: "rpg_series:spell_novice_rogue"
-				criterion: ""
-				id: "6E0000000000001F"
-				type: "advancement"
-			}]
-			x: -2d
-			y: 6d
-		},
-		{
-			dependencies: ["39F13BA17DD246F8"]
-			id: "5E20000000000003"
-			rewards: [{
-				id: "7E00000000000011"
-				type: "xp"
-				xp: 25
-			}]
-			tasks: [{
+			dependencies: ["5F20000000000002"]
+			id: "5F20000000000003"
+			rewards: [{ id: "7F20000000000003", type: "xp", xp: 25 }]
+			tasks: [
+				{
 				consume_items: false
-				id: "6E00000000000020"
+				id: "6F20000000000000"
 				item: { count: 1, id: "rogues:rogue_armor_head" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6E00000000000021"
+				id: "6F20000000000000"
 				item: { count: 1, id: "rogues:rogue_armor_chest" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6E00000000000022"
+				id: "6F20000000000000"
 				item: { count: 1, id: "rogues:rogue_armor_legs" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6E00000000000023"
+				id: "6F20000000000000"
 				item: { count: 1, id: "rogues:rogue_armor_feet" }
 				type: "item"
-			}]
-			x: 2d
+			}
+			]
+			x: -2d
 			y: 4d
 		},
 		{
-			dependencies: ["5E20000000000002"]
-			id: "5E20000000000004"
-			rewards: [{
-				id: "7E00000000000012"
-				type: "xp"
-				xp: 20
-			}]
-			tasks: [{
-				advancement: "rpg_series:spell_cast_rogue_book"
-				criterion: ""
-				id: "6E00000000000024"
-				type: "advancement"
-			}]
-			x: -2d
-			y: 8d
-		},
-		{
-			dependencies: ["5E20000000000004"]
-			id: "5E20000000000005"
-			shape: "hexagon"
-			rewards: [{
-				id: "7E00000000000013"
-				type: "xp"
-				xp: 40
-			}]
-			tasks: [{
-				advancement: "rpg_series:spell_master_rogue"
-				criterion: ""
-				id: "6E00000000000025"
-				type: "advancement"
-			}]
-			x: -2d
-			y: 10d
-		},
-		{
-			dependencies: ["5E20000000000003"]
-			id: "5E20000000000006"
-			rewards: [{
-				id: "7E00000000000014"
-				type: "xp"
-				xp: 25
-			}]
-			tasks: [{
+			dependencies: ["5F20000000000002"]
+			id: "5F20000000000004"
+			rewards: [{ id: "7F20000000000004", type: "xp", xp: 25 }]
+			tasks: [
+				{
 				consume_items: false
-				id: "6E00000000000026"
-				item: { count: 1, id: "rogues:diamond_sickle" }
-				type: "item"
-			}]
-			x: 2d
-			y: 6d
-		},
-		{
-			dependencies: ["5E20000000000006"]
-			id: "5E20000000000007"
-			shape: "hexagon"
-			rewards: [{
-				id: "7E00000000000015"
-				type: "xp"
-				xp: 40
-			}]
-			tasks: [{
-				consume_items: false
-				id: "6E00000000000027"
+				id: "6F20000000000000"
 				item: { count: 1, id: "rogues:assassin_armor_head" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6E00000000000028"
+				id: "6F20000000000000"
 				item: { count: 1, id: "rogues:assassin_armor_chest" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6E00000000000029"
+				id: "6F20000000000000"
 				item: { count: 1, id: "rogues:assassin_armor_legs" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6E0000000000002A"
+				id: "6F20000000000000"
 				item: { count: 1, id: "rogues:assassin_armor_feet" }
 				type: "item"
-			}]
+			}
+			]
 			x: 2d
-			y: 8d
+			y: 4d
+		},
+		{
+			dependencies: ["5F20000000000003"]
+			id: "5F20000000000005"
+			rewards: [{ id: "7F20000000000005", type: "xp", xp: 15 }]
+			tasks: [
+				{
+				consume_items: false
+				id: "6F20000000000000"
+				item: { count: 1, id: "rogues:diamond_dagger" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6F20000000000000"
+				item: { count: 1, id: "rogues:diamond_sickle" }
+				type: "item"
+			}
+			]
+			x: -2d
+			y: 6d
+		},
+		{
+			dependencies: ["5F20000000000004"]
+			id: "5F20000000000006"
+			shape: "diamond"
+			rewards: [{ id: "7F20000000000006", type: "xp", xp: 40 }]
+			tasks: [
+				{
+				advancement: "rpg_series:spell_master_rogue"
+				criterion: ""
+				id: "6F20000000000000"
+				type: "advancement"
+			}
+			]
+			x: 2d
+			y: 6d
 		}
 	]
 }
