@@ -2823,6 +2823,6 @@
 \tquest.5C30000000000009.title: "Board an Airship"
 \tquest.5C30000000000009.quest_desc: ["Use the grappling hook on a Sable / Create Aeronautics airship or sublevel and board it safely. This is deliberately manual because the moving-structure interaction is the achievement."]
 \tquest.5C3000000000000A.title: "Skybound Arsenal"
-\tquest.5C3000000000000A.quest_desc: ["Obtain an Ender Staff Upgrade and a Forcefield Upgrade after mastering moving structures. This gives the page a concrete advanced-equipment endpoint."]
+\tquest.5C3000000000000A.quest_desc: ["Obtain an Ender Staff Upgrade and a Hook Thrower Upgrade after mastering moving structures. This gives the page a concrete advanced-equipment endpoint."]
 
 }
