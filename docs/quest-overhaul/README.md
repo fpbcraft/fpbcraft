@@ -1,6 +1,6 @@
 # FPBCraft FTB Quests overhaul
 
-Status: **planning / research**. No quest SNBT has been redesigned in this phase.
+Status: **implementation in progress**. Phases 1–5 are complete; Phase 6 RPG Series is next.
 
 This directory documents the planned overhaul of the FPBCraft quest book. The starting point is the current FPBCraft quest pack plus the quest packs from **All of Create Aeronautics** and **Create Chronicles**. The source packs are intentionally treated as reusable source material: good layouts, wording, dependency trees, icons and quest ideas should be retained where they still match FPBCraft.
 
@@ -22,7 +22,7 @@ This directory documents the planned overhaul of the FPBCraft quest book. The st
 - [Source restoration plan](04-source-restoration-plan.md)
 - [Implementation phases / slices](05-implementation-phases.md)
 - [Open questions](06-open-questions.md)
-- [Research sources](research-sources.md)
+- [Research sources](research-sources.md)\n- [Phase 5 result](12-phase-5-result.md)
 
 ## Current baseline
 
