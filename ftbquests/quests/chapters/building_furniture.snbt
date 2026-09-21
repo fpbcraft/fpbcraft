@@ -262,6 +262,39 @@
 			}]
 			x: 3d
 			y: 5d
+		},
+		{
+			dependencies: ["2C167EF3B2484CBE"]
+			id: "5A20000000000001"
+			rewards: [{
+				id: "5A20000000002001"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "5A20000000001001"
+				item: { components: { "ftbfiltersystem:filter": "or(mod(immersive_furniture))" }, count: 1, id: "ftbfiltersystem:smart_filter" }
+				type: "item"
+			}]
+			x: -4d
+			y: 3.5d
+		},
+		{
+			dependencies: ["5B47C4A0292E74C5", "3E5AC888381F061B", "5A20000000000001"]
+			id: "5A20000000000002"
+			rewards: [{
+				id: "5A20000000002002"
+				type: "xp"
+				xp: 35
+			}]
+			shape: "hexagon"
+			tasks: [{
+				id: "5A20000000001002"
+				type: "checkmark"
+			}]
+			x: -4d
+			y: 5d
 		}
 	]
 }
