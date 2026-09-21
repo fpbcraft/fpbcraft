@@ -12,46 +12,39 @@
 		{
 			id: "5E00000000000001"
 			shape: "hexagon"
-			rewards: [{
-				id: "7E00000000000001"
-				type: "xp"
-				xp: 15
-			}]
-			tasks: [{
+			rewards: [{ id: "7E00000000000001", type: "xp", xp: 15 }]
+			tasks: [
+				{
 				consume_items: false
 				id: "6E00000000000001"
 				item: { count: 1, id: "spell_engine:spell_binding" }
 				type: "item"
-			}]
+			}
+			]
 			x: 0d
 			y: 0d
 		},
 		{
 			dependencies: ["5E00000000000001"]
 			id: "5E00000000000002"
-			rewards: [{
-				id: "7E00000000000002"
-				type: "xp"
-				xp: 20
-			}]
-			tasks: [{
+			rewards: [{ id: "7E00000000000002", type: "xp", xp: 20 }]
+			tasks: [
+				{
 				advancement: "rpg_series:classes"
 				criterion: ""
 				id: "6E00000000000002"
 				type: "advancement"
-			}]
+			}
+			]
 			x: 0d
 			y: 2d
 		},
 		{
 			dependencies: ["5E00000000000001"]
 			id: "5E00000000000003"
-			rewards: [{
-				id: "7E00000000000003"
-				type: "xp"
-				xp: 15
-			}]
-			tasks: [{
+			rewards: [{ id: "7E00000000000003", type: "xp", xp: 15 }]
+			tasks: [
+				{
 				consume_items: false
 				id: "6E00000000000003"
 				item: { count: 1, id: "runes:arcane_stone" }
@@ -74,19 +67,17 @@
 				id: "6E00000000000006"
 				item: { count: 1, id: "runes:healing_stone" }
 				type: "item"
-			}]
+			}
+			]
 			x: -3d
 			y: 2d
 		},
 		{
 			dependencies: ["5E00000000000001"]
 			id: "5E00000000000004"
-			rewards: [{
-				id: "7E00000000000004"
-				type: "xp"
-				xp: 20
-			}]
-			tasks: [{
+			rewards: [{ id: "7E00000000000004", type: "xp", xp: 20 }]
+			tasks: [
+				{
 				consume_items: false
 				id: "6E00000000000007"
 				item: { count: 1, id: "jewelry:ruby" }
@@ -121,47 +112,65 @@
 				id: "6E0000000000000C"
 				item: { count: 1, id: "jewelry:tanzanite" }
 				type: "item"
-			}]
+			}
+			]
 			x: 3d
 			y: 2d
 		},
 		{
 			dependencies: ["5E00000000000004"]
 			id: "5E00000000000005"
-			rewards: [{
-				id: "7E00000000000005"
-				type: "xp"
-				xp: 20
-			}]
-			tasks: [{
+			rewards: [{ id: "7E00000000000005", type: "xp", xp: 20 }]
+			tasks: [
+				{
 				consume_items: false
 				id: "6E0000000000000D"
-				item: { count: 1, id: "jewelry:ruby_ring" }
+				item: { count: 1, id: "jewelry:jewelers_kit" }
 				type: "item"
 			}
 				{
 				consume_items: false
 				id: "6E0000000000000E"
+				item: { count: 1, id: "jewelry:ruby_ring" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6E0000000000000F"
 				item: { count: 1, id: "jewelry:sapphire_necklace" }
 				type: "item"
-			}]
+			}
+			]
 			x: 3d
 			y: 4d
 		},
 		{
 			dependencies: ["5E00000000000002"]
 			id: "5E00000000000006"
+			rewards: [{ id: "7E00000000000006", type: "xp", xp: 20 }]
+			tasks: [
+				{
+				consume_items: false
+				id: "6E00000000000010"
+				item: { count: 1, id: "skill_tree_rpgs:orb_of_oblivion" }
+				type: "item"
+			}
+			]
+			x: -1d
+			y: 4d
+		},
+		{
+			dependencies: ["5E00000000000002"]
+			id: "5E00000000000007"
 			shape: "diamond"
-			rewards: [{
-				id: "7E00000000000006"
-				type: "xp"
-				xp: 15
-			}]
-			tasks: [{
-				id: "6E0000000000000F"
+			rewards: [{ id: "7E00000000000007", type: "xp", xp: 15 }]
+			tasks: [
+				{
+				id: "6E00000000000011"
 				type: "checkmark"
-			}]
-			x: 0d
+			}
+			]
+			x: 1d
 			y: 4d
 		}
 	]
