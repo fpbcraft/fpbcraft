@@ -2665,11 +2665,11 @@
 	quest.46E1F7333890AC05.title: "Survive the Mother of the Maze"
 	quest.46E1F7333890AC05.quest_desc: ["Encounter the Mother of the Maze. The dedicated Bosses section will later own the explicit guided kill quest."]
 	quest.1961ABE88CC367DB.title: "Maze Rose"
-	quest.1961ABE88CC367DB.quest_desc: ["Obtain a Maze Rose as a tangible Ice Maze progression milestone."]
+	quest.1961ABE88CC367DB.quest_desc: ["After defeating the Maze Mother on the Boss Progression page, keep the Maze Rose as the tangible Ice Maze completion trophy."]
 	quest.5551333BF6400CD0.title: "Shell Horn"
 	quest.5551333BF6400CD0.quest_desc: ["Obtain the Shell Horn and inspect its role in later Aquamirae progression."]
 	quest.7501E48CE11CE1A1.title: "Cornelia's Legacy"
-	quest.7501E48CE11CE1A1.quest_desc: ["Obtain Tidepiercer from the Captain Cornelia progression. The explicit boss quest comes later."]
+	quest.7501E48CE11CE1A1.quest_desc: ["After defeating Captain Cornelia on the Boss Progression page, obtain Tidepiercer to complete her Aquamirae equipment branch."]
 	quest.58A3C4D8F0B52DF9.title: "Myths of the Sea"
 	quest.58A3C4D8F0B52DF9.quest_desc: ["Explore oceans and wetlands for mythological creatures. This page is about discovery; major boss kills are reserved for the Bosses section."]
 	quest.14456E2BEBDA5C12.title: "Watch the Coasts"
@@ -2921,7 +2921,7 @@
 	quest.5F6000000000000A.title: "Icy Veins"
 	quest.5F6000000000000A.quest_desc: ["Fully bind the Tome of Frost and complete Frost mastery."]
 	quest.5F70000000000001.title: "Epic Armor Upgrades"
-	quest.5F70000000000001.quest_desc: ["Obtain the Armory epic Smithing Template. End-game class armor uses this template together with class-group upgrade crystals."]
+	quest.5F70000000000001.quest_desc: ["Defeat any major boss from the Boss Progression page, then obtain the Armory epic Smithing Template. End-game class armor uses this template together with class-group upgrade crystals."]
 	quest.5F70000000000002.title: "Vanquisher Crystal"
 	quest.5F70000000000002.quest_desc: ["Obtain a Vanquisher's Lost Crystal for Archer and Frost Wizard armor upgrades."]
 	quest.5F70000000000003.title: "Champion Crystal"
@@ -2974,4 +2974,29 @@
 	quest.5F7000000000001A.quest_desc: ["Find a Holy Locket and Ender's Hand from Relics. These are acquisition milestones for dungeon and high-value loot."]
 	quest.5F7000000000001B.title: "Relic Hunter"
 	quest.5F7000000000001B.quest_desc: ["Find a Bastion Ring and Elytra Booster to complete the representative Relics branch."]
+	chapter.507000000000C001.title: "Boss Progression"
+	quest.5071000000000001.title: "The Wither"
+	quest.5071000000000001.quest_desc: ["Defeat the Wither and claim its Nether Star. This is a real progression gate for Create Nuclear's Reactor Controller rather than an arbitrary boss-chain requirement."]
+	quest.5071000000000002.title: "Remastered Ender Dragon"
+	quest.5071000000000002.quest_desc: ["Defeat the Ender Dragon. Ender Dragon Fight Remastered changes the encounter, but the boss remains the vanilla Ender Dragon entity so FTB Quests can track the kill directly."]
+	quest.5072000000000001.title: "Ferrous Wroughtnaut"
+	quest.5072000000000001.quest_desc: ["Defeat a Ferrous Wroughtnaut and recover both guaranteed trophies: the Wrought Helm and Axe of a Thousand Metals."]
+	quest.5072000000000002.title: "Frostmaw"
+	quest.5072000000000002.quest_desc: ["Defeat a Frostmaw. Its native Mowzie's Mobs advancement is used for reliable completion; the Ice Crystal is deliberately not mandatory because it can be stolen before the kill."]
+	quest.5072000000000003.title: "Umvuthi, the Sunbird"
+	quest.5072000000000003.quest_desc: ["Defeat Umvuthi and claim the Sol Visage. The visage is a guaranteed player-kill drop and makes a concrete trophy for this encounter."]
+	quest.5073000000000001.title: "Cloud Golem"
+	quest.5073000000000001.quest_desc: ["Defeat the Cloud Golem. Legendary Monsters exposes a dedicated boss advancement, so the quest uses that instead of a manual checkmark."]
+	quest.5073000000000002.title: "Possessed Paladin"
+	quest.5073000000000002.quest_desc: ["Defeat the Possessed Paladin in the Collapsed Kingdom progression. Completion uses Legendary Monsters' native boss advancement."]
+	quest.5073000000000003.title: "The Obliterator"
+	quest.5073000000000003.quest_desc: ["Defeat The Obliterator, the late Legendary Monsters boss associated with the Space Station progression. This is shown as the outer-tier encounter without hard-gating the other Legendary bosses behind it."]
+	quest.5074000000000001.title: "Mother of the Maze"
+	quest.5074000000000001.quest_desc: ["After reaching the Ship Graveyard, defeat the Maze Mother and obtain a Maze Rose. The Adventure page owns discovery; the Bosses page owns the actual kill."]
+	quest.5074000000000002.title: "Captain Cornelia"
+	quest.5074000000000002.quest_desc: ["Obtain the Shell Horn through Aquamirae progression, use it to reach Captain Cornelia, then defeat her. Her follow-up equipment remains on the Aquamirae page."]
+	quest.5074000000000003.title: "Kraken"
+	quest.5074000000000003.quest_desc: ["After discovering signs of the Kraken on the Myths of the Sea page, defeat one and recover its guaranteed Kraken Tentacle."]
+	quest.5074000000000004.title: "Leviathan"
+	quest.5074000000000004.quest_desc: ["Track a Leviathan through the Myths of the Sea discovery branch, defeat it, and recover its guaranteed Leviathan Heart."]
 }
