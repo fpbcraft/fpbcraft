@@ -1,6 +1,5 @@
 {
 	chapter.01014DDC205ECA93.title: " &ePump Dat Oil"
-	chapter.06C461D2AA9B967D.title: "Electricity"
 	chapter.077E2D43C856BB30.title: "Storage & Computers"
 	chapter.08CDC01FE839E5A6.title: " &eBrass Age"
 	chapter.09F0C87D85FE2EBB.title: "&e Aquatic Ambitions"
@@ -94,8 +93,6 @@
 	quest.0405C3D134D951AF.title: "Accumulator"
 	quest.042A5486EA918E0D.title: "Waking Lichblade"
 	quest.0442B31457FC6BC2.title: "&aObtain Limestone"
-	quest.0476DA101D0EDB46.quest_desc: ["Craft or obtain createaddition:capacitor. Use EMI to inspect its recipe and uses before adding it to your build."]
-	quest.0476DA101D0EDB46.title: "Obtain Capacitor"
 	quest.04879E1AF2DD1230.quest_desc: ["Craft or obtain paladins:iron_kite_shield. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.04879E1AF2DD1230.title: "Obtain Iron Kite Shield"
 	quest.0491660AE6DA9865.title: "&aObtain &5Awkward potion"
@@ -139,8 +136,6 @@
 	]
 	quest.077578BEE2304A7D.title: "Organic Compost"
 	quest.07D303ABCE43AFAA.title: "Train Signal"
-	quest.07EAFAB80CF38221.quest_desc: ["Build a dedicated workshop and a clear test range. The cannon is the end of a manufacturing process, not the first step."]
-	quest.07EAFAB80CF38221.title: "&6Big Cannons"
 	quest.080B7781E8747877.title: "&aObtain &eNautilus Shell"
 	quest.082CB8913F013810.title: "&aCraft &dTrident"
 	quest.0832882D51C2828A.quest_desc: ["Explore FPBCRAFT's expanded continents without turning exploration into a checklist of every biome. Mark your base, portals, transport hubs, and dangerous discoveries. Carry recovery supplies and avoid removing unique structure blocks before you understand their purpose."]
@@ -181,8 +176,6 @@
 	quest.0C75C8D376F32D8E.title: "Obtain Infuser"
 	quest.0CE3111596ADA68D.title: "&4Fan Seething Catalyst"
 	quest.0D149B0AE3F9A751.title: "Item Vault"
-	quest.0D32E9864B678D9D.quest_desc: ["Craft or obtain createoreexcavation:drill. Use EMI to inspect its recipe and uses before adding it to your build."]
-	quest.0D32E9864B678D9D.title: "Obtain Drill"
 	quest.0DB74467E850AE47.title: "Stack Upgrade Tier 3"
 	quest.0DF4E30D035B7195.quest_desc: ["Craft or obtain create_integrated_farming:vacuum_harvester. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.0DF4E30D035B7195.title: "Obtain Vacuum Harvester"
@@ -824,8 +817,6 @@
 	quest.3953A8F33F547DC3.title: "Propeller Bearing"
 	quest.3980DD561018E983.quest_desc: ["Craft or obtain sophisticatedbackpacks:backpack. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.3980DD561018E983.title: "Obtain Backpack"
-	quest.3999E4356A525276.quest_desc: ["Build a small test installation and inspect the controller. Confirm the required structure and support systems before adding fuel."]
-	quest.3999E4356A525276.title: "Lay Out the Reactor"
 	quest.39C04484804E5D4A.quest_desc: ["Use the slide with the instant camera and give a finished picture to a friend."]
 	quest.39C04484804E5D4A.title: "Capture a Shared Moment"
 	quest.39C224031316D458.quest_desc: ["Inspect the film’s uses and load it into your camera. Photograph a few different subjects."]
@@ -998,3 +989,12 @@
 	quest.43FA7F5302F72B4F.title: "Obtain Stove"
 	quest.44BC710230A95A04.title: "Adjustable Chain Gearshift"
 	quest.44E8BA528D2299BC.title: "&eCraft a &6Slicer"
+	quest.44F129D70B859461.quest_desc: ["Prove your basic combat loadout against common enemies."]
+	quest.44F129D70B859461.title: "Defeat Ten Zombies"
+	quest.452A5581870B0573.quest_desc: ["Practice blocking and repositioning, then try fighting with a teammate."]
+	quest.452A5581870B0573.title: "Hold Your Ground"
+	quest.45302D6847413C5C.title: "Stormbringer"
+	quest.453DC602E5FD4DEF.quest_desc: ["Use the gyroscope’s instructions and adjust one setting at a time. Test close to the ground."]
+	quest.453DC602E5FD4DEF.title: "Tune the Craft"
+	quest.455357FC782D9375.quest_desc: ["Build a searchable store while keeping your original chests accessible."]
+	quest.455357FC782D9375.title: "&6Tom’s Storage"
