@@ -3,7 +3,7 @@
 	default_quest_shape: "circle"
 	filename: "combat_just_hammers"
 	group: "4863600DDEA1AF02"
-	icon: { id: "minecraft:iron_pickaxe" }
+	icon: { id: "justhammers:iron_hammer" }
 	id: "5C1000000000C001"
 	images: [ ]
 	order_index: 1
@@ -11,15 +11,11 @@
 	quests: [
 		{
 			id: "5C10000000000001"
-			rewards: [{
-				id: "5C10000000002001"
-				type: "xp"
-				xp: 10
-			}]
+			rewards: [{ id: "5C10000000002001", type: "xp", xp: 10 }]
 			tasks: [{
 				consume_items: false
 				id: "5C10000000001001"
-				item: { components: { "ftbfiltersystem:filter": "or(mod(justhammers))" }, count: 1, id: "ftbfiltersystem:smart_filter" }
+				item: { count: 1, id: "justhammers:iron_hammer" }
 				type: "item"
 			}]
 			x: 0d
@@ -28,78 +24,68 @@
 		{
 			dependencies: ["5C10000000000001"]
 			id: "5C10000000000002"
-			rewards: [{
-				id: "5C10000000002002"
-				type: "xp"
-				xp: 10
-			}]
+			rewards: [{ id: "5C10000000002002", type: "xp", xp: 10 }]
 			tasks: [{
+				consume_items: false
 				id: "5C10000000001002"
-				type: "checkmark"
+				item: { count: 1, id: "justhammers:iron_impact_hammer" }
+				type: "item"
 			}]
 			x: -3d
 			y: 2d
 		},
 		{
-			dependencies: ["5C10000000000001"]
+			dependencies: ["5C10000000000002"]
 			id: "5C10000000000003"
-			rewards: [{
-				id: "5C10000000002003"
-				type: "xp"
-				xp: 10
-			}]
+			rewards: [{ id: "5C10000000002003", type: "xp", xp: 10 }]
 			tasks: [{
+				consume_items: false
 				id: "5C10000000001003"
-				type: "checkmark"
+				item: { count: 1, id: "justhammers:iron_reinforced_hammer" }
+				type: "item"
 			}]
 			x: -1d
-			y: 2d
+			y: 4d
 		},
 		{
-			dependencies: ["5C10000000000001"]
+			dependencies: ["5C10000000000003"]
 			id: "5C10000000000004"
-			rewards: [{
-				id: "5C10000000002004"
-				type: "xp"
-				xp: 10
-			}]
+			rewards: [{ id: "5C10000000002004", type: "xp", xp: 15 }]
 			tasks: [{
+				consume_items: false
 				id: "5C10000000001004"
-				type: "checkmark"
+				item: { count: 1, id: "justhammers:iron_reinforced_impact_hammer" }
+				type: "item"
 			}]
 			x: 1d
-			y: 2d
+			y: 6d
 		},
 		{
-			dependencies: ["5C10000000000001"]
+			dependencies: ["5C10000000000004"]
 			id: "5C10000000000005"
-			rewards: [{
-				id: "5C10000000002005"
-				type: "xp"
-				xp: 10
-			}]
+			rewards: [{ id: "5C10000000002005", type: "xp", xp: 20 }]
 			tasks: [{
+				consume_items: false
 				id: "5C10000000001005"
-				type: "checkmark"
+				item: { count: 1, id: "justhammers:iron_destructor_hammer" }
+				type: "item"
 			}]
 			x: 3d
-			y: 2d
+			y: 8d
 		},
 		{
-			dependencies: ["5C10000000000003", "5C10000000000005"]
+			dependencies: ["5C10000000000005"]
 			id: "5C10000000000006"
 			shape: "hexagon"
-			rewards: [{
-				id: "5C10000000002006"
-				type: "xp"
-				xp: 40
-			}]
+			rewards: [{ id: "5C10000000002006", type: "xp", xp: 40 }]
 			tasks: [{
+				consume_items: false
 				id: "5C10000000001006"
-				type: "checkmark"
+				item: { count: 1, id: "justhammers:diamond_destructor_hammer" }
+				type: "item"
 			}]
 			x: 0d
-			y: 4d
+			y: 10d
 		}
 	]
 }
