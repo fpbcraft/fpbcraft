@@ -1,0 +1,311 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "farming_immortalers_delight"
+	group: "171B0F909A01E9E1"
+	icon: {
+		id: "immortalers_delight:sniffer_fur_brush"
+	}
+	id: "314D0E1200000001"
+	images: [ ]
+	order_index: 1
+	quest_links: [ ]
+	quests: [
+		{
+					icon: {
+						id: "immortalers_delight:sniffer_fur_brush"
+					}
+					id: "40F9425448D9450B"
+					rewards: [{
+						id: "2698D4DD79133DD6"
+						type: "xp"
+						xp: 10
+					}]
+					shape: "gear"
+					size: 1.5d
+					tasks: [{
+					id: "28AB93F09E43A991"
+					type: "checkmark"
+				}]
+					x: 0.0d
+					y: 0.0d
+				}
+		{
+					dependencies: ["40F9425448D9450B"]
+					id: "39D833BB8E941A51"
+					rewards: [{
+						id: "1A519FB308F22007"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					consume_items: false
+					id: "1DA83C3CD7422B2B"
+					item: { count: 1, id: "minecraft:sniffer_egg" }
+					type: "item"
+				}]
+					x: 0.0d
+					y: 2.0d
+				}
+		{
+					dependencies: ["40F9425448D9450B"]
+					id: "3907A9AD5DE769E9"
+					rewards: [{
+						id: "1A200E6BBA6A57EA"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					consume_items: false
+					id: "30B1D02C8CBA8AEF"
+					item: { count: 1, id: "immortalers_delight:sniffer_fur_brush" }
+					type: "item"
+				}]
+					x: 0.0d
+					y: 3.5d
+				}
+		{
+					dependencies: ["3907A9AD5DE769E9"]
+					id: "6AD6395144AA7C6B"
+					rewards: [{
+						id: "6063481DC65B8B95"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					consume_items: false
+					id: "2ADEEFB6179C7B05"
+					item: { count: 1, id: "immortalers_delight:evolutcorn" }
+					type: "item"
+				}]
+					x: -6.0d
+					y: 5.0d
+				}
+		{
+					dependencies: ["3907A9AD5DE769E9"]
+					id: "583DCAC285421ADE"
+					rewards: [{
+						id: "107A039CDC074F59"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					consume_items: false
+					id: "6EBEEF2067C1D6AE"
+					item: { count: 1, id: "immortalers_delight:pearlip" }
+					type: "item"
+				}]
+					x: -4.0d
+					y: 6.5d
+				}
+		{
+					dependencies: ["3907A9AD5DE769E9"]
+					id: "7B44ADDA54A7A7BD"
+					rewards: [{
+						id: "1D91C67977C67723"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					consume_items: false
+					id: "46FB3C3DBE1AA3CC"
+					item: { count: 1, id: "immortalers_delight:himekaido_seed" }
+					type: "item"
+				}]
+					x: -2.0d
+					y: 8.0d
+				}
+		{
+					dependencies: ["3907A9AD5DE769E9"]
+					id: "67AFAA46612A0105"
+					rewards: [{
+						id: "13A1AF8E9BA56CE9"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					consume_items: false
+					id: "2EF2E2762159AE43"
+					item: { count: 1, id: "immortalers_delight:contains_tea_leisamboo" }
+					type: "item"
+				}]
+					x: 0.0d
+					y: 9.5d
+				}
+		{
+					dependencies: ["3907A9AD5DE769E9"]
+					id: "5DB6B17FE140F17C"
+					rewards: [{
+						id: "3CD90FBE387697B9"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					consume_items: false
+					id: "169123C3753A5809"
+					item: { count: 1, id: "immortalers_delight:kwat_wheat_seeds" }
+					type: "item"
+				}]
+					x: 2.0d
+					y: 8.0d
+				}
+		{
+					dependencies: ["3907A9AD5DE769E9"]
+					id: "19C1D8B184A05125"
+					rewards: [{
+						id: "1E89818A81D6FCF0"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					consume_items: false
+					id: "20AD69235F9A8C36"
+					item: { count: 1, id: "immortalers_delight:alfalfa_seeds" }
+					type: "item"
+				}]
+					x: 4.0d
+					y: 6.5d
+				}
+		{
+					dependencies: ["3907A9AD5DE769E9"]
+					id: "58424E33722E8E37"
+					rewards: [{
+						id: "52A5A360D92B4B65"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					consume_items: false
+					id: "6B786089EF155B49"
+					item: { count: 1, id: "immortalers_delight:warped_laurel_seeds" }
+					type: "item"
+				}]
+					x: 6.0d
+					y: 5.0d
+				}
+		{
+					dependencies: ["6AD6395144AA7C6B"]
+					id: "1B9391CCDD9BC2E3"
+					rewards: [{
+						id: "268B1C604C12FB78"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					consume_items: false
+					id: "4FFAB852B97502CD"
+					item: { count: 1, id: "immortalers_delight:ancient_stove" }
+					type: "item"
+				}]
+					x: -4.0d
+					y: 11.0d
+				}
+		{
+					dependencies: ["1B9391CCDD9BC2E3"]
+					id: "26D6139235E840E1"
+					rewards: [{
+						id: "2D65FBEBC6109F81"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					consume_items: false
+					id: "6D234DC37AC2764C"
+					item: { count: 1, id: "immortalers_delight:enchantal_cooler" }
+					type: "item"
+				}]
+					x: -2.0d
+					y: 12.5d
+				}
+		{
+					dependencies: ["26D6139235E840E1"]
+					id: "6CF46E20B3D1B493"
+					optional: true
+					rewards: [{
+						id: "3C1B9646F5A70395"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					consume_items: false
+					id: "7792E18D2A66BB3A"
+					item: { count: 1, id: "immortalers_delight:bowl_of_kwat_tofu_stew" }
+					type: "item"
+				}]
+					x: 0.0d
+					y: 14.0d
+				}
+		{
+					dependencies: ["67AFAA46612A0105"]
+					id: "6E112360801FF0E8"
+					optional: true
+					rewards: [{
+						id: "3EA226159A0807DF"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					consume_items: false
+					id: "164AFB9A9005E7EC"
+					item: { count: 1, id: "immortalers_delight:leisamboo_tea" }
+					type: "item"
+				}]
+					x: 2.0d
+					y: 12.5d
+				}
+		{
+					dependencies: ["19C1D8B184A05125"]
+					id: "1932B311790D7B07"
+					optional: true
+					rewards: [{
+						id: "7025DB320FE1D0FF"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					consume_items: false
+					id: "23E20FC9A70475B0"
+					item: { count: 1, id: "immortalers_delight:alfalfa_porridge" }
+					type: "item"
+				}]
+					x: 4.0d
+					y: 11.0d
+				}
+		{
+					dependencies: ["40F9425448D9450B"]
+					id: "7A31C33041F7A606"
+					optional: true
+					rewards: [{
+						id: "696C0A578F6E4264"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					consume_items: false
+					id: "36FB7B9C880220DB"
+					item: { count: 1, id: "immortalers_delight:rusty_ancient_blade" }
+					type: "item"
+				}]
+					x: 7.0d
+					y: 9.0d
+				}
+		{
+					dependencies: ["40F9425448D9450B"]
+					id: "17916F65A43E8FF3"
+					optional: true
+					rewards: [{
+						id: "4162E055F9A1BC1D"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					consume_items: false
+					id: "1A6379EC3D880CB8"
+					item: { count: 1, id: "immortalers_delight:ancient_blade" }
+					type: "item"
+				}]
+					x: 8.5d
+					y: 10.5d
+				}
+	]
+}

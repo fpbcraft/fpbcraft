@@ -5,9 +5,7 @@
 	chapter.09F0C87D85FE2EBB.title: "&e Aquatic Ambitions"
 	chapter.16C5FD7375E8F1C9.title: "Photography"
 	chapter.1E8F36011DDBC0E7.title: " &eGetting Started"
-	chapter.24588CE3822D1A5E.title: " &eCreate Kitchen"
 	chapter.254243CAD3B3043A.title: "Food and Farming"
-	chapter.27AC45BF67882B5D.title: "Farm to Table"
 	chapter.2AC40A5D34D93FFC.title: "&e Aeronautics"
 	chapter.2C98A0203051DEC7.title: "Heavy Industry"
 	chapter.2F17721232295EBD.title: "&bSophisticated Backpacks"
@@ -28,7 +26,6 @@
 	chapter.695BADC1E8DFAD85.title: " &eAndesite Age"
 	chapter.6FBBFF7714F75AF3.title: " &eEnchantment Industry"
 	chapter.717E2EBC94CCCB5C.title: "&e Off-Road"
-	chapter.723CD0BDFFF3D894.title: "Deep Seas"
 	chapter.775994AE63FF3CA4.title: " &eFun Additions"
 	chapter.77A2785C01AA06AE.title: " &eConnected"
 	chapter.7C6B8E6E2496CF8D.title: "Oceans and Submarines"
@@ -71,8 +68,6 @@
 	quest.00B01883BE42A871.quest_desc: ["Craft or obtain createrailwaysnavigator:train_station_clock. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.00B01883BE42A871.title: "Obtain Train Station Clock"
 	quest.00EE843F384DB938.title: "Laser Blocks"
-	quest.00F533B24884272C.quest_desc: ["Consult the guide before selecting a tank and inhabitants."]
-	quest.00F533B24884272C.title: "Plan an Aquarium"
 	quest.010CD0B694E25FEC.quest_desc: ["Use Ponder to follow the boring setup. Check the barrel material and recipe before powering the drill."]
 	quest.010CD0B694E25FEC.title: "Machine the Barrel"
 	quest.013A20A3DCF9B129.quest_desc: ["Craft or obtain computercraft:computer_advanced. Use EMI to inspect its recipe and uses before adding it to your build."]
@@ -262,8 +257,6 @@
 	quest.12B8D781D7E61A07.quest_desc: ["Craft or obtain computercraft:wired_modem_full. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.12B8D781D7E61A07.title: "Obtain Wired Modem Full"
 	quest.12B91215BFFF67CA.quest_desc: ["Start with a small route and expand after it completes a reliable round trip."]
-	quest.12BD42304D81C2B9.quest_desc: ["Craft or obtain oceansdelight:fugu_roll. Use EMI to inspect its recipe and uses before adding it to your build."]
-	quest.12BD42304D81C2B9.title: "Obtain Fugu Roll"
 	quest.12E8EDE461EE10E1.quest_desc: ["Craft or obtain simulated:rope_coupling. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.12E8EDE461EE10E1.title: "Obtain Rope Coupling"
 	quest.1342F99BA0A42602.title: "Mjolnir"
@@ -432,8 +425,6 @@
 	quest.1C5D6A111BA7EE6C.title: "Millstone"
 	quest.1C812AE015CB5309.quest_desc: ["Choose a small set of images that work together and give them space to be seen."]
 	quest.1C812AE015CB5309.title: "&6The Gallery"
-	quest.1C8C1A28A1695E83.quest_desc: ["Keep a record of fishing spots and what you catch there."]
-	quest.1C8C1A28A1695E83.title: "&6Tide Fishing"
 	quest.1C9CC78F2C3FF831.title: "Livyatan"
 	quest.1CDAAA97BDE8BF53.quest_desc: ["Inspect the casting recipes and prepare a casting area for the barrel material you intend to use."]
 	quest.1CDAAA97BDE8BF53.title: "Prepare the Foundry"
@@ -601,8 +592,6 @@
 	quest.27F1DC2DFB8CAA98.title: "Obtain Mechanical Saw"
 	quest.281AAF5A1EBB212C.quest_desc: ["Fit the vent and test its behavior in shallow water before attempting a deep dive."]
 	quest.281AAF5A1EBB212C.title: "Control the Ballast"
-	quest.281BD363F284F932.quest_desc: ["Begin in shallow water with a small craft and a recovery route. See Aquatic Ambitions for the related underwater Create systems."]
-	quest.281BD363F284F932.title: "&6Submarine Workshop"
 	quest.2827F9DB62704B2E.title: "Materials for &3Crates"
 	quest.283E86B9543CD37F.title: "Icewhisper"
 	quest.286BBA52B26F5D97.quest_desc: ["Craft or obtain quark:backpack. Use EMI to inspect its recipe and uses before adding it to your build."]
@@ -749,8 +738,6 @@
 	quest.323322C27D4630CD.title: "Obtain Water Thruster"
 	quest.3233DDD823D4139B.title: "&6Transmission Chain"
 	quest.328A73D96C93A941.title: "Engine"
-	quest.32A3F067AEC41928.quest_desc: ["Compare shallow and deeper water and note which catches change."]
-	quest.32A3F067AEC41928.title: "Compare Fishing Depths"
 	quest.32F350560FF91E9E.title: "Docking Connector"
 	quest.334FF5EA51FD789C.title: "&6Minecart with Chest"
 	quest.33F9DA1C941929AF.quest_desc: ["Use the launcher in a clear test area. Keep a route back to both anchors."]
@@ -832,8 +819,6 @@
 	quest.3B66A8BECF486D75.title: "Obtain Encased Fan"
 	quest.3B731698EA862F9C.quest_desc: ["Can be found naturally in &aslime chunks,&r and will spawn as one of two size variants, each with their own stats."]
 	quest.3B731698EA862F9C.title: "Slime golem"
-	quest.3B7FDEA8E83ECFFF.quest_desc: ["Craft or obtain tide:fish_satchel. Use EMI to inspect its recipe and uses before adding it to your build."]
-	quest.3B7FDEA8E83ECFFF.title: "Obtain Fish Satchel"
 	quest.3B8E3FCDC823702B.title: "Small Tire"
 	quest.3B9859534043A89B.title: "Oil Scanner"
 	quest.3BB020375315EC8C.quest_desc: ["Craft or obtain create_sa:flamethrower. Use EMI to inspect its recipe and uses before adding it to your build."]
@@ -883,8 +868,6 @@
 	quest.3C566E2503F3B9E6.title: "&eCapturing the Moment: Expure Photography&r"
 	quest.3C5C9B6A36243E74.title: "&eMake a &dSweet Berry Cake"
 	quest.3C946DA546A25322.title: "Andesite Alloy"
-	quest.3C9945B82C422643.quest_desc: ["Craft or obtain crabbersdelight:turtle_stew. Use EMI to inspect its recipe and uses before adding it to your build."]
-	quest.3C9945B82C422643.title: "Obtain Turtle Stew"
 	quest.3CB51169AB0AD075.quest_desc: ["Craft or obtain offroad:borehead_bearing. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.3CB51169AB0AD075.title: "Obtain Borehead Bearing"
 	quest.3CC352FF22296785.quest_desc: ["Craft or obtain createpropulsion:wing. Use EMI to inspect its recipe and uses before adding it to your build."]
@@ -969,8 +952,6 @@
 	quest.4372151895E66E97.title: "Cart Assembler"
 	quest.43F01090BC46C56B.title: "&aObtain &rFlint"
 	quest.43F2E7913D8C8550.title: "&6Freewheel Clutch"
-	quest.43FA7F5302F72B4F.quest_desc: ["Craft or obtain farmersdelight:stove. Use EMI to inspect its recipe and uses before adding it to your build."]
-	quest.43FA7F5302F72B4F.title: "Obtain Stove"
 	quest.44BC710230A95A04.title: "Adjustable Chain Gearshift"
 	quest.44E8BA528D2299BC.title: "&eCraft a &6Slicer"
 	quest.44F129D70B859461.quest_desc: ["Prove your basic combat loadout against common enemies."]
@@ -983,8 +964,6 @@
 	quest.455357FC782D9375.title: "&6Tom’s Storage"
 	quest.457EB60D601C67FD.quest_desc: ["Perhaps you can&b put these back together&r, or maybe make&o &6something else&r with it."]
 	quest.457EB60D601C67FD.title: "Milestone"
-	quest.45840D11383C3D7B.quest_desc: ["Craft or obtain oceansdelight:guardian_soup. Use EMI to inspect its recipe and uses before adding it to your build."]
-	quest.45840D11383C3D7B.title: "Obtain Guardian Soup"
 	quest.45C7967EAB5168EF.title: "Andesite Propeller"
 	quest.45E550E53EE8D558.title: "Super Glue"
 	quest.45EC37852830BCFD.title: "Blind Spot"
@@ -1052,8 +1031,6 @@
 	quest.4967A0568610849B.title: "Develop the Results"
 	quest.496DC07E5B463E4E.quest_desc: ["Craft or obtain farmingforblockheads:market. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.496DC07E5B463E4E.title: "Obtain Market"
-	quest.4981D51AAAC7558C.quest_desc: ["Carry food, breathing supplies, and spare equipment when investigating unfamiliar waters."]
-	quest.4981D51AAAC7558C.title: "&6Marine Discovery"
 	quest.498A73260C8CAEBE.quest_desc: ["Craft or obtain create:belt_connector. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.498A73260C8CAEBE.title: "Obtain Belt Connector"
 	quest.49AC543770A71292.quest_desc: ["Craft or obtain rechiseled:chisel. Use EMI to inspect its recipe and uses before adding it to your build."]
@@ -1082,8 +1059,6 @@
 	quest.4BB98C708458A178.quest_desc: ["Simply right click the &6Item Drain&r with a &6Mechanical Grindstone&r and then place another on top of it and you'll be able to grind away the enchantments into &aliquid experience&r."]
 	quest.4BB98C708458A178.title: "&8Grindstone and Item Drain"
 	quest.4BFC19FFA13C6239.title: "Hiveheart"
-	quest.4C04C08F5E39A2FF.quest_desc: ["Place the cutting board and inspect its recipe category in EMI."]
-	quest.4C04C08F5E39A2FF.title: "Prepare Ingredients"
 	quest.4C0BA749CF6F4494.title: "Storm's Edge"
 	quest.4C24144CF6D1C718.title: "Deployer"
 	quest.4C4B9F6F6A373E3E.quest_desc: ["Craft or obtain simulated:docking_connector. Use EMI to inspect its recipe and uses before adding it to your build."]
@@ -1343,8 +1318,6 @@
 	quest.5ADC0CF838E33798.title: "Obtain Basic Integrated Circuit"
 	quest.5AF632FD5D90B888.quest_desc: ["Craft or obtain create_aeronautics_throwable_rope_connector:throwable_rope_connector. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.5AF632FD5D90B888.title: "Obtain Throwable Rope Connector"
-	quest.5B31509FFB46D929.quest_desc: ["Use the journal while exploring different waters. Record your first catches instead of trying to complete every entry at once."]
-	quest.5B31509FFB46D929.title: "Start a Fishing Journal"
 	quest.5B408EC0BD565632.title: "Sail Equipments"
 	quest.5B47C4A0292E74C5.quest_desc: [
 		"&6Another Furniture&r adds various furniture blocks, all with the goal of staying vanilla-styled and consistently sized, keeping normal blocks and player sizes in mind."
@@ -1454,8 +1427,6 @@
 	quest.6377DD5FC02A248E.title: "Water Bucket"
 	quest.63F9138F24DFD5C9.quest_desc: ["Craft or obtain createaddition:modular_accumulator. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.63F9138F24DFD5C9.title: "Obtain Modular Accumulator"
-	quest.645B6465697F8BF3.quest_desc: ["Read the compass description and follow it on a prepared expedition. Establish a return point before entering danger."]
-	quest.645B6465697F8BF3.title: "Follow an Ocean Mystery"
 	quest.645E620B51EFDA76.quest_desc: ["Check the deposit with a sample drill before committing to a full production line."]
 	quest.645E620B51EFDA76.title: "Take a Sample"
 	quest.6478FAB88BEB7E12.quest_desc: ["Craft or obtain create_submarine:ballast_vent. Use EMI to inspect its recipe and uses before adding it to your build."]
@@ -1488,8 +1459,6 @@
 	quest.6730B4B5518718D7.title: "Soulstealer"
 	quest.675997DA447C769D.quest_desc: ["Craft or obtain create_connected:brass_gearbox. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.675997DA447C769D.title: "Obtain Brass Gearbox"
-	quest.67775101CE48D0E2.quest_desc: ["Supply the pot with the heat and ingredients shown in its recipes. Prepare food for your next group expedition."]
-	quest.67775101CE48D0E2.title: "Cook a Shared Meal"
 	quest.6784DFEE1F53DFB7.quest_desc: ["Craft or obtain exposure_expanded:panoramic_lens. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.6784DFEE1F53DFB7.title: "Obtain Panoramic Lens"
 	quest.67AC3FC09FA35D34.title: "Levitite Blend Bucket"
@@ -1532,8 +1501,6 @@
 	quest.69C7F71E6330CDE3.quest_desc: ["Build a dependable Create workshop from rotational power through brass automation. Stress capacity is the available mechanical budget; stress impact is what machines consume. Use goggles and Ponder before increasing speed or extending a network."]
 	quest.69C7F71E6330CDE3.title: "Begin Create Foundations"
 	quest.69EC849DD0101246.title: "&2Block of Experience"
-	quest.6A24580EECB10EA3.quest_desc: ["Use the knife with the cutting board and inspect the outputs of a crop or food ingredient."]
-	quest.6A24580EECB10EA3.title: "Choose the Right Tool"
 	quest.6A82CEDA5E818E99.title: "&eController Rail"
 	quest.6AA61742DC4FADAE.title: "Music Disc"
 	quest.6AC099F5F9A76F74.quest_desc: ["Craft or obtain armory_rpgs:deathmantle_armor_head. Use EMI to inspect its recipe and uses before adding it to your build."]
@@ -1567,8 +1534,6 @@
 	quest.6B1C3C6D26F26308.quest_desc: ["Craft or obtain createnuclear:autunite_pillar. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.6B1C3C6D26F26308.title: "Obtain Autunite Pillar"
 	quest.6B1F3351C8A162D2.title: "§ePortable Drill"
-	quest.6B26BDD04CD60943.quest_desc: ["Prepare tools, then build a kitchen around the recipes you actually want to cook."]
-	quest.6B26BDD04CD60943.title: "&6Farmer’s Delight"
 	quest.6B9ACC746BF2729E.title: "Precision Mechanism"
 	quest.6BB5CEF20DE2B7BD.title: "Crushing Wheel"
 	quest.6BD49F15F2BB54D4.title: "Vector Thruster"
@@ -1583,8 +1548,6 @@
 	quest.6C56203690BC7DCA.quest_desc: ["Craft or obtain create:cogwheel. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.6C56203690BC7DCA.title: "Obtain Cogwheel"
 	quest.6C9B6A56DF079134.title: "Mounted Potato Cannon"
-	quest.6CC8BDCE66C1A34E.quest_desc: ["Use the finder alongside the journal to plan a new fishing trip."]
-	quest.6CC8BDCE66C1A34E.title: "Find Your Next Catch"
 	quest.6D00B9295B7BBA33.title: "Pulse Extender"
 	quest.6D27BC09F8C71D4E.quest_desc: ["The &6Empty Blaze Burner&r can be filled by &eRight-clicking&r it on either a &6Blaze Spawner&r or a &6Blaze&r"]
 	quest.6D27BC09F8C71D4E.title: "Blaze Burner"
@@ -1730,8 +1693,6 @@
 	quest.77C07C96FC10F769.quest_desc: ["Craft or obtain numismatics:banking_guide. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.77C07C96FC10F769.title: "Obtain Banking Guide"
 	quest.77DADB4D6BEC91DE.title: "Hose Pulley"
-	quest.784568DA925E8116.quest_desc: ["Use the aquarist table to begin a small aquarium. Check the needs of each inhabitant before expanding."]
-	quest.784568DA925E8116.title: "Build a Living Display"
 	quest.78ABB6AFE1B9F40F.title: "Contraption Diagram"
 	quest.78D419DC99312BAF.title: "Train Track"
 	quest.791DE4A66C2CBB9D.quest_desc: ["The &6netherite backpack&r is the upgrade of the &ediamond backpack&r. It has 120 storage slots and can hold 7 upgrades"]
@@ -1822,8 +1783,6 @@
 	quest.8E44B6E56D480AF1.title: "Obtain Mechanical Crafter"
 	quest.8FAAF5EDFE9A348B.quest_desc: ["Craft or obtain create:mechanical_drill. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.8FAAF5EDFE9A348B.title: "Obtain Mechanical Drill"
-	quest.92E4C1EE435C97FD.quest_desc: ["Craft or obtain crabbersdelight:bisque. Use EMI to inspect its recipe and uses before adding it to your build."]
-	quest.92E4C1EE435C97FD.title: "Obtain Bisque"
 	quest.94192E1789A67668.quest_desc: ["Craft or obtain cookingforblockheads:cooking_table. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.94192E1789A67668.title: "Obtain Cooking Table"
 	quest.9464FF84D8256C3C.quest_desc: ["Craft or obtain cratedelight:apple_crate. Use EMI to inspect its recipe and uses before adding it to your build."]
@@ -1852,8 +1811,6 @@
 	quest.9BAE93601478896C.title: "Obtain Color Film"
 	quest.9BBF28479CF9CD0C.quest_desc: ["Craft or obtain numismatics:bank_terminal. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.9BBF28479CF9CD0C.title: "Obtain Bank Terminal"
-	quest.9BE12F9CD8FB4D04.quest_desc: ["Craft or obtain farmersdelight:skillet. Use EMI to inspect its recipe and uses before adding it to your build."]
-	quest.9BE12F9CD8FB4D04.title: "Obtain Skillet"
 	quest.9C967A9D8A204DAD.quest_desc: ["Craft or obtain minecraft:water_bucket. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.9C967A9D8A204DAD.title: "Obtain Water Bucket"
 	quest.9D62E96ADA029B1E.quest_desc: ["Craft or obtain create_simulated_additions:ckbg_mid_drive_engine. Use EMI to inspect its recipe and uses before adding it to your build."]
@@ -1900,8 +1857,6 @@
 	quest.B09A9279107522B6.title: "Obtain Mechanical Arm"
 	quest.B1F6977AED8C71E7.quest_desc: ["Practice shields, cover, and ranged counterplay."]
 	quest.B1F6977AED8C71E7.title: "Defeat Ten Skeletons"
-	quest.B312FF4DC96B64DA.quest_desc: ["Craft or obtain aquamirae:dreadwake. Use EMI to inspect its recipe and uses before adding it to your build."]
-	quest.B312FF4DC96B64DA.title: "Obtain Dreadwake"
 	quest.B4BC4D8A294E6808.quest_desc: ["Craft or obtain railways:handcar. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.B4BC4D8A294E6808.title: "Obtain Handcar"
 	quest.B4C15E8483C5D612.quest_desc: ["Craft or obtain create:attribute_filter. Use EMI to inspect its recipe and uses before adding it to your build."]
@@ -2560,4 +2515,196 @@
 	quest.7A259EC18BFAC41C.title: "Andesite Chunk Loader"
 	quest.7B4C52AD367C6D2A.quest_desc: ["Use Save mode on a small Sable or Create Aeronautics vehicle. Start with something expendable so you can learn how connected sublevels are captured safely."]
 	quest.7B4C52AD367C6D2A.title: "Save a Vehicle Blueprint"
+	chapter.27AC45BF67882B5D.title: "Farmer's Delight"
+	chapter.314D0E1200000001.title: "Immortalers Delight"
+	chapter.24588CE3822D1A5E.title: "Create Kitchen"
+	chapter.314D0E1200000002.title: "Delight Addons"
+	chapter.723CD0BDFFF3D894.title: "Underwater Engineering"
+	chapter.314D0E1200000011.title: "Tide Fishing"
+	chapter.314D0E1200000012.title: "Aquamirae"
+	chapter.314D0E1200000013.title: "Myths of the Sea"
+	chapter.314D0E1200000014.title: "Aquariums"
+	quest.6B26BDD04CD60943.title: "Farmer's Delight"
+	quest.6B26BDD04CD60943.quest_desc: ["Grow the core crops, learn ingredient preparation, then master the Skillet, Stove and Cooking Pot. Create-based automation is kept on the separate Create Kitchen page."]
+	quest.4B68AE39361B67C5.title: "Cabbage"
+	quest.4B68AE39361B67C5.quest_desc: ["Find Cabbage Seeds from wild crops or village farms and establish a renewable farmland patch."]
+	quest.29A8D56840D2ABA7.title: "Tomatoes"
+	quest.29A8D56840D2ABA7.quest_desc: ["Find Tomato Seeds and grow Tomatoes. Tomato vines are useful for compact farms and many recipes."]
+	quest.187A2806F0F6DE96.title: "Onions"
+	quest.187A2806F0F6DE96.quest_desc: ["Onions act as both harvest and planting item. Establish a reliable farmland patch for savory recipes."]
+	quest.73F98D125FF6BB64.title: "Rice"
+	quest.73F98D125FF6BB64.quest_desc: ["Rice needs a shallow-water growing setup rather than ordinary dry farmland. Build a small paddy and harvest enough to cook with."]
+	quest.4C04C08F5E39A2FF.title: "Cutting Board"
+	quest.4C04C08F5E39A2FF.quest_desc: ["Use a Cutting Board with knives and other tools to turn ingredients into cuts and recipe components."]
+	quest.6A24580EECB10EA3.title: "A Good Knife"
+	quest.6A24580EECB10EA3.quest_desc: ["Knives unlock many Cutting Board recipes and useful harvesting interactions."]
+	quest.9BE12F9CD8FB4D04.title: "Skillet"
+	quest.9BE12F9CD8FB4D04.quest_desc: ["Use the Skillet for direct frying and quick meals."]
+	quest.43FA7F5302F72B4F.title: "Stove"
+	quest.43FA7F5302F72B4F.quest_desc: ["Build a Farmer's Delight Stove as a reliable heat source for the Cooking Pot."]
+	quest.67775101CE48D0E2.title: "Cooking Pot"
+	quest.67775101CE48D0E2.quest_desc: ["Use a heated Cooking Pot for soups, stews and composed meals."]
+	quest.6B0F71C4ED462CA4.title: "Cook Rice"
+	quest.6B0F71C4ED462CA4.quest_desc: ["Use your rice harvest in a simple cooked-rice recipe."]
+	quest.2C2A35F6C12BF9F1.title: "Make Cabbage Rolls"
+	quest.2C2A35F6C12BF9F1.quest_desc: ["Turn cabbage into a composed meal instead of treating crops as checklist items."]
+	quest.1DC083B919D8CB9E.title: "Make Beef Stew"
+	quest.1DC083B919D8CB9E.quest_desc: ["Cook a representative multi-ingredient stew."]
+	quest.40F9425448D9450B.title: "Immortalers Delight"
+	quest.40F9425448D9450B.quest_desc: ["Ancient plants are largely discovered through Sniffer exploration. Each crop has its own habitat or cultivation rule, then feeds into specialized ancient cooking."]
+	quest.39D833BB8E941A51.title: "Find a Sniffer Egg"
+	quest.39D833BB8E941A51.quest_desc: ["Immortalers Delight ruins can help you obtain a Sniffer Egg. A Sniffer is central to discovering ancient crops."]
+	quest.3907A9AD5DE769E9.title: "Sniffer Fur Brush"
+	quest.3907A9AD5DE769E9.quest_desc: ["Craft the durable Sniffer Fur Brush for archaeology and ancient-crop exploration."]
+	quest.6AD6395144AA7C6B.title: "Evolutcorn"
+	quest.6AD6395144AA7C6B.quest_desc: ["Have a Sniffer dig in plains, then plant Evolutcorn on farmland."]
+	quest.583DCAC285421ADE.title: "Pearlip"
+	quest.583DCAC285421ADE.quest_desc: ["Have a Sniffer search jungle terrain. Pearlip grows into a tall fruiting plant on soil-like blocks."]
+	quest.7B44ADDA54A7A7BD.title: "Himekaido"
+	quest.7B44ADDA54A7A7BD.quest_desc: ["Sniff in forest biomes for Himekaido Seed; it begins as a shrub and can develop into a larger fruiting tree."]
+	quest.67AFAA46612A0105.title: "Leisamboo"
+	quest.67AFAA46612A0105.quest_desc: ["Search river environments. Leisamboo is aquatic and is planted on a soil-like block one block below the water surface."]
+	quest.5DB6B17FE140F17C.title: "Kwat Wheat"
+	quest.5DB6B17FE140F17C.quest_desc: ["Sniff in the Crimson Forest. Kwat Wheat grows on farmland, soul sand or soul soil and mature plants can release dangerous gas."]
+	quest.19C1D8B184A05125.title: "Alfalfa"
+	quest.19C1D8B184A05125.quest_desc: ["Alfalfa Seeds can be found through Sniffer digging in many terrains and grow normally on farmland."]
+	quest.58424E33722E8E37.title: "Warped Laurel"
+	quest.58424E33722E8E37.quest_desc: ["Search the Warped Forest. Warped Laurel can grow on farmland or soul sand; the soul-sand variant has a special water interaction."]
+	quest.1B9391CCDD9BC2E3.title: "Ancient Stove"
+	quest.1B9391CCDD9BC2E3.quest_desc: ["Use the Ancient Stove for Immortalers Delight's heat-based food preparation."]
+	quest.26D6139235E840E1.title: "Enchantal Cooler"
+	quest.26D6139235E840E1.quest_desc: ["Use the Enchantal Cooler for its separate cold/preparation recipe category."]
+	quest.6CF46E20B3D1B493.title: "Kwat Tofu Stew"
+	quest.6CF46E20B3D1B493.quest_desc: ["Cook a representative Kwat Wheat dish."]
+	quest.6E112360801FF0E8.title: "Leisamboo Tea"
+	quest.6E112360801FF0E8.quest_desc: ["Process Leisamboo into tea and explore the beverage side of the mod."]
+	quest.1932B311790D7B07.title: "Alfalfa Porridge"
+	quest.1932B311790D7B07.quest_desc: ["Cook a simple Alfalfa dish."]
+	quest.7A31C33041F7A606.title: "Rusty Ancient Blade"
+	quest.7A31C33041F7A606.quest_desc: ["Recover the Rusty Ancient Blade as an optional ancient-equipment branch."]
+	quest.17916F65A43E8FF3.title: "Ancient Blade Newly Whetted"
+	quest.17916F65A43E8FF3.quest_desc: ["Restore the Ancient Blade into its sharpened form."]
+	quest.7E7A92C196C65603.title: "Delight Addons"
+	quest.7E7A92C196C65603.quest_desc: ["FPBcraft contains several Farmer's Delight addons. Sample their distinct recipe families rather than completing every food."]
+	quest.12BD42304D81C2B9.title: "Fugu Roll"
+	quest.12BD42304D81C2B9.quest_desc: ["Use Ocean's Delight to turn ocean catches into food."]
+	quest.45840D11383C3D7B.title: "Guardian Soup"
+	quest.45840D11383C3D7B.quest_desc: ["Try a more unusual Ocean's Delight recipe."]
+	quest.92E4C1EE435C97FD.title: "Crab Bisque"
+	quest.92E4C1EE435C97FD.quest_desc: ["Use Crabber's Delight for shellfish-focused cooking."]
+	quest.3C9945B82C422643.title: "Turtle Stew"
+	quest.3C9945B82C422643.quest_desc: ["Try another Crabber's Delight recipe family."]
+	quest.2F23BBA907338F3F.title: "From Catch to Dinner"
+	quest.2F23BBA907338F3F.quest_desc: ["Turn something from a fishing or sea-exploration trip into a meal from a Delight addon."]
+	quest.48FF4CD992D8B3D9.title: "Chef's Delight"
+	quest.48FF4CD992D8B3D9.quest_desc: ["Browse Chef's Delight in EMI and make one representative recipe or useful kitchen item."]
+	quest.13421596ED9374BE.title: "Crate Delight"
+	quest.13421596ED9374BE.quest_desc: ["Browse Crate Delight in EMI and make one representative recipe or useful kitchen item."]
+	quest.2344F2841723F787.title: "Miner's Delight"
+	quest.2344F2841723F787.quest_desc: ["Browse Miner's Delight in EMI and make one representative recipe or useful kitchen item."]
+	quest.5AD15B7E62A3F1A6.title: "End's Delight"
+	quest.5AD15B7E62A3F1A6.quest_desc: ["Browse End's Delight in EMI and make one representative recipe or useful kitchen item."]
+	quest.46F6A348B6716640.title: "My Nether's Delight"
+	quest.46F6A348B6716640.quest_desc: ["Browse My Nether's Delight in EMI and make one representative recipe or useful kitchen item."]
+	quest.40C3179283FC3399.title: "Rustic Delight"
+	quest.40C3179283FC3399.quest_desc: ["Browse Rustic Delight in EMI and make one representative recipe or useful kitchen item."]
+	quest.4A4A0DBD9DA973B7.title: "Storage Delight"
+	quest.4A4A0DBD9DA973B7.quest_desc: ["Browse Storage Delight in EMI and make one representative recipe or useful kitchen item."]
+	quest.281BD363F284F932.title: "Underwater Engineering"
+	quest.281BD363F284F932.quest_desc: ["Build and test a Create submarine close to shore before using it for deep-sea expeditions."]
+	quest.1C8C1A28A1695E83.title: "Tide Fishing"
+	quest.1C8C1A28A1695E83.quest_desc: ["Tide adds a fishing minigame, customizable rods, many habitats and a journal that records fish when you actually catch them."]
+	quest.5B31509FFB46D929.title: "Fishing Journal"
+	quest.5B31509FFB46D929.quest_desc: ["Use the Journal to track caught species, habitats, biggest catches and completion progress."]
+	quest.7501DDA36D5FF32C.title: "Catch Your First Tide Fish"
+	quest.7501DDA36D5FF32C.quest_desc: ["Complete Tide's fishing minigame: right-click while the indicator is inside the colored region."]
+	quest.54924E3279F3ACDF.title: "Angling Table"
+	quest.54924E3279F3ACDF.quest_desc: ["Use the Angling Table to combine hooks, lines and bobbers on a fishing rod."]
+	quest.1E791C43CB853A5D.title: "Try Bait"
+	quest.1E791C43CB853A5D.quest_desc: ["Add Bait to speed fishing or provide special bonuses."]
+	quest.72DF1F00E2E8D5D7.title: "Change the Hook"
+	quest.72DF1F00E2E8D5D7.quest_desc: ["Install a hook, then inspect specialized hook effects in EMI."]
+	quest.6B36B9EC734FFD3D.title: "Upgrade the Line"
+	quest.6B36B9EC734FFD3D.quest_desc: ["Install a fishing line and inspect stronger material tiers."]
+	quest.1B68E5AF081A8F5A.title: "Build Your Own Rod"
+	quest.1B68E5AF081A8F5A.quest_desc: ["Combine a hook, line and bobber at the Angling Table, then test the rod."]
+	quest.32A3F067AEC41928.title: "Depth Meter"
+	quest.32A3F067AEC41928.quest_desc: ["Use the Depth Meter while scouting fish habitats."]
+	quest.537C7A168C9B7B0D.title: "Climate Gauge"
+	quest.537C7A168C9B7B0D.quest_desc: ["Use the Climate Gauge to understand environmental conditions relevant to fish habitats."]
+	quest.2E09F648012A5989.title: "Weather Radio"
+	quest.2E09F648012A5989.quest_desc: ["Carry the Weather Radio when targeting condition-sensitive catches."]
+	quest.6CC8BDCE66C1A34E.title: "Fish Finder"
+	quest.6CC8BDCE66C1A34E.quest_desc: ["Use the Fish Finder alongside the Journal when hunting a specific catch."]
+	quest.3B7FDEA8E83ECFFF.title: "Fish Satchel"
+	quest.3B7FDEA8E83ECFFF.quest_desc: ["Carry catches without turning every fishing trip into inventory management."]
+	quest.723BEC43902EA0EE.title: "Fish More Than One Habitat"
+	quest.723BEC43902EA0EE.quest_desc: ["Catch fish from several distinct environments and use the Journal to plan where to go next."]
+	quest.6EC9063BF3120BF2.title: "Specialized Fishing Rod"
+	quest.6EC9063BF3120BF2.quest_desc: ["Craft a Crystal Fishing Rod as an optional milestone."]
+	quest.6C1FB9E2125648CE.title: "Bring a Fish Home Alive"
+	quest.6C1FB9E2125648CE.quest_desc: ["Use Tide's bucketable fish support to bring a live catch home for an aquarium."]
+	quest.4981D51AAAC7558C.title: "Aquamirae"
+	quest.4981D51AAAC7558C.quest_desc: ["Explore the Ice Maze and Ship Graveyard as a full expedition with navigation, salvage, equipment and dangerous encounters."]
+	quest.645B6465697F8BF3.title: "Echo Compass"
+	quest.645B6465697F8BF3.quest_desc: ["Use the Echo Compass to begin the Ship Graveyard progression."]
+	quest.1C11995A1A04DDC7.title: "Reach the Ship Graveyard"
+	quest.1C11995A1A04DDC7.quest_desc: ["Prepare underwater breathing, recovery supplies and a route home, then reach the frozen Ship Graveyard."]
+	quest.3A5919C9C6A4E070.title: "Ship Graveyard Echo"
+	quest.3A5919C9C6A4E070.quest_desc: ["Recover a Ship Graveyard Echo, a central progression material."]
+	quest.18ECF76DB65AFB34.title: "Abyssal Amethyst"
+	quest.18ECF76DB65AFB34.quest_desc: ["Obtain Abyssal Amethyst and inspect the gear recipes it unlocks."]
+	quest.28D09AB64485C1CC.title: "Abyssal Armor"
+	quest.28D09AB64485C1CC.quest_desc: ["Assemble the full Abyssal armor set as an optional deep-exploration milestone."]
+	quest.2AC8A904C5C9F3E9.title: "Rune of the Storm"
+	quest.2AC8A904C5C9F3E9.quest_desc: ["Find the ancient Rune of the Storm in the frozen depths."]
+	quest.B312FF4DC96B64DA.title: "Dreadwake"
+	quest.B312FF4DC96B64DA.quest_desc: ["Obtain Dreadwake as one of Aquamirae's notable abyssal weapons."]
+	quest.59988C4BFF1D9775.title: "Terrible Chakram"
+	quest.59988C4BFF1D9775.quest_desc: ["Obtain the Terrible Chakram and learn its ranged returning behavior."]
+	quest.46E1F7333890AC05.title: "Survive the Mother of the Maze"
+	quest.46E1F7333890AC05.quest_desc: ["Encounter the Mother of the Maze. The dedicated Bosses section will later own the explicit guided kill quest."]
+	quest.1961ABE88CC367DB.title: "Maze Rose"
+	quest.1961ABE88CC367DB.quest_desc: ["Obtain a Maze Rose as a tangible Ice Maze progression milestone."]
+	quest.5551333BF6400CD0.title: "Shell Horn"
+	quest.5551333BF6400CD0.quest_desc: ["Obtain the Shell Horn and inspect its role in later Aquamirae progression."]
+	quest.7501E48CE11CE1A1.title: "Cornelia's Legacy"
+	quest.7501E48CE11CE1A1.quest_desc: ["Obtain Tidepiercer from the Captain Cornelia progression. The explicit boss quest comes later."]
+	quest.58A3C4D8F0B52DF9.title: "Myths of the Sea"
+	quest.58A3C4D8F0B52DF9.quest_desc: ["Explore oceans and wetlands for mythological creatures. This page is about discovery; major boss kills are reserved for the Bosses section."]
+	quest.14456E2BEBDA5C12.title: "Watch the Coasts"
+	quest.14456E2BEBDA5C12.quest_desc: ["Explore ocean coasts for creatures such as the Bake Kujira."]
+	quest.39DC63457BF89ED8.title: "Something in the Swamp"
+	quest.39DC63457BF89ED8.quest_desc: ["Search swamps for the aggressive Bunyip."]
+	quest.773EEADF225D02FD.title: "Warm-Ocean Wildlife"
+	quest.773EEADF225D02FD.quest_desc: ["Explore warm oceans for creatures such as the Abaia."]
+	quest.628E73F28E542E3E.title: "Find a Hippocampus"
+	quest.628E73F28E542E3E.quest_desc: ["Locate a Hippocampus and investigate its traversal or taming mechanics."]
+	quest.74DCAEFEE72B2873.title: "Leviathan Territory"
+	quest.74DCAEFEE72B2873.quest_desc: ["Locate the cold-ocean territory of a Leviathan without requiring the kill here."]
+	quest.6AD3AF711015FA06.title: "The Deep-Ocean Kraken"
+	quest.6AD3AF711015FA06.quest_desc: ["Find signs of a Kraken in deep ocean and prepare an escape plan."]
+	quest.1EBB83B2F1EF9DD3.title: "Aquariums"
+	quest.1EBB83B2F1EF9DD3.quest_desc: ["Use Better Fishtanks to turn live catches into a display and husbandry project."]
+	quest.00F533B24884272C.title: "Aquarist Guide"
+	quest.00F533B24884272C.quest_desc: ["Read the Better Fishtanks guide before choosing tank size, fish and equipment."]
+	quest.784568DA925E8116.title: "Aquarist Table"
+	quest.784568DA925E8116.quest_desc: ["Build the Aquarist Table as the entry point for aquarium equipment."]
+	quest.3142A26AD2636D61.title: "Build a Working Aquarium"
+	quest.3142A26AD2636D61.quest_desc: ["Assemble a functioning tank before adding rare fish."]
+	quest.7A6C0BE8F3E42F52.title: "Display a Tide Catch"
+	quest.7A6C0BE8F3E42F52.quest_desc: ["Bring a live Tide fish home in a bucket and add it to an aquarium."]
+
+	quest.38FF4CD992D8B3D9.title: "Chef's Delight"
+	quest.38FF4CD992D8B3D9.quest_desc: ["Browse Chef's Delight in EMI and make one representative recipe or useful kitchen item."]
+	quest.73421596ED9374BE.title: "Crate Delight"
+	quest.73421596ED9374BE.quest_desc: ["Browse Crate Delight in EMI and make one representative recipe or useful kitchen item."]
+	quest.1344F2841723F787.title: "Miner's Delight"
+	quest.1344F2841723F787.quest_desc: ["Browse Miner's Delight in EMI and make one representative recipe or useful kitchen item."]
+	quest.4AD15B7E62A3F1A6.title: "End's Delight"
+	quest.4AD15B7E62A3F1A6.quest_desc: ["Browse End's Delight in EMI and make one representative recipe or useful kitchen item."]
+	quest.36F6A348B6716640.title: "My Nether's Delight"
+	quest.36F6A348B6716640.quest_desc: ["Browse My Nether's Delight in EMI and make one representative recipe or useful kitchen item."]
+	quest.3A4A0DBD9DA973B7.title: "Storage Delight"
+	quest.3A4A0DBD9DA973B7.quest_desc: ["Browse Storage Delight in EMI and make one representative recipe or useful kitchen item."]
 }

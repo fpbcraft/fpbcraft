@@ -1,0 +1,230 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "farming_delight_addons"
+	group: "171B0F909A01E9E1"
+	icon: {
+		id: "oceansdelight:fugu_roll"
+	}
+	id: "314D0E1200000002"
+	images: [ ]
+	order_index: 3
+	quest_links: [ ]
+	quests: [
+		{
+							icon: {
+								id: "oceansdelight:fugu_roll"
+							}
+							id: "7E7A92C196C65603"
+							rewards: [{
+								id: "648D9126528DDD2A"
+								type: "xp"
+								xp: 10
+							}]
+							shape: "gear"
+							size: 1.5d
+							tasks: [{
+							id: "4D0912A3796F9FA8"
+							type: "checkmark"
+						}]
+							x: 0.0d
+							y: 0.0d
+						}
+		{
+							dependencies: ["7E7A92C196C65603"]
+							id: "12BD42304D81C2B9"
+							rewards: [{
+								id: "170B80D91C989D6A"
+								type: "xp"
+								xp: 10
+							}]
+							tasks: [{
+							consume_items: false
+							id: "285C75FDDFFA4B94"
+							item: { count: 1, id: "oceansdelight:fugu_roll" }
+							type: "item"
+						}]
+							x: -3.0d
+							y: 2.0d
+						}
+		{
+							dependencies: ["12BD42304D81C2B9"]
+							id: "45840D11383C3D7B"
+							rewards: [{
+								id: "432B7C2DEE0B1FBA"
+								type: "xp"
+								xp: 10
+							}]
+							tasks: [{
+							consume_items: false
+							id: "28697BC74EFE87C3"
+							item: { count: 1, id: "oceansdelight:guardian_soup" }
+							type: "item"
+						}]
+							x: -3.0d
+							y: 3.5d
+						}
+		{
+							dependencies: ["7E7A92C196C65603"]
+							id: "92E4C1EE435C97FD"
+							rewards: [{
+								id: "3C98627A5C21F10C"
+								type: "xp"
+								xp: 10
+							}]
+							tasks: [{
+							consume_items: false
+							id: "6F13633742BB6A05"
+							item: { count: 1, id: "crabbersdelight:bisque" }
+							type: "item"
+						}]
+							x: 3.0d
+							y: 2.0d
+						}
+		{
+							dependencies: ["92E4C1EE435C97FD"]
+							id: "3C9945B82C422643"
+							rewards: [{
+								id: "3EC2EC0830669E76"
+								type: "xp"
+								xp: 10
+							}]
+							tasks: [{
+							consume_items: false
+							id: "72984A83165D2EBE"
+							item: { count: 1, id: "crabbersdelight:turtle_stew" }
+							type: "item"
+						}]
+							x: 3.0d
+							y: 3.5d
+						}
+		{
+							dependencies: ["7E7A92C196C65603"]
+							id: "2F23BBA907338F3F"
+							optional: true
+							rewards: [{
+								id: "4095230E20019D5E"
+								type: "xp"
+								xp: 10
+							}]
+							tasks: [{
+							id: "4A5FF52229C91BCB"
+							type: "checkmark"
+						}]
+							x: 0.0d
+							y: 5.0d
+						}
+		{
+					dependencies: ["7E7A92C196C65603"]
+					id: "48FF4CD992D8B3D9"
+					optional: true
+					rewards: [{
+						id: "787E3D03C1253BCB"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					id: "1F95784C7D816AF4"
+					type: "checkmark"
+				}]
+					x: -7.0d
+					y: 2.0d
+				}
+		{
+					dependencies: ["7E7A92C196C65603"]
+					id: "13421596ED9374BE"
+					optional: true
+					rewards: [{
+						id: "38D13F20D8492AD2"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					id: "63F13C04E9BBADB0"
+					type: "checkmark"
+				}]
+					x: -7.0d
+					y: 3.5d
+				}
+		{
+					dependencies: ["7E7A92C196C65603"]
+					id: "2344F2841723F787"
+					optional: true
+					rewards: [{
+						id: "23E7150579B4739B"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					id: "6753A0CD29D6B69D"
+					type: "checkmark"
+				}]
+					x: -7.0d
+					y: 5.0d
+				}
+		{
+					dependencies: ["7E7A92C196C65603"]
+					id: "5AD15B7E62A3F1A6"
+					optional: true
+					rewards: [{
+						id: "499840639DFC5915"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					id: "236CEDC46F0269E9"
+					type: "checkmark"
+				}]
+					x: 7.0d
+					y: 2.0d
+				}
+		{
+					dependencies: ["7E7A92C196C65603"]
+					id: "46F6A348B6716640"
+					optional: true
+					rewards: [{
+						id: "55EB22CA5583774E"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					id: "631EAD3CE0B9C5EE"
+					type: "checkmark"
+				}]
+					x: 7.0d
+					y: 3.5d
+				}
+		{
+					dependencies: ["7E7A92C196C65603"]
+					id: "40C3179283FC3399"
+					optional: true
+					rewards: [{
+						id: "6B99A2222D9F89A8"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					id: "42D7EC09CDC6CC0D"
+					type: "checkmark"
+				}]
+					x: 7.0d
+					y: 5.0d
+				}
+		{
+					dependencies: ["7E7A92C196C65603"]
+					id: "4A4A0DBD9DA973B7"
+					optional: true
+					rewards: [{
+						id: "1347A7A63A3B4A95"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					id: "4FA12744DFCE43B9"
+					type: "checkmark"
+				}]
+					x: 0.0d
+					y: 7.0d
+				}
+	]
+}
