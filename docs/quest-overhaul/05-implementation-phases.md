@@ -9,17 +9,18 @@ Deliverables:
 - commit the current quest pack unchanged;
 - document current structure and source provenance;
 - research requested mods;
-- identify open design decisions;
+- record pack-owner design decisions;
 - no quest edits.
 
 ## Phase 1 — Structural cleanup
 
-**Owner scope:** chapter groups, Tutorial / Getting Started, moving existing quests only.
+**Owner scope:** chapter groups, simple Tutorial / Getting Started, moving existing quests only.
 
 - remove `FPBCRAFT Additions` group;
-- create/rename target groups approved by the pack owner;
+- create/rename the approved top-level groups, including **Combat & Equipment**, **RPG Series** and **Bosses**;
 - redistribute existing `fpb_*` pages without expanding them yet;
 - move Supplementaries / archaeology / photography / Farmer's Delight content out of `Getting Started!`;
+- preserve a compact first-session Tutorial / Getting Started page;
 - keep quest IDs stable where possible;
 - clean duplicate/orphan localization entries after moves.
 
@@ -50,7 +51,7 @@ This phase should not also add hundreds of new quests; its purpose is a clean ba
 - Aeroworks / rope connector integration
 - Create Power Loader
 - Railway Navigator / train services cleanup
-- Hang Glider / Grappling Hook cross-links if the approved architecture puts them here
+- cross-links to Skybound where Aeronautics quests benefit from a grappling/moving-airship milestone
 
 3A and 3B can run in parallel.
 
@@ -78,14 +79,30 @@ This phase should not also add hundreds of new quests; its purpose is a clean ba
 - Additional Lights / Redden's Stone Lanterns / MultiBeds
 - Measurements and other small building utility quests
 
-## Phase 5B — Exploration / tools
+## Phase 5B — Adventure & exploration
 
 - Better Archeology
 - Galosphere
 - Naturalist
+- Exposure page final integration
+- Hang Glider
+- exploration utility cleanup
+
+## Phase 5C — Combat & Equipment
+
+- move/preserve Simply Swords source-derived progression
 - Just Hammers
 - Immersive Armors
-- Exposure page final integration
+- **Grappling Hook Mod: Skybound**
+  - basic hook movement
+  - Smithing Table upgrade progression
+  - Long Fall Boots
+  - functional upgrade branches
+  - Create contraption milestone
+  - Sable / Create Aeronautics airship milestone
+- Traveler Tool Belt and other small equipment branches selected during implementation
+
+5A, 5B and 5C can run in parallel once Phase 1 has created their target groups.
 
 ## Phase 6 — RPG Series
 
@@ -102,10 +119,14 @@ Suggested sub-slices:
 
 ## Phase 7 — Bosses
 
+Use the approved **guided progression** model.
+
 - enumerate actual bosses from installed jars / Boss Checklist registry;
-- create the approved checklist-vs-progression structure;
+- organize encounters into loose practical tiers/dimensions;
+- use discovery → preparation → defeat → signature drop → onward progression where appropriate;
 - connect boss drops to RPG / Aquamirae / Nuclear gates;
-- avoid duplicate kill quests already owned by a mod page unless a cross-chapter dependency is enough.
+- avoid hard-gating unrelated bosses behind one another;
+- avoid duplicate kill quests already owned by a mod page when a cross-chapter dependency is sufficient.
 
 ## Phase 8 — Book-wide polish and QA
 
