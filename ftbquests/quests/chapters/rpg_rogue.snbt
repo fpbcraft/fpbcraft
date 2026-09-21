@@ -16,13 +16,13 @@
 			tasks: [
 				{
 				consume_items: false
-				id: "6F20000000000000"
+				id: "6F20000000000001"
 				item: { count: 1, id: "rogues:iron_dagger" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F20000000000000"
+				id: "6F20000000000002"
 				item: { count: 1, id: "rogues:iron_sickle" }
 				type: "item"
 			}
@@ -38,7 +38,7 @@
 				{
 				advancement: "rpg_series:path_choose_rogue"
 				criterion: ""
-				id: "6F20000000000000"
+				id: "6F20000000000003"
 				type: "advancement"
 			}
 			]
@@ -52,25 +52,25 @@
 			tasks: [
 				{
 				consume_items: false
-				id: "6F20000000000000"
+				id: "6F20000000000004"
 				item: { count: 1, id: "rogues:rogue_armor_head" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F20000000000000"
+				id: "6F20000000000005"
 				item: { count: 1, id: "rogues:rogue_armor_chest" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F20000000000000"
+				id: "6F20000000000006"
 				item: { count: 1, id: "rogues:rogue_armor_legs" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F20000000000000"
+				id: "6F20000000000007"
 				item: { count: 1, id: "rogues:rogue_armor_feet" }
 				type: "item"
 			}
@@ -85,25 +85,25 @@
 			tasks: [
 				{
 				consume_items: false
-				id: "6F20000000000000"
+				id: "6F20000000000008"
 				item: { count: 1, id: "rogues:assassin_armor_head" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F20000000000000"
+				id: "6F20000000000009"
 				item: { count: 1, id: "rogues:assassin_armor_chest" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F20000000000000"
+				id: "6F2000000000000A"
 				item: { count: 1, id: "rogues:assassin_armor_legs" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F20000000000000"
+				id: "6F2000000000000B"
 				item: { count: 1, id: "rogues:assassin_armor_feet" }
 				type: "item"
 			}
@@ -118,13 +118,13 @@
 			tasks: [
 				{
 				consume_items: false
-				id: "6F20000000000000"
+				id: "6F2000000000000C"
 				item: { count: 1, id: "rogues:diamond_dagger" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F20000000000000"
+				id: "6F2000000000000D"
 				item: { count: 1, id: "rogues:diamond_sickle" }
 				type: "item"
 			}
@@ -141,7 +141,7 @@
 				{
 				advancement: "rpg_series:spell_master_rogue"
 				criterion: ""
-				id: "6F20000000000000"
+				id: "6F2000000000000E"
 				type: "advancement"
 			}
 			]
