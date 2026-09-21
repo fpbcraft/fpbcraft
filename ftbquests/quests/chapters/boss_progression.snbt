@@ -113,7 +113,7 @@
 			y: 8d
 		},
 		{
-			icon: { id: "minecraft:lightning_rod" }
+			icon: { id: "legendary_monsters:atmospheric_boots" }
 			id: "5073000000000001"
 			rewards: [{ id: "7073000000000001", type: "xp", xp: 50 }]
 			tasks: [
@@ -123,12 +123,24 @@
 				id: "6073000000000001"
 				type: "advancement"
 			}
+				{
+				consume_items: false
+				id: "6073000000000004"
+				item: { count: 1, id: "legendary_monsters:air_rune" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6073000000000005"
+				item: { count: 1, id: "legendary_monsters:atmospheric_boots" }
+				type: "item"
+			}
 			]
 			x: 3d
 			y: 0d
 		},
 		{
-			icon: { id: "minecraft:iron_chestplate" }
+			icon: { id: "legendary_monsters:soul_great_sword" }
 			id: "5073000000000002"
 			rewards: [{ id: "7073000000000002", type: "xp", xp: 50 }]
 			tasks: [
@@ -138,12 +150,24 @@
 				id: "6073000000000002"
 				type: "advancement"
 			}
+				{
+				consume_items: false
+				id: "6073000000000006"
+				item: { count: 1, id: "legendary_monsters:corrupted_soul" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6073000000000007"
+				item: { count: 1, id: "legendary_monsters:soul_great_sword" }
+				type: "item"
+			}
 			]
 			x: 3d
 			y: 4d
 		},
 		{
-			icon: { id: "minecraft:netherite_sword" }
+			icon: { id: "legendary_monsters:portal_shard" }
 			id: "5073000000000003"
 			shape: "hexagon"
 			rewards: [{ id: "7073000000000003", type: "xp", xp: 75 }]
@@ -153,6 +177,12 @@
 				criterion: ""
 				id: "6073000000000003"
 				type: "advancement"
+			}
+				{
+				consume_items: false
+				id: "6073000000000008"
+				item: { count: 1, id: "legendary_monsters:portal_shard" }
+				type: "item"
 			}
 			]
 			x: 3d
