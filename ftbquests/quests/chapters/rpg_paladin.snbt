@@ -16,13 +16,13 @@
 			tasks: [
 				{
 				consume_items: false
-				id: "6F40000000000000"
+				id: "6F40000000000001"
 				item: { count: 1, id: "paladins:iron_mace" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F40000000000000"
+				id: "6F40000000000002"
 				item: { count: 1, id: "paladins:iron_kite_shield" }
 				type: "item"
 			}
@@ -38,7 +38,7 @@
 				{
 				advancement: "rpg_series:path_choose_paladin"
 				criterion: ""
-				id: "6F40000000000000"
+				id: "6F40000000000003"
 				type: "advancement"
 			}
 			]
@@ -52,25 +52,25 @@
 			tasks: [
 				{
 				consume_items: false
-				id: "6F40000000000000"
+				id: "6F40000000000004"
 				item: { count: 1, id: "paladins:paladin_armor_head" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F40000000000000"
+				id: "6F40000000000005"
 				item: { count: 1, id: "paladins:paladin_armor_chest" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F40000000000000"
+				id: "6F40000000000006"
 				item: { count: 1, id: "paladins:paladin_armor_legs" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F40000000000000"
+				id: "6F40000000000007"
 				item: { count: 1, id: "paladins:paladin_armor_feet" }
 				type: "item"
 			}
@@ -85,25 +85,25 @@
 			tasks: [
 				{
 				consume_items: false
-				id: "6F40000000000000"
+				id: "6F40000000000008"
 				item: { count: 1, id: "paladins:crusader_armor_head" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F40000000000000"
+				id: "6F40000000000009"
 				item: { count: 1, id: "paladins:crusader_armor_chest" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F40000000000000"
+				id: "6F4000000000000A"
 				item: { count: 1, id: "paladins:crusader_armor_legs" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F40000000000000"
+				id: "6F4000000000000B"
 				item: { count: 1, id: "paladins:crusader_armor_feet" }
 				type: "item"
 			}
@@ -118,13 +118,13 @@
 			tasks: [
 				{
 				consume_items: false
-				id: "6F40000000000000"
+				id: "6F4000000000000C"
 				item: { count: 1, id: "paladins:diamond_great_hammer" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F40000000000000"
+				id: "6F4000000000000D"
 				item: { count: 1, id: "paladins:diamond_claymore" }
 				type: "item"
 			}
@@ -141,7 +141,7 @@
 				{
 				advancement: "rpg_series:spell_master_paladin"
 				criterion: ""
-				id: "6F40000000000000"
+				id: "6F4000000000000E"
 				type: "advancement"
 			}
 			]
