@@ -165,3 +165,20 @@ Not included here:
 - Skybound/Aeronautics links;
 - broader Big Cannons progression;
 - farming/food, sea exploration, building, combat, RPG or boss expansions.
+
+
+## Post-slice formatting hotfix
+
+Testing Phase 3A in-game exposed two FTB Quests localization issues:
+
+- literal ampersands in structural titles (for example `Combat & Equipment` and `Create Crafts & Additions`) were interpreted as legacy formatting codes;
+- several newly generated chapter/group IDs used the high bit of the 64-bit ID range, causing those chapter/group titles to resolve as `Unnamed` in the client.
+
+The hotfix:
+
+- replaces literal structural-title ampersands with `and`;
+- remaps only the newly generated affected chapter/group IDs into the normal positive ID range;
+- updates every group reference and localization key;
+- preserves all existing source IDs, quest IDs, tasks and dependencies.
+
+The corrected test package is `fpbcraft-quests-phase-3a-format-fix.zip`.
