@@ -201,7 +201,7 @@
 					y: 8.0d
 				}
 		{
-					dependencies: ["645B6465697F8BF3"]
+					dependencies: ["5074000000000001"]
 					id: "1961ABE88CC367DB"
 					optional: true
 					rewards: [{
@@ -237,7 +237,7 @@
 					y: 5.0d
 				}
 		{
-					dependencies: ["645B6465697F8BF3"]
+					dependencies: ["5074000000000002"]
 					id: "7501E48CE11CE1A1"
 					optional: true
 					rewards: [{
