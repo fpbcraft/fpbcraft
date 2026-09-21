@@ -4,7 +4,7 @@
 	filename: "industry_big_cannons"
 	group: "6DEDA2F315449415"
 	icon: { id: "createbigcannons:cannon_mount" }
-	id: "CBCA110000000001"
+	id: "4BCA110000000001"
 	images: [ ]
 	order_index: 6
 	quest_links: [ ]
