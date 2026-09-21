@@ -142,7 +142,7 @@
 				{
 					consume_items: false
 					id: "5C3000000000100C"
-					item: { count: 1, id: "grapplemod:forcefield_upgrade" }
+					item: { count: 1, id: "grapplemod:hook_thrower_upgrade" }
 					type: "item"
 				}
 			]
