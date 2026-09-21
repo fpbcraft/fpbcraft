@@ -2,11 +2,11 @@
 	default_hide_dependency_lines: false
 	default_quest_shape: "circle"
 	filename: "building_furniture"
-	group: "B17DDEC0A7E6F001"
+	group: "517DDEC0A7E6F001"
 	icon: {
 		id: "another_furniture:oak_chair"
 	}
-	id: "B01D1E6F0A100001"
+	id: "301D1E6F0A100001"
 	images: [ ]
 	order_index: 1
 	quest_links: [ ]
