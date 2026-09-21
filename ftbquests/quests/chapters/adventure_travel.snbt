@@ -2,7 +2,7 @@
 	default_hide_dependency_lines: false
 	default_quest_shape: "circle"
 	filename: "adventure_travel"
-	group: "AD7E4E8A10A10001"
+	group: "5D7E4E8A10A10001"
 	icon: {
 		id: "waystones:waystone"
 	}

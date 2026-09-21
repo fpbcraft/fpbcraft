@@ -2,7 +2,7 @@
 	default_hide_dependency_lines: false
 	default_quest_shape: "circle"
 	filename: "building_supplementaries"
-	group: "B17DDEC0A7E6F001"
+	group: "517DDEC0A7E6F001"
 	icon: {
 		id: "supplementaries:globe"
 	}
