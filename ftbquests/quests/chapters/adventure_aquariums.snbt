@@ -1,0 +1,101 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "adventure_aquariums"
+	group: "5D7E4E8A10A10001"
+	icon: {
+		id: "betterfishtanks:guide_book"
+	}
+	id: "314D0E1200000014"
+	images: [ ]
+	order_index: 6
+	quest_links: [ ]
+	quests: [
+		{
+					icon: {
+						id: "betterfishtanks:guide_book"
+					}
+					id: "1EBB83B2F1EF9DD3"
+					rewards: [{
+						id: "73513EBB3D76F92F"
+						type: "xp"
+						xp: 10
+					}]
+					shape: "gear"
+					size: 1.5d
+					tasks: [{
+					id: "316AD2B01B5F22CD"
+					type: "checkmark"
+				}]
+					x: 0.0d
+					y: 0.0d
+				}
+		{
+					dependencies: ["1EBB83B2F1EF9DD3"]
+					id: "00F533B24884272C"
+					rewards: [{
+						id: "6923B05B18F88E7E"
+						type: "xp"
+						xp: 10
+					}]
+					shape: "circle"
+					tasks: [{
+						consume_items: false
+						id: "45C3948120F37AB1"
+						item: { count: 1, id: "betterfishtanks:guide_book" }
+						type: "item"
+					}]
+					x: 0.0d
+					y: 2.0d
+				}
+		{
+					dependencies: ["00F533B24884272C"]
+					id: "784568DA925E8116"
+					rewards: [{
+						id: "63D517597B948BAC"
+						type: "xp"
+						xp: 10
+					}]
+					shape: "circle"
+					tasks: [{
+						consume_items: false
+						id: "2EF797493E7EE221"
+						item: { count: 1, id: "betterfishtanks:aquarist_table" }
+						type: "item"
+					}]
+					x: 0.0d
+					y: 3.5d
+				}
+		{
+					dependencies: ["784568DA925E8116"]
+					id: "3142A26AD2636D61"
+					rewards: [{
+						id: "2EC4FA96F930FCBE"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					id: "58A6365AA2945E4B"
+					type: "checkmark"
+				}]
+					x: 0.0d
+					y: 5.0d
+				}
+		{
+					dependencies: ["784568DA925E8116"]
+					id: "7A6C0BE8F3E42F52"
+					optional: true
+					rewards: [{
+						id: "3CF278E55BAAD014"
+						type: "xp"
+						xp: 10
+					}]
+					tasks: [{
+					id: "1C8100B393D0308E"
+					type: "checkmark"
+				}]
+					x: 2.0d
+					y: 6.5d
+				}
+	]
+}
