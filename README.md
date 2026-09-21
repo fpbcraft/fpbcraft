@@ -10,4 +10,4 @@ Planning and progress documents live in [`docs/quest-overhaul/`](docs/quest-over
 
 The current working quest pack lives in [`ftbquests/quests/`](ftbquests/quests/). The unchanged pre-overhaul baseline and hash manifest are retained under [`ftbquests/current/`](ftbquests/current/).
 
-> Status: Phase 6 RPG Series complete. Phase 7 Bosses / progression links is next.
+> Status: Phase 7 Bosses / progression links complete. Phase 8 book-wide polish and QA is next.
