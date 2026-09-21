@@ -1,6 +1,6 @@
 {
 	chapter.01014DDC205ECA93.title: " &ePump Dat Oil"
-	chapter.077E2D43C856BB30.title: "Storage & Computers"
+	chapter.077E2D43C856BB30.title: "Storage and Computers"
 	chapter.08CDC01FE839E5A6.title: " &eBrass Age"
 	chapter.09F0C87D85FE2EBB.title: "&e Aquatic Ambitions"
 	chapter.0B91282419AF1F71.title: "Flight Workshop"
@@ -45,7 +45,7 @@
 	chapter_group.191CDC99EE58E587.title: "&6 Transportation"
 	chapter_group.210CB4D563354A3F.title: "Storage"
 	chapter_group.45A8E931C4697E91.title: "Others"
-	chapter_group.4863600DDEA1AF02.title: "Combat & Equipment"
+	chapter_group.4863600DDEA1AF02.title: "Combat and Equipment"
 	chapter_group.4A93CDBE321781DA.title: "RPG Series"
 	chapter_group.67C285939F8460F0.title: "&6Create"
 	chapter_group.6DEDA2F315449415.title: "&6Engineer's Paradise"
@@ -620,8 +620,7 @@
 	quest.29451136DDC83208.title: "Obtain Oil Scanner"
 	quest.2956B1D37C0C297D.title: "&6Mechanical Roller"
 	quest.29A157630356CC34.quest_desc: ["Craft or obtain create_submarine:electrolyzer. Use EMI to inspect its recipe and uses before adding it to your build."]
-	quest.29A157630356CC34.title: "Obtain Electrolyzer"
-	quest.2A38322D86E1B832.title: "Rope Winch"
+	quest.29A157630356CC34.title: "Obtain Electrolyzer"	quest.2A38322D86E1B832.title: "Rope Winch"
 	quest.2A5212A2374C113F.quest_desc: ["You can also switch the look of your &6Water Wheel&r by right-clicking it with pretty much any &awood plank&r (including ones from other mods)"]
 	quest.2A5212A2374C113F.title: "Water Wheel"
 	quest.2AA503F5CB265D58.title: "Directional Linked Receiver"
@@ -1244,8 +1243,7 @@
 		"and they'll need to be repaired."
 	]
 	quest.5327DC6C7A413EE9.title: "Candle golem"
-	quest.53563D4611FE239C.quest_desc: ["Craft or obtain cccbridge:animatronic_block. Use EMI to inspect its recipe and uses before adding it to your build."]
-	quest.53563D4611FE239C.title: "Obtain Animatronic Block"
+	quest.53563D4611FE239C.quest_desc: ["Craft or obtain cccbridge:animatronic_block. Use EMI to inspect its recipe and uses before adding it to your build."]	quest.53563D4611FE239C.title: "Obtain Animatronic Block"
 	quest.53733AB3AC6CDA03.title: "Fluid Tank"
 	quest.53739D43378430B9.title: "Slumbering Lichblade"
 	quest.53C22587722CB4F2.title: "Arcanethyst"
@@ -1868,8 +1866,7 @@
 	quest.9807328BDFC3DFE7.title: "Obtain Takoyaki"
 	quest.9855E6EC7CD4B583.quest_desc: ["Craft or obtain exposure:black_and_white_film. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.9855E6EC7CD4B583.title: "Obtain Black And White Film"
-	quest.9A15CE552E1B8E4F.quest_desc: ["Look directly at a bee nest. Observation tasks reward exploration without requiring you to break the block."]
-	quest.9A15CE552E1B8E4F.title: "Study a Bee Nest"
+	quest.9A15CE552E1B8E4F.quest_desc: ["Look directly at a bee nest. Observation tasks reward exploration without requiring you to break the block."]	quest.9A15CE552E1B8E4F.title: "Study a Bee Nest"
 	quest.9A27D85B185C1EC1.quest_desc: ["Craft or obtain simulated:contraption_diagram. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.9A27D85B185C1EC1.title: "Obtain Contraption Diagram"
 	quest.9BAE93601478896C.quest_desc: ["Craft or obtain exposure:color_film. Use EMI to inspect its recipe and uses before adding it to your build."]
@@ -2394,20 +2391,20 @@
 		"&d@redden&r"
 	]
 	quest.7DB46C70468F2CFE.title: "&6Redden's Stone Lanters"
-	chapter_group.B17DDEC0A7E6F001.title: "Building & Decoration"
-	chapter_group.AD7E4E8A10A10001.title: "Adventure & Exploration"
-	chapter_group.B055E50000000001.title: "Bosses"
+	chapter_group.517DDEC0A7E6F001.title: "Building and Decoration"
+	chapter_group.5D7E4E8A10A10001.title: "Adventure and Exploration"
+	chapter_group.5055E50000000001.title: "Bosses"
 	chapter.51A9AEEA7D5D1001.title: "Supplementaries"
-	chapter.A8C4AE0109F01001.title: "Archaeology"
-	chapter.7A4E1001A0B10001.title: "Travel & Exploration"
-	chapter.B01D1E6F0A100001.title: "Building & Furniture"
-	chapter.C0B47BA51C500001.title: "Combat Basics"
+	chapter.28C4AE0109F01001.title: "Archaeology"
+	chapter.7A4E1001A0B10001.title: "Travel and Exploration"
+	chapter.301D1E6F0A100001.title: "Building and Furniture"
+	chapter.40B47BA51C500001.title: "Combat Basics"
 	chapter.6A4D15C500000201.title: "Game Discs"
-	chapter.C0E0A11A00000001.title: "Create Ore Excavation"
-	chapter.CBCA110000000001.title: "Create Big Cannons"
-	chapter.C0A7E00000000001.title: "Create Nuclear"
-	chapter.B0A3E00000000001.title: "Create: Power Grid"
-	chapter.06C461D2AA9B967D.title: "Create Crafts & Additions"
+	chapter.40E0A11A00000001.title: "Create Ore Excavation"
+	chapter.4BCA110000000001.title: "Create Big Cannons"
+	chapter.40A7E00000000001.title: "Create Nuclear"
+	chapter.30A3E00000000001.title: "Create: Power Grid"
+	chapter.06C461D2AA9B967D.title: "Create Crafts and Additions"
 	quest.74702A1045B526D5.title: "Create Nuclear"
 	quest.74702A1045B526D5.quest_desc: ["Build a reactor through Create-style material processing. This chapter follows the installed 1.21.1 reactor system, not the newer V2 tier/coolant system."]
 	quest.4160C3EF6AFD9B8E.title: "Find Uranium and Lead"
@@ -2489,7 +2486,7 @@
 	quest.8942AC3C8F25CBE7.title: "Electric Motor"
 	quest.8942AC3C8F25CBE7.quest_desc: ["Convert Forge Energy back into Create rotational power with the Electric Motor."]
 	quest.0476DA101D0EDB46.title: "Capacitor"
-	quest.0476DA101D0EDB46.quest_desc: ["Add a Capacitor to the Crafts & Additions electrical toolkit and inspect its uses in EMI."]
+	quest.0476DA101D0EDB46.quest_desc: ["Add a Capacitor to the Crafts and Additions electrical toolkit and inspect its uses in EMI."]
 	quest.7C51313A8F84959F.title: "Portable Energy Interface"
 	quest.7C51313A8F84959F.quest_desc: ["Transfer Forge Energy to and from moving Create contraptions using the Portable Energy Interface."]
 }
