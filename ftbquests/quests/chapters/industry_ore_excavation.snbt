@@ -1,0 +1,123 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "industry_ore_excavation"
+	group: "6DEDA2F315449415"
+	icon: { id: "createoreexcavation:vein_finder" }
+	id: "C0E0A11A00000001"
+	images: [ ]
+	order_index: 5
+	quest_links: [ ]
+	quests: [
+		{
+			icon: {
+				id: "createoreexcavation:vein_finder"
+			}
+			id: "4E387D2F5A72F4EE"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "2299BF4EBD9B520D"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 0.0d
+		},
+		{
+			dependencies: ["4E387D2F5A72F4EE"]
+			id: "00592DF981B90143"
+			rewards: [{
+				id: "457904C588AFD09F"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "6B79E98CBE56C388"
+				item: { count: 1, id: "createoreexcavation:vein_finder" }
+				type: "item"
+			}]
+			x: 0d
+			y: 1.5d
+		},
+		{
+			dependencies: ["00592DF981B90143"]
+			id: "645E620B51EFDA76"
+			rewards: [{
+				id: "7532997D86D0258C"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "787F5E22DA7C3D83"
+				item: { count: 1, id: "createoreexcavation:sample_drill" }
+				type: "item"
+			}]
+			x: 0d
+			y: 3.0d
+		},
+		{
+			dependencies: ["645E620B51EFDA76"]
+			id: "31016BBFD1D232AD"
+			rewards: [{
+				id: "4AA7902B23512FB1"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "3C8275CCAE17E356"
+				item: { count: 1, id: "createoreexcavation:drilling_machine" }
+				type: "item"
+			}]
+			x: 0d
+			y: 4.5d
+		},
+		{
+			dependencies: ["645E620B51EFDA76"]
+			id: "0D32E9864B678D9D"
+			rewards: [{ id: "4465D6371818BB19", type: "xp", xp: 10 }]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "C12434877A4E0419"
+				item: { count: 1, id: "createoreexcavation:drill" }
+				type: "item"
+			}]
+			x: -1.5d
+			y: 3.0d
+		},
+		{
+			dependencies: ["0D32E9864B678D9D"]
+			id: "6C31C7A3809392C1"
+			rewards: [{ id: "B84BC04F9460B8CC", type: "xp", xp: 10 }]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "B5C3CE0451013CF0"
+				item: { count: 1, id: "createoreexcavation:diamond_drill" }
+				type: "item"
+			}]
+			x: -1.5d
+			y: 4.5d
+		},
+		{
+			dependencies: ["645E620B51EFDA76"]
+			id: "61649F53A2D84AA5"
+			rewards: [{ id: "9060A5020FFF0A1D", type: "xp", xp: 10 }]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "865D05AAADDBEE23"
+				item: { count: 1, id: "createoreexcavation:extractor" }
+				type: "item"
+			}]
+			x: 1.5d
+			y: 4.5d
+		}
+	]
+}

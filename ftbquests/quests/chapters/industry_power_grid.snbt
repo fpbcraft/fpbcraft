@@ -1,0 +1,274 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "industry_power_grid"
+	group: "6DEDA2F315449415"
+	icon: { id: "powergrid:power_gauge" }
+	id: "B0A3E00000000001"
+	images: [ ]
+	order_index: 11
+	quest_links: [ ]
+	quests: [
+		{
+			icon: { id: "powergrid:multimeter" }
+			id: "192B13B1593CDA30"
+			rewards: [{ id: "B10C17E0FB77A9F3", type: "xp", xp: 10 }]
+			shape: "gear"
+			size: 1.6d
+			tasks: [{
+				id: "8B00BF49A1A73206"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 0d
+		},
+		{
+			dependencies: ["192B13B1593CDA30"]
+			id: "45FBE37DA49B29B5"
+			rewards: [{ id: "54946CF2897B3077", type: "xp", xp: 10 }]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "6B401FD6FE4775B9"
+				item: { count: 1, id: "powergrid:insulated_copper_wire" }
+				type: "item"
+			}]
+			x: 0d
+			y: 1.5d
+		},
+		{
+			dependencies: ["45FBE37DA49B29B5"]
+			id: "5F338AF618811A0B"
+			rewards: [{ id: "4CAF4EA451F8F0EF", type: "xp", xp: 10 }]
+			shape: "circle"
+			tasks: [
+				{
+								consume_items: false
+								id: "EC186DD6DAA46A89"
+								item: { count: 1, id: "powergrid:lv_switch" }
+								type: "item"
+							},
+				{
+								consume_items: false
+								id: "D1EDE39F8CD91D78"
+								item: { count: 1, id: "powergrid:light_bulb" }
+								type: "item"
+							}
+			]
+			x: 0d
+			y: 3.0d
+		},
+		{
+			dependencies: ["45FBE37DA49B29B5"]
+			id: "ADCCFEE584182F54"
+			rewards: [{ id: "73A4A63A1A5FFE2F", type: "xp", xp: 10 }]
+			shape: "hexagon"
+			tasks: [{
+				consume_items: false
+				id: "9B972CA709481342"
+				item: { count: 1, id: "powergrid:multimeter" }
+				type: "item"
+			}]
+			x: -2d
+			y: 3.0d
+		},
+		{
+			dependencies: ["45FBE37DA49B29B5"]
+			id: "DE27DD7CAB17DC66"
+			rewards: [{ id: "6D9C1501B91154AE", type: "xp", xp: 10 }]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "50555D646A3F760C"
+				item: { count: 1, id: "powergrid:battery" }
+				type: "item"
+			}]
+			x: 2d
+			y: 3.0d
+		},
+		{
+			dependencies: ["5F338AF618811A0B", "ADCCFEE584182F54"]
+			id: "D28A4EF5A79CB67D"
+			rewards: [{ id: "2088631176295DCE", type: "xp", xp: 10 }]
+			shape: "gear"
+			tasks: [
+				{
+								consume_items: false
+								id: "7678823CE7F82591"
+								item: { count: 1, id: "powergrid:generator_housing" }
+								type: "item"
+							},
+				{
+								consume_items: false
+								id: "2675A865AFAEB8A7"
+								item: { count: 1, id: "powergrid:generator_commutator" }
+								type: "item"
+							},
+				{
+								consume_items: false
+								id: "B1313DF404E90D0E"
+								item: { count: 1, id: "powergrid:generator_induction_rotor" }
+								type: "item"
+							}
+			]
+			x: 0d
+			y: 4.5d
+		},
+		{
+			dependencies: ["ADCCFEE584182F54"]
+			id: "2B4DA1F76EAF7FF1"
+			rewards: [{ id: "F96046736B6E7602", type: "xp", xp: 10 }]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "65D1A8DE9E92C8F9"
+				item: { count: 1, id: "powergrid:power_gauge" }
+				type: "item"
+			}]
+			x: -2d
+			y: 4.5d
+		},
+		{
+			dependencies: ["5F338AF618811A0B"]
+			id: "AAC72AFBD591E5C0"
+			rewards: [{ id: "69589C309CD64957", type: "xp", xp: 10 }]
+			shape: "gear"
+			tasks: [{
+				consume_items: false
+				id: "FD545E1C508FEFA5"
+				item: { count: 1, id: "powergrid:electric_motor" }
+				type: "item"
+			}]
+			x: 2d
+			y: 4.5d
+		},
+		{
+			dependencies: ["D28A4EF5A79CB67D", "AAC72AFBD591E5C0"]
+			id: "3BB73E10433397A2"
+			rewards: [{ id: "DAC8378B43DFB511", type: "xp", xp: 10 }]
+			shape: "circle"
+			tasks: [
+				{
+								consume_items: false
+								id: "3A221171D166080C"
+								item: { count: 1, id: "powergrid:transformer_core" }
+								type: "item"
+							},
+				{
+					id: "5A96B7F3F080DB59"
+					type: "checkmark"
+				}
+			]
+			x: 0d
+			y: 6.0d
+		},
+		{
+			dependencies: ["2B4DA1F76EAF7FF1"]
+			id: "DEF24C083D3FBEEB"
+			rewards: [{ id: "291D1BF1A381A27D", type: "xp", xp: 10 }]
+			shape: "circle"
+			tasks: [
+				{
+								consume_items: false
+								id: "28A88972A541A396"
+								item: { count: 1, id: "powergrid:fuse_holder" }
+								type: "item"
+							},
+				{
+								consume_items: false
+								id: "02E26AE997CC8C7F"
+								item: { count: 1, id: "powergrid:grounding_rod" }
+								type: "item"
+							}
+			]
+			x: -2d
+			y: 6.0d
+		},
+		{
+			dependencies: ["3BB73E10433397A2", "DEF24C083D3FBEEB"]
+			id: "7E6E77890C42CC5A"
+			rewards: [{ id: "8CEF62CDC3AD32D4", type: "xp", xp: 10 }]
+			shape: "circle"
+			tasks: [
+				{
+								consume_items: false
+								id: "BB498DAFE9B0AB70"
+								item: { count: 1, id: "powergrid:heavy_wire_connector" }
+								type: "item"
+							},
+				{
+								consume_items: false
+								id: "10B44970BC52EE8E"
+								item: { count: 1, id: "powergrid:hv_switch" }
+								type: "item"
+							}
+			]
+			x: 0d
+			y: 7.5d
+		},
+		{
+			dependencies: ["ADCCFEE584182F54"]
+			id: "7EAA39628888424A"
+			rewards: [{ id: "848DF20E8EE2CD54", type: "xp", xp: 10 }]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "B9CF682481E05390"
+				item: { count: 1, id: "powergrid:solar_panel" }
+				type: "item"
+			}]
+			x: 2d
+			y: 6.0d
+		},
+		{
+			dependencies: ["7E6E77890C42CC5A"]
+			id: "E3E7FA0773698FD4"
+			rewards: [{ id: "F0A2A1EB0F98BAD0", type: "xp", xp: 10 }]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "79139A7A3DE4CA65"
+				item: { count: 1, id: "powergrid:fe_inverter" }
+				type: "item"
+			}]
+			x: 3.5d
+			y: 7.5d
+		},
+		{
+			dependencies: ["7E6E77890C42CC5A"]
+			id: "40906C6BCDE424F9"
+			rewards: [{ id: "8E1B74825528C93F", type: "xp", xp: 10 }]
+			shape: "circle"
+			tasks: [
+				{
+								consume_items: false
+								id: "58A6D518DFB9AE6F"
+								item: { count: 1, id: "powergrid:circuit_design_table" }
+								type: "item"
+							},
+				{
+								consume_items: false
+								id: "848226D23FAC992A"
+								item: { count: 1, id: "powergrid:circuit_board" }
+								type: "item"
+							}
+			]
+			x: -2d
+			y: 7.5d
+		},
+		{
+			dependencies: ["7E6E77890C42CC5A", "7EAA39628888424A"]
+			icon: { id: "powergrid:power_gauge" }
+			id: "58FDAB779E341AA6"
+			rewards: [{ id: "DCBFE645E5110C4A", type: "xp", xp: 10 }]
+			shape: "gear"
+			size: 1.6d
+			tasks: [{
+				id: "A91FAD288D83C9C0"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 9.0d
+		}
+	]
+}
