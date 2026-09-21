@@ -3,7 +3,7 @@
 	default_quest_shape: "circle"
 	filename: "adventure_galosphere"
 	group: "5D7E4E8A10A10001"
-	icon: { id: "minecraft:amethyst_cluster" }
+	icon: { id: "galosphere:allurite_shard" }
 	id: "5B1000000000C001"
 	images: [ ]
 	order_index: 5
@@ -11,15 +11,11 @@
 	quests: [
 		{
 			id: "5B10000000000001"
-			rewards: [{
-				id: "5B10000000002001"
-				type: "xp"
-				xp: 10
-			}]
+			rewards: [{ id: "5B10000000002001", type: "xp", xp: 10 }]
 			tasks: [{
 				consume_items: false
 				id: "5B10000000001001"
-				item: { components: { "ftbfiltersystem:filter": "or(mod(galosphere))" }, count: 1, id: "ftbfiltersystem:smart_filter" }
+				item: { count: 1, id: "galosphere:allurite_shard" }
 				type: "item"
 			}]
 			x: 0d
@@ -28,14 +24,12 @@
 		{
 			dependencies: ["5B10000000000001"]
 			id: "5B10000000000002"
-			rewards: [{
-				id: "5B10000000002002"
-				type: "xp"
-				xp: 10
-			}]
+			rewards: [{ id: "5B10000000002002", type: "xp", xp: 10 }]
 			tasks: [{
+				consume_items: false
 				id: "5B10000000001002"
-				type: "checkmark"
+				item: { count: 1, id: "galosphere:pink_salt_shard" }
+				type: "item"
 			}]
 			x: -2d
 			y: 2d
@@ -43,15 +37,11 @@
 		{
 			dependencies: ["5B10000000000001"]
 			id: "5B10000000000003"
-			rewards: [{
-				id: "5B10000000002003"
-				type: "xp"
-				xp: 10
-			}]
+			rewards: [{ id: "5B10000000002003", type: "xp", xp: 15 }]
 			tasks: [{
 				consume_items: false
 				id: "5B10000000001003"
-				item: { components: { "ftbfiltersystem:filter": "or(mod(galosphere))" }, count: 1, id: "ftbfiltersystem:smart_filter" }
+				item: { count: 1, id: "galosphere:palladium_ingot" }
 				type: "item"
 			}]
 			x: 0d
@@ -60,14 +50,12 @@
 		{
 			dependencies: ["5B10000000000001"]
 			id: "5B10000000000004"
-			rewards: [{
-				id: "5B10000000002004"
-				type: "xp"
-				xp: 10
-			}]
+			rewards: [{ id: "5B10000000002004", type: "xp", xp: 10 }]
 			tasks: [{
+				consume_items: false
 				id: "5B10000000001004"
-				type: "checkmark"
+				item: { count: 1, id: "galosphere:opal" }
+				type: "item"
 			}]
 			x: 2d
 			y: 2d
@@ -75,14 +63,12 @@
 		{
 			dependencies: ["5B10000000000003"]
 			id: "5B10000000000005"
-			rewards: [{
-				id: "5B10000000002005"
-				type: "xp"
-				xp: 25
-			}]
+			rewards: [{ id: "5B10000000002005", type: "xp", xp: 25 }]
 			tasks: [{
+				consume_items: false
 				id: "5B10000000001005"
-				type: "checkmark"
+				item: { count: 1, id: "galosphere:echo_altar" }
+				type: "item"
 			}]
 			x: 0d
 			y: 4d
@@ -91,14 +77,12 @@
 			dependencies: ["5B10000000000002", "5B10000000000004", "5B10000000000005"]
 			id: "5B10000000000006"
 			shape: "hexagon"
-			rewards: [{
-				id: "5B10000000002006"
-				type: "xp"
-				xp: 50
-			}]
+			rewards: [{ id: "5B10000000002006", type: "xp", xp: 50 }]
 			tasks: [{
+				consume_items: false
 				id: "5B10000000001006"
-				type: "checkmark"
+				item: { count: 1, id: "galosphere:sterling_chestplate" }
+				type: "item"
 			}]
 			x: 0d
 			y: 6d
