@@ -22,7 +22,8 @@ This directory documents the planned overhaul of the FPBCraft quest book. The st
 - [Source restoration plan](04-source-restoration-plan.md)
 - [Implementation phases / slices](05-implementation-phases.md)
 - [Open questions](06-open-questions.md)
-- [Research sources](research-sources.md)\n- [Phase 5 result](12-phase-5-result.md)
+- [Research sources](research-sources.md)
+- [Phase 5 result](12-phase-5-result.md)
 
 ## Current baseline
 
