@@ -6,6 +6,9 @@
 
 ## Current state
 
-Phase 1 — structural cleanup — is complete. See [`../docs/quest-overhaul/07-phase-1-result.md`](../docs/quest-overhaul/07-phase-1-result.md).
+- Phase 1 — structural cleanup — complete.
+- Phase 2 — source restoration — complete.
 
-The next planned slice is Phase 2: restoring compatible source-pack quests and chapters.
+See [`../docs/quest-overhaul/07-phase-1-result.md`](../docs/quest-overhaul/07-phase-1-result.md) and [`../docs/quest-overhaul/08-phase-2-result.md`](../docs/quest-overhaul/08-phase-2-result.md).
+
+Each completed implementation slice also produces a test ZIP containing the resulting top-level `quests/` folder.
