@@ -16,13 +16,13 @@
 			tasks: [
 				{
 				consume_items: false
-				id: "6F50000000000000"
+				id: "6F50000000000001"
 				item: { count: 1, id: "paladins:holy_wand" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F50000000000000"
+				id: "6F50000000000002"
 				item: { count: 1, id: "paladins:holy_staff" }
 				type: "item"
 			}
@@ -38,7 +38,7 @@
 				{
 				advancement: "rpg_series:path_choose_priest"
 				criterion: ""
-				id: "6F50000000000000"
+				id: "6F50000000000003"
 				type: "advancement"
 			}
 			]
@@ -52,25 +52,25 @@
 			tasks: [
 				{
 				consume_items: false
-				id: "6F50000000000000"
+				id: "6F50000000000004"
 				item: { count: 1, id: "paladins:priest_robe_head" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F50000000000000"
+				id: "6F50000000000005"
 				item: { count: 1, id: "paladins:priest_robe_chest" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F50000000000000"
+				id: "6F50000000000006"
 				item: { count: 1, id: "paladins:priest_robe_legs" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F50000000000000"
+				id: "6F50000000000007"
 				item: { count: 1, id: "paladins:priest_robe_feet" }
 				type: "item"
 			}
@@ -85,25 +85,25 @@
 			tasks: [
 				{
 				consume_items: false
-				id: "6F50000000000000"
+				id: "6F50000000000008"
 				item: { count: 1, id: "paladins:prior_robe_head" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F50000000000000"
+				id: "6F50000000000009"
 				item: { count: 1, id: "paladins:prior_robe_chest" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F50000000000000"
+				id: "6F5000000000000A"
 				item: { count: 1, id: "paladins:prior_robe_legs" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F50000000000000"
+				id: "6F5000000000000B"
 				item: { count: 1, id: "paladins:prior_robe_feet" }
 				type: "item"
 			}
@@ -118,13 +118,13 @@
 			tasks: [
 				{
 				consume_items: false
-				id: "6F50000000000000"
+				id: "6F5000000000000C"
 				item: { count: 1, id: "paladins:diamond_holy_wand" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F50000000000000"
+				id: "6F5000000000000D"
 				item: { count: 1, id: "paladins:diamond_holy_staff" }
 				type: "item"
 			}
@@ -141,7 +141,7 @@
 				{
 				advancement: "rpg_series:spell_master_priest"
 				criterion: ""
-				id: "6F50000000000000"
+				id: "6F5000000000000E"
 				type: "advancement"
 			}
 			]
