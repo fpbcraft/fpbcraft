@@ -1,50 +1,53 @@
-# Open questions
+# Decisions and open questions
 
-These decisions are intentionally left for the pack owner rather than silently guessed.
+This file records decisions made by the pack owner so later implementation chats do not need to rediscover them.
 
-## Q1 — Boss structure
+## Resolved decisions
 
-Two reasonable designs:
+### Boss structure — guided progression
 
-**A. Guided progression (provisional recommendation):** loose tiers by dimension/difficulty. Each boss has discovery/preparation/kill/drop progression, but unrelated bosses are not hard-gated behind one another.
+Use a loose guided progression organized by practical tier, dimension and/or discovery path.
 
-**B. Checklist/discovery:** mostly independent boss quests, closer to “find → defeat → collect signature drop.”
+Typical boss flow:
 
-Because Boss Checklist already provides an exhaustive boss encyclopedia, option A gives FTB Quests a more distinct purpose.
+1. discovery / summoning;
+2. preparation;
+3. defeat;
+4. signature drop;
+5. onward link into equipment/RPG/mod progression.
 
-## Q2 — Exact Grappling Hook project
+Unrelated bosses should **not** be hard-gated behind each other merely to force a single linear chain. Boss Checklist remains the exhaustive boss encyclopedia.
 
-The current mod list says `Grappling Hook Mod`, but there are multiple 1.21.1 NeoForge projects with very similar names. Confirm the exact jar/project before exact quests are authored.
+### Tutorial / Getting Started — keep it simple
 
-If it is **Grappling Hook Mod: Skybound**, the quest should explicitly teach its Create contraption / Sable airship support.
+Keep a compact Tutorial / Getting Started experience for first-session information and basic pack conventions.
 
-## Q3 — Final top-level groups
+Move substantive mod progression out of it. In particular, Supplementaries, Better Archeology, Farmer's Delight, photography and other mod-specific chains belong on dedicated/domain pages.
 
-Proposed additions are:
+### Combat & Equipment — dedicated section
 
-- Building & Decoration
-- Adventure & Exploration
-- RPG Series
-- Bosses
+Create a dedicated top-level **Combat & Equipment** section.
 
-And retain:
+It should be the natural home for Simply Swords, Immersive Armors, Just Hammers, Grappling Hook Mod: Skybound and other equipment/combat-focused material. RPG Series remains separate because it has class-based progression.
 
-- Create
-- Aeronautics
-- Engineer's Paradise
-- Transportation
-- Farming & Food
-- Storage
+### Grappling Hook project — confirmed
 
-Question: should `Tools & Equipment / Combat` be a separate top-level group, or should Just Hammers / Immersive Armors / Simply Swords live under Adventure & Exploration and RPG Series?
+The installed project is **Grappling Hook Mod: Skybound**:
 
-## Q4 — What remains in `Getting Started!`?
+https://modrinth.com/mod/grapplemod-skybound
 
-Proposed default: keep a very short starter page for first-session vanilla/server milestones and move **all substantive mod progression** elsewhere, while keeping the AOC `Tutorial` page for quest-book/modpack mechanics.
+The quest design should explicitly use its unusually FPBCraft-relevant integrations:
 
-Alternative: eliminate the Chronicles-style `Getting Started!` chapter completely once its content has been redistributed.
+- grappling onto assembled Create contraptions;
+- grappling onto Sable sublevels / airships;
+- Create Aeronautics compatibility;
+- upgrade progression through the Smithing Table;
+- Long Fall Boots;
+- representative motor / rocket / teleport / magnet / dual-hook / forcefield upgrades without requiring every cosmetic rope style.
 
-## Q5 — Reward philosophy
+## Remaining design questions
+
+### Reward philosophy
 
 The current source packs use different reward philosophies. Before the implementation/polish phases decide whether FPBCraft should use:
 
@@ -53,3 +56,12 @@ The current source packs use different reward philosophies. Before the implement
 - source rewards preserved whenever source quests are reused.
 
 No reward redesign is planned until this is decided.
+
+### Traversal equipment placement
+
+Current provisional split:
+
+- Grappling Hook Mod: Skybound → Combat & Equipment, because it has substantial equipment/upgrading progression.
+- Hang Glider → Adventure & Exploration, because it is primarily traversal.
+
+This is a minor taxonomy decision and can be changed during structural cleanup without affecting quest content.
