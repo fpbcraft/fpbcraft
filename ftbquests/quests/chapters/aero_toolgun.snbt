@@ -1,0 +1,213 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "aero_toolgun"
+	group: "7DA377FCDB6BF5A7"
+	icon: {
+		id: "create_aeronautics_toolgun:survival_structure_tool"
+	}
+	id: "0B91282419AF1F71"
+	images: [ ]
+	order_index: 4
+	quest_links: [ ]
+	quests: [
+		{
+			icon: {
+				id: "create_aeronautics_toolgun:survival_structure_tool"
+			}
+			id: "4AAC777C53B0E32F"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "290C358F15F7987B"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 0d
+		}
+		{
+			dependencies: ["4AAC777C53B0E32F"]
+			id: "2560A19BA65ABA14"
+			rewards: [{
+				id: "321F4A9F77C5A28B"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "630473234B7C7E29"
+				item: { count: 1, id: "create_aeronautics_toolgun:survival_structure_tool" }
+				type: "item"
+			}]
+			x: 0d
+			y: 2d
+		}
+		{
+			dependencies: ["2560A19BA65ABA14"]
+			id: "4DFC4C8F8215830C"
+			rewards: [{
+							id: "0016B869B2B64680"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				id: "6B6E7CCD8E9AB5C5"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 3.5d
+		}
+		{
+			dependencies: ["4DFC4C8F8215830C"]
+			id: "7B4C52AD367C6D2A"
+			rewards: [{
+							id: "02C5B96FB3F59CC6"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				id: "172B0194926F4057"
+				type: "checkmark"
+			}]
+			x: -2d
+			y: 5d
+		}
+		{
+			dependencies: ["7B4C52AD367C6D2A"]
+			id: "2EB06B243632753B"
+			rewards: [{
+				id: "5B1BBA89FAE9033F"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "607C4DC64C7C62FA"
+				item: { count: 1, id: "create_aeronautics_toolgun:portable_structure_container" }
+				type: "item"
+			}]
+			x: -2d
+			y: 6.5d
+		}
+		{
+			dependencies: ["2EB06B243632753B"]
+			id: "6020D4E9158EBD6B"
+			rewards: [{
+							id: "216EB5250FBBDA11"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				id: "6421EB030B74FC2A"
+				type: "checkmark"
+			}]
+			x: -2d
+			y: 8d
+		}
+		{
+			dependencies: ["2EB06B243632753B"]
+			id: "151735352C6318F1"
+			rewards: [{
+							id: "014BDF96C0BF3937"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "246B53638385F0FA"
+				item: { count: 1, id: "create_aeronautics_toolgun:disposable_vehicle_container" }
+				type: "item"
+			}]
+			x: -4d
+			y: 8d
+		}
+		{
+			dependencies: ["2560A19BA65ABA14"]
+			id: "5F2923D112C7A521"
+			rewards: [{
+							id: "7D45AEBB3A00436D"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "01B4690820E119CC"
+				item: { count: 1, id: "create_aeronautics_toolgun:magnetic_gun" }
+				type: "item"
+			}]
+			x: 2d
+			y: 3.5d
+		}
+		{
+			dependencies: ["5F2923D112C7A521"]
+			id: "363407846CCC1EA6"
+			rewards: [{
+							id: "4C354F0CACDA978E"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				id: "2C9370BC8913B233"
+				type: "checkmark"
+			}]
+			x: 2d
+			y: 5d
+		}
+		{
+			dependencies: ["4DFC4C8F8215830C"]
+			id: "31DB3E9F67A747D7"
+			rewards: [{
+							id: "215EAB5B56184BCB"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				id: "2E031EA4E95563BE"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 5.5d
+		}
+		{
+			dependencies: ["31DB3E9F67A747D7"]
+			id: "3683846711D353BF"
+			rewards: [{
+							id: "6C5D255E8BE1D7D1"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				id: "7443D4D6C806743B"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 7d
+		}
+		{
+			dependencies: ["6020D4E9158EBD6B", "3683846711D353BF", "363407846CCC1EA6"]
+			id: "61BBFFD8E76ABFBA"
+			rewards: [{
+							id: "64F9042C5B2DCF07"
+							type: "xp"
+							xp: 25
+						}]
+			shape: "circle"
+			tasks: [{
+				id: "2CBBEC3424614A26"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 9d
+		}
+	]
+}

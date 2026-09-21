@@ -1,0 +1,213 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "transport_power_loader"
+	group: "191CDC99EE58E587"
+	icon: {
+		id: "create_power_loader:brass_chunk_loader"
+	}
+	id: "6EF925EF6D33E789"
+	images: [ ]
+	order_index: 3
+	quest_links: [ ]
+	quests: [
+		{
+			icon: {
+				id: "create_power_loader:brass_chunk_loader"
+			}
+			id: "5B6BAE566FBC39BC"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "771B2D7ADFA5C69D"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 0d
+		}
+		{
+			dependencies: ["5B6BAE566FBC39BC"]
+			id: "6292460DB23E5221"
+			rewards: [{
+				id: "7D7FB1E67BEA64C3"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "3AD99488F2454DC6"
+				item: { count: 1, id: "create_power_loader:empty_andesite_chunk_loader" }
+				type: "item"
+			}]
+			x: -2d
+			y: 2d
+		}
+		{
+			dependencies: ["6292460DB23E5221"]
+			id: "517A13A858670888"
+			rewards: [{
+							id: "47D6BA4D21EDF1EC"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				id: "195536EB1A02B7D2"
+				type: "checkmark"
+			}]
+			x: -2d
+			y: 3.5d
+		}
+		{
+			dependencies: ["517A13A858670888"]
+			id: "7A259EC18BFAC41C"
+			rewards: [{
+							id: "279A74599C7D9550"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "2566E202F3286CC1"
+				item: { count: 1, id: "create_power_loader:andesite_chunk_loader" }
+				type: "item"
+			}]
+			x: -2d
+			y: 5d
+		}
+		{
+			dependencies: ["7A259EC18BFAC41C"]
+			id: "2677A9AF029E5C8F"
+			rewards: [{
+							id: "2263A8C348D9E924"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				id: "106FB37ABB15B088"
+				type: "checkmark"
+			}]
+			x: -2d
+			y: 6.5d
+		}
+		{
+			dependencies: ["5B6BAE566FBC39BC"]
+			id: "0DA4BC1BC034EE69"
+			rewards: [{
+							id: "617485C9B6040667"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "77A2AC670D44C144"
+				item: { count: 1, id: "create_power_loader:empty_brass_chunk_loader" }
+				type: "item"
+			}]
+			x: 2d
+			y: 2d
+		}
+		{
+			dependencies: ["0DA4BC1BC034EE69"]
+			id: "5DD91F49DE7AC8EC"
+			rewards: [{
+							id: "341B60982647BDE8"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "58D6FB59EF91179E"
+				item: { count: 1, id: "create_power_loader:brass_chunk_loader" }
+				type: "item"
+			}]
+			x: 2d
+			y: 3.5d
+		}
+		{
+			dependencies: ["5DD91F49DE7AC8EC"]
+			id: "41B7B3C582FE60E2"
+			rewards: [{
+							id: "0F9F9532C9A3323B"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				id: "2FFA743A62D8C6FA"
+				type: "checkmark"
+			}]
+			x: 2d
+			y: 5d
+		}
+		{
+			dependencies: ["41B7B3C582FE60E2"]
+			id: "44094CDFD2CAF677"
+			rewards: [{
+							id: "0ABEC7FBFAE23CB1"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				id: "33A0607898949784"
+				type: "checkmark"
+			}]
+			x: 1d
+			y: 6.5d
+		}
+		{
+			dependencies: ["41B7B3C582FE60E2"]
+			id: "6519A08C5E0DABB5"
+			rewards: [{
+							id: "1ADB03A987C94B05"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				id: "189983E9952F740D"
+				type: "checkmark"
+			}]
+			x: 3d
+			y: 6.5d
+		}
+		{
+			dependencies: ["6519A08C5E0DABB5"]
+			id: "6B77226A091CC501"
+			rewards: [{
+							id: "059AACEAC0664C35"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				id: "34BF1D8F50CA12CB"
+				type: "checkmark"
+			}]
+			x: 3d
+			y: 8d
+		}
+		{
+			dependencies: ["2677A9AF029E5C8F", "44094CDFD2CAF677", "6B77226A091CC501"]
+			id: "7169D197E32CB6CE"
+			rewards: [{
+							id: "6FBA28749A8EDFDB"
+							type: "xp"
+							xp: 20
+						}]
+			shape: "circle"
+			tasks: [{
+				id: "2B644E1C808E7F17"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 10d
+		}
+	]
+}

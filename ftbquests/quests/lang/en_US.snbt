@@ -3,12 +3,10 @@
 	chapter.077E2D43C856BB30.title: "Storage and Computers"
 	chapter.08CDC01FE839E5A6.title: " &eBrass Age"
 	chapter.09F0C87D85FE2EBB.title: "&e Aquatic Ambitions"
-	chapter.0B91282419AF1F71.title: "Flight Workshop"
 	chapter.16C5FD7375E8F1C9.title: "Photography"
 	chapter.1E8F36011DDBC0E7.title: " &eGetting Started"
 	chapter.24588CE3822D1A5E.title: " &eCreate Kitchen"
 	chapter.254243CAD3B3043A.title: "Food and Farming"
-	chapter.25856E7FE5EAA126.title: "Railway Services"
 	chapter.27AC45BF67882B5D.title: "Farm to Table"
 	chapter.2AC40A5D34D93FFC.title: "&e Aeronautics"
 	chapter.2C98A0203051DEC7.title: "Heavy Industry"
@@ -41,6 +39,12 @@
 	chapter.D937BC0889D39BCD.title: "Photography and Collecting"
 	chapter.F695A64CBA07DE8D.title: "Create Foundations"
 	chapter.F6B7688A978F114D.title: "Combat, Classes, and Bosses"
+	chapter.0B91282419AF1F71.title: "Aeronautics Toolgun"
+	chapter.25856E7FE5EAA126.title: "Railway Services"
+	chapter.354CB5C21E504C39.title: "Docking and Rope"
+	chapter.42CAA3A44E04DAD9.title: "Aeroworks Controls"
+	chapter.50C4B67ED2727CAE.title: "Player Economy"
+	chapter.6EF925EF6D33E789.title: "Create: Power Loader"
 	chapter_group.171B0F909A01E9E1.title: "&6Farming and Food"
 	chapter_group.191CDC99EE58E587.title: "&6 Transportation"
 	chapter_group.210CB4D563354A3F.title: "Storage"
@@ -153,7 +157,6 @@
 	quest.08A93C3DB204A69A.title: "Obtain Chest"
 	quest.08C0482016F6FF46.title: "Monstrous Tire"
 	quest.0922AF692CC1EE68.quest_desc: ["Use the navigator with your rail network. Check that the destination and station names are meaningful to another player."]
-	quest.0922AF692CC1EE68.title: "Plan a Journey"
 	quest.09303FAB3B7317BD.title: "&d&lWelcome to the Fun Section"
 	quest.09ABC17DF68F838A.title: "Smart Propeller"
 	quest.09F8889A001D8A02.title: "Huge Diesel Engine"
@@ -201,7 +204,6 @@
 	quest.0E31BD4DE8F3FE89.title: "&e🧵 Spools and Wire Types"
 	quest.0E3C425C3E41725B.title: "Package Frogport"
 	quest.0EB54DBB3540331E.quest_desc: ["Use the crossing in a test section and check both routes before connecting it to the main line."]
-	quest.0EB54DBB3540331E.title: "Build a Crossing"
 	quest.0ED9B5FAAF0A1152.title: "Mechanical Harvester"
 	quest.0EE161A63A5AAFCA.quest_desc: ["Inspect the lens’s uses and compare the same scene with your usual camera setup."]
 	quest.0EE161A63A5AAFCA.title: "Change Your Perspective"
@@ -260,7 +262,6 @@
 	quest.12B8D781D7E61A07.quest_desc: ["Craft or obtain computercraft:wired_modem_full. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.12B8D781D7E61A07.title: "Obtain Wired Modem Full"
 	quest.12B91215BFFF67CA.quest_desc: ["Start with a small route and expand after it completes a reliable round trip."]
-	quest.12B91215BFFF67CA.title: "&6Railway Infrastructure"
 	quest.12BD42304D81C2B9.quest_desc: ["Craft or obtain oceansdelight:fugu_roll. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.12BD42304D81C2B9.title: "Obtain Fugu Roll"
 	quest.12E8EDE461EE10E1.quest_desc: ["Craft or obtain simulated:rope_coupling. Use EMI to inspect its recipe and uses before adding it to your build."]
@@ -321,8 +322,6 @@
 	quest.15F468F42F7E0DAA.title: "Obtain Basin"
 	quest.16A4F5B99841D9D3.quest_desc: ["Craft or obtain toms_storage:item_filter. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.16A4F5B99841D9D3.title: "Obtain Item Filter"
-	quest.16A90A131D040D60.quest_desc: ["Practice connections at ground level where both ends are easy to reach."]
-	quest.16A90A131D040D60.title: "&6Rope Connections"
 	quest.16B089CEA0086976.quest_desc: [
 		"Bee Nests house wild Bees! They can't be moved but produce &cHoneycomb&r, which can be used to craft a &eBeehive.&r"
 		""
@@ -333,7 +332,6 @@
 	quest.16B089CEA0086976.title: "Find a Bee Nest"
 	quest.16B5ECA8A4615830.title: "Borehead Bearing"
 	quest.16B62072743D8EA9.quest_desc: ["Configure a terminal and test it with a small transaction."]
-	quest.16B62072743D8EA9.title: "Set Up Banking"
 	quest.16BB8F1BEBB5231D.title: "Analog Lever"
 	quest.16C5B7FEB0A5A883.title: "Simulated"
 	quest.16C7279B94679735.quest_desc: ["Craft or obtain jewelry:jewelers_kit. Use EMI to inspect its recipe and uses before adding it to your build."]
@@ -397,7 +395,6 @@
 	]
 	quest.194C38A81DBF3408.title: "Coal golem"
 	quest.1A1D03622DC034D0.quest_desc: ["Choose a common product, clearly advertise its price, and have another player test a purchase."]
-	quest.1A1D03622DC034D0.title: "Open a Small Shop"
 	quest.1A8CB63A3DD02B6C.title: "Netherite Diving Boots"
 	quest.1AA9280A2C910B3E.title: "&eCraft &bFishing Net"
 	quest.1B17D90D4096418D.quest_desc: [
@@ -413,7 +410,6 @@
 	quest.1B5A8F69FA996BE0.quest_desc: ["Can be obtained by &aright-clicking&r a piece of Stripped Log with a &6Brass Ingot&r"]
 	quest.1B5A8F69FA996BE0.title: "&6Brass Casing"
 	quest.1B5EB49F9665F261.quest_desc: ["Add a station clock to a waiting area and test it while a scheduled service runs."]
-	quest.1B5EB49F9665F261.title: "Equip the Station"
 	quest.1B9559364523CB42.quest_desc: ["Craft or obtain createaddition:rolling_mill. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.1B9559364523CB42.title: "Obtain Rolling Mill"
 	quest.1B9ED4AE2B210340.quest_desc: ["Craft or obtain createdieselgenerators:pumpjack_bearing. Use EMI to inspect its recipe and uses before adding it to your build."]
@@ -533,8 +529,6 @@
 	quest.2543EBF86EFAEAA0.quest_desc: ["Craft or obtain createdieselgenerators:engine_piston. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.2543EBF86EFAEAA0.title: "Obtain Engine Piston"
 	quest.25484B6775FCF549.title: "&6The 6-way Gearboxes"
-	quest.2560A19BA65ABA14.quest_desc: ["Read the tool’s controls and try each needed operation on an expendable frame."]
-	quest.2560A19BA65ABA14.title: "Shape a Test Frame"
 	quest.256EE2934D3F225F.quest_desc: [
 		"When crafted, a respawn anchor has no (zero) charge and can't yet be used until charged. Using a glowstone block (not glowstone dust) on it adds a charge. The anchor accepts up to 4 charges, and the charge level is indicated by a dial on the side of the block"
 		""
@@ -664,8 +658,6 @@
 		"Decorate with style and make your Minecraft creations truly stand out."
 	]
 	quest.2C167EF3B2484CBE.title: "Decoration and Building Options."
-	quest.2C2E9669B7CF255F.quest_desc: ["Give your railway useful station names before adding passenger displays."]
-	quest.2C2E9669B7CF255F.title: "&6Passenger Information"
 	quest.2C58ED9D4CFD1505.quest_desc: [
 		"Activate a Waystone when you discover one so it becomes a useful stop on your journeys."
 		""
@@ -679,7 +671,6 @@
 	quest.2CB70E6D236A5599.quest_desc: ["The &6diamond backpack&r is the upgrade of the &egold backpack&r. It has 108 storage slots and can hold 5 upgrades"]
 	quest.2CB70E6D236A5599.title: "Diamond Backpack"
 	quest.2D420E7E1408CA7B.quest_desc: ["Try a short rope connection and inspect how the frames move relative to one another."]
-	quest.2D420E7E1408CA7B.title: "Connect Nearby Frames"
 	quest.2DA35CE521EA5341.quest_desc: ["Craft or obtain create_vibrant_vaults:vertical_shipping_container. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.2DA35CE521EA5341.title: "Obtain Vertical Shipping Container"
 	quest.2DA9042005E23D71.title: "&aInventory Access Port"
@@ -701,8 +692,6 @@
 		"It’s the best way to understand the mechanics, weapon types, and upgrade systems Simply Swords has to offer."
 	]
 	quest.2E9BB5BB1FC9A449.title: "Guide Book"
-	quest.2EB06B243632753B.quest_desc: ["Inspect the container’s supported operations before relying on it to recover a vehicle."]
-	quest.2EB06B243632753B.title: "Prepare Recovery Storage"
 	quest.2EC2A1393412D7F8.title: "&aThrow a &eNautilus Shell&a into the &6Crushing Wheel"
 	quest.2ED6612189365230.quest_desc: [
 		"&eThe Accumulator&r is a block used for storing electrical energy."
@@ -765,7 +754,6 @@
 	quest.32F350560FF91E9E.title: "Docking Connector"
 	quest.334FF5EA51FD789C.title: "&6Minecart with Chest"
 	quest.33F9DA1C941929AF.quest_desc: ["Use the launcher in a clear test area. Keep a route back to both anchors."]
-	quest.33F9DA1C941929AF.title: "Reach a Distant Anchor"
 	quest.33FFB796891872AB.quest_desc: ["Tree Fertilizer can grow Saplings instantly regardless of their spacing conditions. "]
 	quest.33FFB796891872AB.title: "Tree Fertilizer"
 	quest.342EBDAD1623E863.quest_desc: ["Craft or obtain create:gearshift. Use EMI to inspect its recipe and uses before adding it to your build."]
@@ -825,7 +813,6 @@
 	quest.39F13BA17DD246F8.quest_desc: ["Compare the dagger’s reach and timing with your heavier weapon."]
 	quest.39F13BA17DD246F8.title: "Try a Lighter Weapon"
 	quest.39FE1634844E05B3.quest_desc: ["Mount the launcher at a test dock and rehearse departure and recovery."]
-	quest.39FE1634844E05B3.title: "Build a Docking Station"
 	quest.3A2BE2B49EBA3445.title: "Redstone Transmission"
 	quest.3A40D77D084CB093.title: "Redstone Converter"
 	quest.3A73F444D62F80C6.title: "Brass Casing"
@@ -838,7 +825,6 @@
 	quest.3AD6E6BAEDE817C6.quest_desc: ["Keep the relic in your inventory and get inflicted with &6Darkness.&r Wait briefly for the transformation."]
 	quest.3AD6E6BAEDE817C6.title: "Magispear"
 	quest.3B114CD43935DC08.quest_desc: ["Start with the mod’s own guide so you understand accounts and transactions before opening a shop."]
-	quest.3B114CD43935DC08.title: "Read the Banking Guide"
 	quest.3B43CD49D5B7924E.title: "&dRail"
 	quest.3B57514B1D0DA58B.quest_desc: ["Craft or obtain create:portable_storage_interface. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.3B57514B1D0DA58B.title: "Obtain Portable Storage Interface"
@@ -944,8 +930,6 @@
 	]
 	quest.3F9A72B4DDD3F9BC.title: " A Sharp Upgrade"
 	quest.3FA3CC13659D491F.title: "&cFan Blasting Catalyst"
-	quest.3FA8BB65BB34118F.quest_desc: ["Use the installed trading system for player shops. Quest rewards remain ordinary items and XP."]
-	quest.3FA8BB65BB34118F.title: "&6Numismatics"
 	quest.3FCDA063769799D6.title: "&6Craft a Millstone"
 	quest.3FEAD3F2766B0AC1.title: "&6Brass Sheet"
 	quest.401EE830BE90D58F.quest_desc: ["Craft or obtain armory_rpgs:deathmantle_armor_feet. Use EMI to inspect its recipe and uses before adding it to your build."]
@@ -995,7 +979,6 @@
 	quest.452A5581870B0573.title: "Hold Your Ground"
 	quest.45302D6847413C5C.title: "Stormbringer"
 	quest.453DC602E5FD4DEF.quest_desc: ["Use the gyroscope’s instructions and adjust one setting at a time. Test close to the ground."]
-	quest.453DC602E5FD4DEF.title: "Tune the Craft"
 	quest.455357FC782D9375.quest_desc: ["Build a searchable store while keeping your original chests accessible."]
 	quest.455357FC782D9375.title: "&6Tom’s Storage"
 	quest.457EB60D601C67FD.quest_desc: ["Perhaps you can&b put these back together&r, or maybe make&o &6something else&r with it."]
@@ -1374,13 +1357,10 @@
 	quest.5BBF3CAEF0A0F731.title: "Sunfire"
 	quest.5BDC2AD73778ECE7.title: "Flamewind"
 	quest.5C62F9E7E06BFFFC.quest_desc: ["Configure a display where passengers can read it. Take a real trip to verify the information."]
-	quest.5C62F9E7E06BFFFC.title: "Publish the Timetable"
 	quest.5C74998BA5206671.title: "&aObtain &eGlow Dust"
 	quest.5C7763B7F0804CCE.quest_desc: ["Bamboo spikes are useful traps to protect you base from mobs. They can be tipped with potion effects!"]
 	quest.5C7763B7F0804CCE.title: "Bamboo Spikes"
 	quest.5CBBB0ED38F63CE3.title: "Swivel Bearing"
-	quest.5D16915F16C1BE46.quest_desc: ["Add controls only after the basic craft is stable and recoverable."]
-	quest.5D16915F16C1BE46.title: "&6Pilot Controls"
 	quest.5D2B78231DB12B64.quest_desc: ["Choose equipment that matches your preferred combat style, then test it against ordinary enemies before pursuing bosses. Keep spare equipment and food at home. Boss milestones use credited kill tasks, so players who meaningfully contribute can progress with their team."]
 	quest.5D2B78231DB12B64.title: "Begin Combat, Classes, and Bosses"
 	quest.5E557F234EEBC3F1.quest_desc: [
@@ -1459,8 +1439,6 @@
 	quest.627ABF25D55F8D01.title: "Obtain Monk Workbench"
 	quest.6284C630A9B57E87.quest_desc: ["Craft or obtain create:mechanical_press. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.6284C630A9B57E87.title: "Obtain Mechanical Press"
-	quest.6292460DB23E5221.quest_desc: ["Read the loader’s uses and the server’s limits. The empty component alone is not proof that a route remains loaded."]
-	quest.6292460DB23E5221.title: "Understand Chunk Loading"
 	quest.62C660289ABEF798.title: "Materials"
 	quest.62D944E5A588674C.quest_desc: ["Test with common materials and an explicit filter before permitting valuable items."]
 	quest.62D944E5A588674C.title: "Manage Supplies Carefully"
@@ -1551,7 +1529,6 @@
 	quest.690CD6E1D994E5D6.quest_desc: ["Craft or obtain create_integrated_farming:roost. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.690CD6E1D994E5D6.title: "Obtain Roost"
 	quest.6912BAE1F6715D30.quest_desc: ["Arrange the control desk so the pilot can reach the important controls and see the direction of travel."]
-	quest.6912BAE1F6715D30.title: "Build the Cockpit"
 	quest.69C7F71E6330CDE3.quest_desc: ["Build a dependable Create workshop from rotational power through brass automation. Stress capacity is the available mechanical budget; stress impact is what machines consume. Use goggles and Ponder before increasing speed or extending a network."]
 	quest.69C7F71E6330CDE3.title: "Begin Create Foundations"
 	quest.69EC849DD0101246.title: "&2Block of Experience"
@@ -1652,7 +1629,6 @@
 	quest.715DCA85971A7607.title: "Dormant Relic"
 	quest.71A2EEC9052B40D2.title: "Hot Air Burner"
 	quest.71A4F77CE44A4079.quest_desc: ["Inspect the joystick’s connections and test each axis separately."]
-	quest.71A4F77CE44A4079.title: "Install Pilot Input"
 	quest.71B3EE01379B7B80.title: "Awakened Lichblade"
 	quest.71EE7089CEAC97A0.quest_desc: [
 		"The &6Photograph Frame&r is a fancy way to display your pictures, available in three sizes: 1x1, 2x2, and 3x3. "
@@ -2492,4 +2468,96 @@
 	quest.0476DA101D0EDB46.quest_desc: ["Add a Capacitor to the Crafts and Additions electrical toolkit and inspect its uses in EMI."]
 	quest.7C51313A8F84959F.title: "Portable Energy Interface"
 	quest.7C51313A8F84959F.quest_desc: ["Transfer Forge Energy to and from moving Create contraptions using the Portable Energy Interface."]
+	quest.01B3C841225829B3.quest_desc: ["Add a Button Module for discrete cockpit commands alongside analog flight controls."]
+	quest.01B3C841225829B3.title: "Button Module"
+	quest.074CB36FB41FB4DB.quest_desc: ["Place an Advanced Display where travelers can read it and configure it for useful station or departure information."]
+	quest.074CB36FB41FB4DB.title: "Install Passenger Information"
+	quest.0922AF692CC1EE68.title: "Railway Navigator"
+	quest.0DA4BC1BC034EE69.quest_desc: ["Craft the Brass tier when one chunk is not enough. It also needs a captured Ghast before becoming active."]
+	quest.0DA4BC1BC034EE69.title: "Empty Brass Chunk Loader"
+	quest.0EB54DBB3540331E.title: "Track Crossing"
+	quest.12B91215BFFF67CA.title: "Railway Infrastructure"
+	quest.151735352C6318F1.quest_desc: ["Make a single-use vehicle container for one-way transport jobs where you do not need a reusable portable container."]
+	quest.151735352C6318F1.title: "Disposable Vehicle Container"
+	quest.16A90A131D040D60.quest_desc: ["Use throwable and mounted rope tools to catch, connect, and dock moving physical structures without relying on perfect block alignment."]
+	quest.16A90A131D040D60.title: "Docking and Rope"
+	quest.16B62072743D8EA9.title: "Bank Terminal"
+	quest.1A1D03622DC034D0.title: "Sale Point"
+	quest.1B5EB49F9665F261.title: "Train Station Clock"
+	quest.1CCDF34CE09BCB46.quest_desc: ["Install a Joystick, stabilization/control hardware, and at least one auxiliary control on a test vehicle. Verify every axis and command while the craft is still easy to recover."]
+	quest.1CCDF34CE09BCB46.title: "Build a Working Cockpit"
+	quest.24940F7B57274AA0.quest_desc: ["Plan a real trip with the Navigator and follow the suggested connection. Fix ambiguous station names or schedules you notice while traveling."]
+	quest.24940F7B57274AA0.title: "Take a Planned Connection"
+	quest.2560A19BA65ABA14.quest_desc: ["Craft the survival Structure Tool. This is the main interface for blueprinting, transforming, welding, disconnecting, deleting, and changing collision on physical structures."]
+	quest.2560A19BA65ABA14.title: "Survival Structure Tool"
+	quest.2677A9AF029E5C8F.quest_desc: ["Power the Andesite loader, leave the area, and verify a simple machine continues operating. Keep this single-chunk tier for small stationary jobs."]
+	quest.2677A9AF029E5C8F.title: "Test a Loaded Chunk"
+	quest.2C2E9669B7CF255F.quest_desc: ["Build passenger-facing navigation and station infrastructure on top of your Create railway network."]
+	quest.2C2E9669B7CF255F.title: "Railway Services"
+	quest.2D420E7E1408CA7B.title: "Throwable Rope Connector"
+	quest.2EB06B243632753B.quest_desc: ["Craft a Portable Structure Container so a saved vehicle can be carried and reconstructed without keeping the original vehicle loaded."]
+	quest.2EB06B243632753B.title: "Portable Structure Container"
+	quest.31DB3E9F67A747D7.quest_desc: ["Use Translate or Rotate on a test structure, then try Weld or Simple Weld between two physical structures. Use Disconnect to remove a connection deliberately."]
+	quest.31DB3E9F67A747D7.title: "Edit Physical Structures"
+	quest.33F9DA1C941929AF.title: "Rope Connector Launcher"
+	quest.363407846CCC1EA6.quest_desc: ["Grab a physical structure with the Magnetic Gun, move it, rotate it, try precision control, and release it safely. Learn this before attempting tight docking maneuvers."]
+	quest.363407846CCC1EA6.title: "Move and Rotate a Craft"
+	quest.3683846711D353BF.quest_desc: ["Test No Collision mode on two harmless physical structures. Re-enable normal collision when finished; collision changes can make docking easier but can also hide mistakes."]
+	quest.3683846711D353BF.title: "Control Structure Collision"
+	quest.39FE1634844E05B3.title: "Mounted Rope Launcher"
+	quest.3AECA3B3FE42AB1D.quest_desc: ["Craft a Control Stand as a compact cockpit mounting point for Aeroworks controls."]
+	quest.3AECA3B3FE42AB1D.title: "Control Stand"
+	quest.3B114CD43935DC08.title: "Banking Guide"
+	quest.3DD13D4904BFA026.quest_desc: ["Install the mounted launcher on a vehicle or dock and test a repeatable capture/retrieval workflow before depending on it during travel."]
+	quest.3DD13D4904BFA026.title: "Use a Mounted Rope Launcher"
+	quest.3FA8BB65BB34118F.quest_desc: ["Numismatics provides player-facing banking and shop tools. It belongs with shared storage/services rather than railway progression."]
+	quest.3FA8BB65BB34118F.title: "Player Economy"
+	quest.41B7B3C582FE60E2.quest_desc: ["Open the value panel and test the 1x1, 3x3, and 5x5 settings. Leave it on the smallest range that actually covers the machinery you need."]
+	quest.41B7B3C582FE60E2.title: "Configure the Smallest Useful Range"
+	quest.44094CDFD2CAF677.quest_desc: ["Assemble a Brass loader onto a moving or stationary contraption. On contraptions it loads a 3x3 area and does not need rotational power once assembled. Test its contraption-control behavior as well."]
+	quest.44094CDFD2CAF677.title: "Keep a Contraption Loaded"
+	quest.453DC602E5FD4DEF.title: "Gyroscope"
+	quest.4A6A53BC7E9D6D23.quest_desc: ["FPBcraft also includes Grappling Hook Mod: Skybound, which can hook onto Create contraptions and Sable/Create Aeronautics vehicles. Use it to board or recover onto a moving craft. Its full upgrade path is covered later in Combat and Equipment."]
+	quest.4A6A53BC7E9D6D23.title: "Board a Moving Airship"
+	quest.4AFF5FE1E7F3D01A.quest_desc: ["Run a train through the crossing and any added station infrastructure before connecting it to a busy main line. Verify signals, clearances, and route names from both directions."]
+	quest.4AFF5FE1E7F3D01A.title: "Test Railway Infrastructure"
+	quest.4DFC4C8F8215830C.quest_desc: ["Open the Survival Structure Tool interface and review Save, Load, Delete, No Collision, Weld, Simple Weld, Translate, Rotate, and Disconnect before editing an important craft."]
+	quest.4DFC4C8F8215830C.title: "Learn the Tool Modes"
+	quest.517A13A858670888.quest_desc: ["Right-click a Ghast with the empty chunk loader to capture it and turn the loader into its active form. Do this somewhere you can safely control the Ghast encounter."]
+	quest.517A13A858670888.title: "Capture a Ghast"
+	quest.522AD32AD04CEB2F.quest_desc: ["Use the Navigator to search between two stations. Group station platforms that belong to the same stop and choose names that make sense to another player."]
+	quest.522AD32AD04CEB2F.title: "Map the Network"
+	quest.5B6BAE566FBC39BC.quest_desc: ["Keep important machines, trains, and moving contraptions active beyond player view. Chunk loading is powerful on a multiplayer server, so use the smallest area that solves the problem."]
+	quest.5B6BAE566FBC39BC.title: "Create: Power Loader"
+	quest.5C62F9E7E06BFFFC.title: "Advanced Display"
+	quest.5D16915F16C1BE46.quest_desc: ["Aeroworks adds cockpit controls and stabilization parts for piloting physical vehicles. Build the controls on a simple test craft before wiring a full airship."]
+	quest.5D16915F16C1BE46.title: "Aeroworks Controls"
+	quest.5DD91F49DE7AC8EC.quest_desc: ["The Brass loader can cover a configurable 1x1, 3x3, or 5x5 area. Larger ranges need higher rotational speed when used as a stationary block."]
+	quest.5DD91F49DE7AC8EC.title: "Brass Chunk Loader"
+	quest.5F2923D112C7A521.quest_desc: ["The survival Magnetic Gun can grab physical structures for careful repositioning. Practice with a small craft before using it near docks or other vehicles."]
+	quest.5F2923D112C7A521.title: "Magnetic Gun"
+	quest.6020D4E9158EBD6B.quest_desc: ["Load or print the saved blueprint in a clear area. Verify the vehicle, block-entity data, ropes, wires, constraints, and connected sublevels survived before deleting the original."]
+	quest.6020D4E9158EBD6B.title: "Print the Vehicle Again"
+	quest.61BBFFD8E76ABFBA.quest_desc: ["Save and restore a vehicle that contains more than one sublevel or supported moving components. Confirm important contraptions, constraints, wires, ropes, and block-entity data behave correctly after restoration."]
+	quest.61BBFFD8E76ABFBA.title: "Preserve a Complex Vehicle"
+	quest.6292460DB23E5221.quest_desc: ["Craft the empty Andesite loader. Before it can load chunks, it needs a captured Ghast in its portal core."]
+	quest.6292460DB23E5221.title: "Empty Andesite Chunk Loader"
+	quest.64531F329E19756F.quest_desc: ["Add an Andesite Depositor as a Create-friendly way to move currency into your banking setup. Use EMI to inspect its exact interactions in this pack."]
+	quest.64531F329E19756F.title: "Andesite Depositor"
+	quest.6519A08C5E0DABB5.quest_desc: ["Put a Brass loader on a train and verify the train remains active outside normal player simulation distance. Use this only on trains that genuinely need unattended operation."]
+	quest.6519A08C5E0DABB5.title: "Keep a Train Loaded"
+	quest.6912BAE1F6715D30.title: "Control Desk"
+	quest.6B77226A091CC501.quest_desc: ["Place a Brass loader next to a Train Station in the correct orientation. The station attachment loads a 3x3 area while a train is present and unloads it after the train departs."]
+	quest.6B77226A091CC501.title: "Attach a Loader to a Station"
+	quest.6D1A61642339F2C4.quest_desc: ["Configure a Sale Point for a low-risk item and test the full purchase flow with a friend before stocking valuable goods."]
+	quest.6D1A61642339F2C4.title: "Open a Small Shop"
+	quest.7169D197E32CB6CE.quest_desc: ["Review the loaders you left running. Prefer single chunks and station-triggered loading where possible, and remove loaders that no longer serve an active machine or route."]
+	quest.7169D197E32CB6CE.title: "Chunk Loading Without Regret"
+	quest.71A4F77CE44A4079.title: "Joystick"
+	quest.75D2ABAF81B76874.quest_desc: ["Practice catching and bringing two small physical structures together with the rope launcher. Approach slowly and leave enough room for collision and constraint behavior."]
+	quest.75D2ABAF81B76874.title: "Dock Two Moving Structures"
+	quest.7A259EC18BFAC41C.quest_desc: ["The Andesite loader keeps its current chunk loaded when supplied with enough rotational power. It unloads after a short delay when power is lost."]
+	quest.7A259EC18BFAC41C.title: "Andesite Chunk Loader"
+	quest.7B4C52AD367C6D2A.quest_desc: ["Use Save mode on a small Sable or Create Aeronautics vehicle. Start with something expendable so you can learn how connected sublevels are captured safely."]
+	quest.7B4C52AD367C6D2A.title: "Save a Vehicle Blueprint"
 }
