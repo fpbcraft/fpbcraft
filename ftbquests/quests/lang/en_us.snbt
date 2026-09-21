@@ -1,6 +1,6 @@
 {
 	chapter.01014DDC205ECA93.title: " &ePump Dat Oil"
-	chapter.077E2D43C856BB30.title: "Storage & Computers"
+	chapter.077E2D43C856BB30.title: "Storage and Computers"
 	chapter.08CDC01FE839E5A6.title: " &eBrass Age"
 	chapter.09F0C87D85FE2EBB.title: "&e Aquatic Ambitions"
 	chapter.0B91282419AF1F71.title: "Flight Workshop"
@@ -45,7 +45,7 @@
 	chapter_group.191CDC99EE58E587.title: "&6 Transportation"
 	chapter_group.210CB4D563354A3F.title: "Storage"
 	chapter_group.45A8E931C4697E91.title: "Others"
-	chapter_group.4863600DDEA1AF02.title: "Combat & Equipment"
+	chapter_group.4863600DDEA1AF02.title: "Combat and Equipment"
 	chapter_group.4A93CDBE321781DA.title: "RPG Series"
 	chapter_group.67C285939F8460F0.title: "&6Create"
 	chapter_group.6DEDA2F315449415.title: "&6Engineer's Paradise"
@@ -2394,20 +2394,20 @@
 		"&d@redden&r"
 	]
 	quest.7DB46C70468F2CFE.title: "&6Redden's Stone Lanters"
-	chapter_group.B17DDEC0A7E6F001.title: "Building & Decoration"
-	chapter_group.AD7E4E8A10A10001.title: "Adventure & Exploration"
-	chapter_group.B055E50000000001.title: "Bosses"
+	chapter_group.517DDEC0A7E6F001.title: "Building and Decoration"
+	chapter_group.5D7E4E8A10A10001.title: "Adventure and Exploration"
+	chapter_group.5055E50000000001.title: "Bosses"
 	chapter.51A9AEEA7D5D1001.title: "Supplementaries"
-	chapter.A8C4AE0109F01001.title: "Archaeology"
-	chapter.7A4E1001A0B10001.title: "Travel & Exploration"
-	chapter.B01D1E6F0A100001.title: "Building & Furniture"
-	chapter.C0B47BA51C500001.title: "Combat Basics"
+	chapter.28C4AE0109F01001.title: "Archaeology"
+	chapter.7A4E1001A0B10001.title: "Travel and Exploration"
+	chapter.301D1E6F0A100001.title: "Building and Furniture"
+	chapter.40B47BA51C500001.title: "Combat Basics"
 	chapter.6A4D15C500000201.title: "Game Discs"
-	chapter.C0E0A11A00000001.title: "Create Ore Excavation"
-	chapter.CBCA110000000001.title: "Create Big Cannons"
-	chapter.C0A7E00000000001.title: "Create Nuclear"
-	chapter.B0A3E00000000001.title: "Create: Power Grid"
-	chapter.06C461D2AA9B967D.title: "Create Crafts & Additions"
+	chapter.40E0A11A00000001.title: "Create Ore Excavation"
+	chapter.4BCA110000000001.title: "Create Big Cannons"
+	chapter.40A7E00000000001.title: "Create Nuclear"
+	chapter.30A3E00000000001.title: "Create: Power Grid"
+	chapter.06C461D2AA9B967D.title: "Create Crafts and Additions"
 	quest.74702A1045B526D5.title: "Create Nuclear"
 	quest.74702A1045B526D5.quest_desc: ["Build a reactor through Create-style material processing. This chapter follows the installed 1.21.1 reactor system, not the newer V2 tier/coolant system."]
 	quest.4160C3EF6AFD9B8E.title: "Find Uranium and Lead"
@@ -2489,7 +2489,7 @@
 	quest.8942AC3C8F25CBE7.title: "Electric Motor"
 	quest.8942AC3C8F25CBE7.quest_desc: ["Convert Forge Energy back into Create rotational power with the Electric Motor."]
 	quest.0476DA101D0EDB46.title: "Capacitor"
-	quest.0476DA101D0EDB46.quest_desc: ["Add a Capacitor to the Crafts & Additions electrical toolkit and inspect its uses in EMI."]
+	quest.0476DA101D0EDB46.quest_desc: ["Add a Capacitor to the Crafts and Additions electrical toolkit and inspect its uses in EMI."]
 	quest.7C51313A8F84959F.title: "Portable Energy Interface"
 	quest.7C51313A8F84959F.quest_desc: ["Transfer Forge Energy to and from moving Create contraptions using the Portable Energy Interface."]
 }

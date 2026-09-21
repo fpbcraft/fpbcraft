@@ -4,7 +4,7 @@
 	filename: "industry_create_nuclear"
 	group: "6DEDA2F315449415"
 	icon: { id: "createnuclear:reactor_controller" }
-	id: "C0A7E00000000001"
+	id: "40A7E00000000001"
 	images: [ ]
 	order_index: 12
 	quest_links: [ ]
