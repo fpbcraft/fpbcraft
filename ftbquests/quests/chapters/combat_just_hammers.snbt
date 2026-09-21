@@ -1,0 +1,105 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "combat_just_hammers"
+	group: "4863600DDEA1AF02"
+	icon: { id: "minecraft:iron_pickaxe" }
+	id: "5C1000000000C001"
+	images: [ ]
+	order_index: 1
+	quest_links: [ ]
+	quests: [
+		{
+			id: "5C10000000000001"
+			rewards: [{
+				id: "5C10000000002001"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "5C10000000001001"
+				item: { components: { "ftbfiltersystem:filter": "or(mod(justhammers))" }, count: 1, id: "ftbfiltersystem:smart_filter" }
+				type: "item"
+			}]
+			x: 0d
+			y: 0d
+		},
+		{
+			dependencies: ["5C10000000000001"]
+			id: "5C10000000000002"
+			rewards: [{
+				id: "5C10000000002002"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "5C10000000001002"
+				type: "checkmark"
+			}]
+			x: -3d
+			y: 2d
+		},
+		{
+			dependencies: ["5C10000000000001"]
+			id: "5C10000000000003"
+			rewards: [{
+				id: "5C10000000002003"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "5C10000000001003"
+				type: "checkmark"
+			}]
+			x: -1d
+			y: 2d
+		},
+		{
+			dependencies: ["5C10000000000001"]
+			id: "5C10000000000004"
+			rewards: [{
+				id: "5C10000000002004"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "5C10000000001004"
+				type: "checkmark"
+			}]
+			x: 1d
+			y: 2d
+		},
+		{
+			dependencies: ["5C10000000000001"]
+			id: "5C10000000000005"
+			rewards: [{
+				id: "5C10000000002005"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "5C10000000001005"
+				type: "checkmark"
+			}]
+			x: 3d
+			y: 2d
+		},
+		{
+			dependencies: ["5C10000000000003", "5C10000000000005"]
+			id: "5C10000000000006"
+			shape: "hexagon"
+			rewards: [{
+				id: "5C10000000002006"
+				type: "xp"
+				xp: 40
+			}]
+			tasks: [{
+				id: "5C10000000001006"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 4d
+		}
+	]
+}
