@@ -29,7 +29,7 @@ Public documentation consulted during the planning pass. These are research refe
 - Handcrafted — https://www.curseforge.com/minecraft/mc-mods/handcrafted
 - Immersive Furniture — https://www.curseforge.com/minecraft/mc-mods/immersive-furniture
 - Hang Glider — https://www.curseforge.com/minecraft/mc-mods/hang-glider
-- Grappling Hook Mod: Skybound (candidate; exact installed project still to confirm) — https://www.curseforge.com/minecraft/mc-mods/grapplemod-skybound
+- Grappling Hook Mod: Skybound — https://modrinth.com/mod/grapplemod-skybound
 
 ## RPG Series
 
