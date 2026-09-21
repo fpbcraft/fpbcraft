@@ -1,0 +1,220 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "rpg_archer"
+	group: "4A93CDBE321781DA"
+	icon: { id: "archers:composite_longbow" }
+	id: "5E1000000000C001"
+	images: [ ]
+	order_index: 1
+	quest_links: [ ]
+	quests: [
+		{
+			id: "75CFCEEEDD3C679C"
+			rewards: [{
+				id: "5E752086D1D30B69"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "5F415F8BC6C17B07"
+				item: { count: 1, id: "archers:archers_workbench" }
+				type: "item"
+			}]
+			x: 0d
+			y: 0d
+		},
+		{
+			dependencies: ["75CFCEEEDD3C679C"]
+			id: "49281E60DFDE522F"
+			rewards: [{
+				id: "0DA23F93DC3FC3CD"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "018DF10C1D8F1487"
+				item: { count: 1, id: "archers:composite_longbow" }
+				type: "item"
+			}]
+			x: 0d
+			y: 2d
+		},
+		{
+			dependencies: ["49281E60DFDE522F"]
+			id: "5E10000000000001"
+			rewards: [{
+				id: "7E00000000000007"
+				type: "xp"
+				xp: 15
+			}]
+			tasks: [{
+				advancement: "rpg_series:path_choose_archer"
+				criterion: ""
+				id: "6E00000000000010"
+				type: "advancement"
+			}]
+			x: -2d
+			y: 4d
+		},
+		{
+			dependencies: ["5E10000000000001"]
+			id: "5E10000000000002"
+			rewards: [{
+				id: "7E00000000000008"
+				type: "xp"
+				xp: 20
+			}]
+			tasks: [{
+				advancement: "rpg_series:spell_novice_archer"
+				criterion: ""
+				id: "6E00000000000011"
+				type: "advancement"
+			}]
+			x: -2d
+			y: 6d
+		},
+		{
+			dependencies: ["49281E60DFDE522F"]
+			id: "14A6521B585F85B5"
+			rewards: [{
+				id: "0A0059C0E0F60F42"
+				type: "xp"
+				xp: 15
+			}]
+			tasks: [{
+				consume_items: false
+				id: "7E417C473E1C2E99"
+				item: { count: 1, id: "archers:medium_quiver" }
+				type: "item"
+			}]
+			x: 2d
+			y: 4d
+		},
+		{
+			dependencies: ["14A6521B585F85B5"]
+			id: "5E10000000000003"
+			rewards: [{
+				id: "7E00000000000009"
+				type: "xp"
+				xp: 25
+			}]
+			tasks: [{
+				consume_items: false
+				id: "6E00000000000012"
+				item: { count: 1, id: "archers:archer_armor_head" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6E00000000000013"
+				item: { count: 1, id: "archers:archer_armor_chest" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6E00000000000014"
+				item: { count: 1, id: "archers:archer_armor_legs" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6E00000000000015"
+				item: { count: 1, id: "archers:archer_armor_feet" }
+				type: "item"
+			}]
+			x: 2d
+			y: 6d
+		},
+		{
+			dependencies: ["5E10000000000002"]
+			id: "5E10000000000004"
+			rewards: [{
+				id: "7E0000000000000A"
+				type: "xp"
+				xp: 20
+			}]
+			tasks: [{
+				advancement: "rpg_series:spell_cast_archer_book"
+				criterion: ""
+				id: "6E00000000000016"
+				type: "advancement"
+			}]
+			x: -2d
+			y: 8d
+		},
+		{
+			dependencies: ["5E10000000000004"]
+			id: "5E10000000000005"
+			shape: "hexagon"
+			rewards: [{
+				id: "7E0000000000000B"
+				type: "xp"
+				xp: 40
+			}]
+			tasks: [{
+				advancement: "rpg_series:spell_master_archer"
+				criterion: ""
+				id: "6E00000000000017"
+				type: "advancement"
+			}]
+			x: -2d
+			y: 10d
+		},
+		{
+			dependencies: ["5E10000000000003"]
+			id: "5E10000000000006"
+			rewards: [{
+				id: "7E0000000000000C"
+				type: "xp"
+				xp: 25
+			}]
+			tasks: [{
+				consume_items: false
+				id: "6E00000000000018"
+				item: { count: 1, id: "archers:royal_longbow" }
+				type: "item"
+			}]
+			x: 2d
+			y: 8d
+		},
+		{
+			dependencies: ["5E10000000000006"]
+			id: "5E10000000000007"
+			shape: "hexagon"
+			rewards: [{
+				id: "7E0000000000000D"
+				type: "xp"
+				xp: 40
+			}]
+			tasks: [{
+				consume_items: false
+				id: "6E00000000000019"
+				item: { count: 1, id: "archers:ranger_armor_head" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6E0000000000001A"
+				item: { count: 1, id: "archers:ranger_armor_chest" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6E0000000000001B"
+				item: { count: 1, id: "archers:ranger_armor_legs" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6E0000000000001C"
+				item: { count: 1, id: "archers:ranger_armor_feet" }
+				type: "item"
+			}]
+			x: 2d
+			y: 10d
+		}
+	]
+}
