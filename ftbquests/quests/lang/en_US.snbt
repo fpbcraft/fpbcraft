@@ -11,7 +11,7 @@
 	chapter.2F17721232295EBD.title: "&bSophisticated Backpacks"
 	chapter.36217E43B0A210E9.title: "Welcome and First Day"
 	chapter.3679B8BBD02A5192.title: " &eCopper Age"
-	chapter.375816172138499C.title: "RPG Foundations"
+	chapter.375816172138499C.title: "RPG Classes"
 	chapter.3899210894FA98FA.title: "&6&nGetting Started!"
 	chapter.403C67A830521243.title: " &eTrains"
 	chapter.4425CF103834DA9D.title: "Storage and Computers"
@@ -2825,17 +2825,11 @@
 \tquest.5C3000000000000A.title: "Skybound Arsenal"
 \tquest.5C3000000000000A.quest_desc: ["Obtain an Ender Staff Upgrade and a Hook Thrower Upgrade after mastering moving structures. This gives the page a concrete advanced-equipment endpoint."]
 
-	chapter.5F1000000000C001.title: "Archer"
-	chapter.5F2000000000C001.title: "Rogue"
-	chapter.5F3000000000C001.title: "Warrior"
-	chapter.5F4000000000C001.title: "Paladin"
-	chapter.5F5000000000C001.title: "Priest"
-	chapter.5F6000000000C001.title: "Wizard"
 	chapter.5F7000000000C001.title: "RPG End Game"
 	quest.5E00000000000001.title: "Spell Binding"
 	quest.5E00000000000001.quest_desc: ["Craft a Spell Binding Table. It is the core workstation for creating and developing RPG Series spell books."]
 	quest.5E00000000000002.title: "Choose a Path"
-	quest.5E00000000000002.quest_desc: ["Unlock the RPG Series class-selection advancement. Each class page stays independent, so you can pursue one role or several."]
+	quest.5E00000000000002.quest_desc: ["Unlock the RPG Series class-selection advancement. All class branches share this radial page, so you can pursue one role or several from the same hub."]
 	quest.5E00000000000003.title: "Runic Materials"
 	quest.5E00000000000003.quest_desc: ["Collect Arcane, Fire, Frost, and Healing Stones. These runes support several RPG spell and equipment recipes."]
 	quest.5E00000000000004.title: "Six Gemstones"
