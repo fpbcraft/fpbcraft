@@ -1,0 +1,152 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "rpg_priest"
+	group: "4A93CDBE321781DA"
+	icon: { id: "paladins:holy_staff" }
+	id: "5F5000000000C001"
+	images: [ ]
+	order_index: 5
+	quest_links: [ ]
+	quests: [
+		{
+			id: "5F50000000000001"
+			shape: "hexagon"
+			rewards: [{ id: "7F50000000000001", type: "xp", xp: 10 }]
+			tasks: [
+				{
+				consume_items: false
+				id: "6F50000000000000"
+				item: { count: 1, id: "paladins:holy_wand" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6F50000000000000"
+				item: { count: 1, id: "paladins:holy_staff" }
+				type: "item"
+			}
+			]
+			x: 0d
+			y: 0d
+		},
+		{
+			dependencies: ["5F50000000000001"]
+			id: "5F50000000000002"
+			rewards: [{ id: "7F50000000000002", type: "xp", xp: 20 }]
+			tasks: [
+				{
+				advancement: "rpg_series:path_choose_priest"
+				criterion: ""
+				id: "6F50000000000000"
+				type: "advancement"
+			}
+			]
+			x: 0d
+			y: 2d
+		},
+		{
+			dependencies: ["5F50000000000002"]
+			id: "5F50000000000003"
+			rewards: [{ id: "7F50000000000003", type: "xp", xp: 25 }]
+			tasks: [
+				{
+				consume_items: false
+				id: "6F50000000000000"
+				item: { count: 1, id: "paladins:priest_robe_head" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6F50000000000000"
+				item: { count: 1, id: "paladins:priest_robe_chest" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6F50000000000000"
+				item: { count: 1, id: "paladins:priest_robe_legs" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6F50000000000000"
+				item: { count: 1, id: "paladins:priest_robe_feet" }
+				type: "item"
+			}
+			]
+			x: -2d
+			y: 4d
+		},
+		{
+			dependencies: ["5F50000000000002"]
+			id: "5F50000000000004"
+			rewards: [{ id: "7F50000000000004", type: "xp", xp: 25 }]
+			tasks: [
+				{
+				consume_items: false
+				id: "6F50000000000000"
+				item: { count: 1, id: "paladins:prior_robe_head" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6F50000000000000"
+				item: { count: 1, id: "paladins:prior_robe_chest" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6F50000000000000"
+				item: { count: 1, id: "paladins:prior_robe_legs" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6F50000000000000"
+				item: { count: 1, id: "paladins:prior_robe_feet" }
+				type: "item"
+			}
+			]
+			x: 2d
+			y: 4d
+		},
+		{
+			dependencies: ["5F50000000000003"]
+			id: "5F50000000000005"
+			rewards: [{ id: "7F50000000000005", type: "xp", xp: 15 }]
+			tasks: [
+				{
+				consume_items: false
+				id: "6F50000000000000"
+				item: { count: 1, id: "paladins:diamond_holy_wand" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6F50000000000000"
+				item: { count: 1, id: "paladins:diamond_holy_staff" }
+				type: "item"
+			}
+			]
+			x: -2d
+			y: 6d
+		},
+		{
+			dependencies: ["5F50000000000004"]
+			id: "5F50000000000006"
+			shape: "diamond"
+			rewards: [{ id: "7F50000000000006", type: "xp", xp: 40 }]
+			tasks: [
+				{
+				advancement: "rpg_series:spell_master_priest"
+				criterion: ""
+				id: "6F50000000000000"
+				type: "advancement"
+			}
+			]
+			x: 2d
+			y: 6d
+		}
+	]
+}
