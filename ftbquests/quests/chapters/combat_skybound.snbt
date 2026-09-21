@@ -1,0 +1,163 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "combat_skybound"
+	group: "4863600DDEA1AF02"
+	icon: { id: "minecraft:lead" }
+	id: "5C3000000000C001"
+	images: [ ]
+	order_index: 3
+	quest_links: [ ]
+	quests: [
+		{
+			id: "5C30000000000001"
+			rewards: [{
+				id: "5C30000000002001"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "5C30000000001001"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 0d
+		},
+		{
+			dependencies: ["5C30000000000001"]
+			id: "5C30000000000002"
+			rewards: [{
+				id: "5C30000000002002"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "5C30000000001002"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 2d
+		},
+		{
+			dependencies: ["5C30000000000002"]
+			id: "5C30000000000003"
+			rewards: [{
+				id: "5C30000000002003"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "5C30000000001003"
+				type: "checkmark"
+			}]
+			x: -4.5d
+			y: 4d
+		},
+		{
+			dependencies: ["5C30000000000002"]
+			id: "5C30000000000004"
+			rewards: [{
+				id: "5C30000000002004"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "5C30000000001004"
+				type: "checkmark"
+			}]
+			x: -1.5d
+			y: 4d
+		},
+		{
+			dependencies: ["5C30000000000002"]
+			id: "5C30000000000005"
+			rewards: [{
+				id: "5C30000000002005"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "5C30000000001005"
+				type: "checkmark"
+			}]
+			x: 1.5d
+			y: 4d
+		},
+		{
+			dependencies: ["5C30000000000002"]
+			id: "5C30000000000006"
+			rewards: [{
+				id: "5C30000000002006"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "5C30000000001006"
+				type: "checkmark"
+			}]
+			x: 4.5d
+			y: 4d
+		},
+		{
+			dependencies: ["5C30000000000002"]
+			id: "5C30000000000007"
+			rewards: [{
+				id: "5C30000000002007"
+				type: "xp"
+				xp: 25
+			}]
+			tasks: [{
+				id: "5C30000000001007"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 6d
+		},
+		{
+			dependencies: ["5C30000000000002"]
+			id: "5C30000000000008"
+			rewards: [{
+				id: "5C30000000002008"
+				type: "xp"
+				xp: 35
+			}]
+			tasks: [{
+				id: "5C30000000001008"
+				type: "checkmark"
+			}]
+			x: -2d
+			y: 8d
+		},
+		{
+			dependencies: ["5C30000000000008"]
+			id: "5C30000000000009"
+			rewards: [{
+				id: "5C30000000002009"
+				type: "xp"
+				xp: 50
+			}]
+			tasks: [{
+				id: "5C30000000001009"
+				type: "checkmark"
+			}]
+			x: 2d
+			y: 8d
+		},
+		{
+			dependencies: ["5C30000000000003", "5C30000000000004", "5C30000000000005", "5C30000000000006", "5C30000000000007", "5C30000000000009"]
+			id: "5C3000000000000A"
+			shape: "hexagon"
+			rewards: [{
+				id: "5C3000000000200A"
+				type: "xp"
+				xp: 75
+			}]
+			tasks: [{
+				id: "5C3000000000100A"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 10d
+		}
+	]
+}
