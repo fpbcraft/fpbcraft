@@ -4,11 +4,16 @@ The objective is to keep the strongest source-pack structure while giving FPBCra
 
 ## Ungrouped onboarding
 
-### Tutorial
-Preserve the useful All of Create Aeronautics tutorial layout. Cover quest-book usage and pack-level conventions.
+### Tutorial / Getting Started
 
-### Getting Started
-Keep only a small early-game progression if it is still useful after redistribution. Do **not** use this as the default home for one-off mod introductions.
+Keep a **simple, compact onboarding page**. Preserve the useful All of Create Aeronautics tutorial material and any good source layout, but restrict this area to genuinely first-session information:
+
+- how to use the quest book;
+- EMI / Jade / Ponder conventions;
+- server/team/claim basics where useful;
+- a few basic early-game milestones if they provide useful entry points to later sections.
+
+Do **not** use Getting Started as a catch-all for one-off mod introductions. Supplementaries, archaeology, Farmer's Delight, photography, furniture and other substantive mod progression move to their domain sections.
 
 ## Create
 
@@ -90,7 +95,7 @@ This needs multiple pages rather than one kitchen sampler:
 
 ## Building & Decoration
 
-A new first-class home for building-focused mods avoids scattering one-off quests through Getting Started.
+A first-class home for building-focused mods avoids scattering one-off quests through Getting Started.
 
 - **Supplementaries** — dedicated chapter
 - **Furniture** — one clear onboarding quest/mini-branch for Another Furniture, Handcrafted and Immersive Furniture
@@ -106,21 +111,25 @@ A new first-class home for building-focused mods avoids scattering one-off quest
 - **Aquamirae** — Ship Graveyard progression, gear and bosses
 - **Galosphere** — underground biomes/resources/mobs/tools/Echo Altar
 - **Naturalist** — emphasize its useful tools/equipment and animal interactions rather than demanding every animal
-- **Myths of the Sea** — creatures/boss encounters if boss coverage warrants a dedicated branch
-- **Hang Glider**
-- **Grappling Hook**
+- **Myths of the Sea** — creatures/boss encounters with boss encounters cross-linked into Bosses
+- **Hang Glider** — traversal/exploration branch unless later moved to Combat & Equipment
 - Exposure photography
 - exploration utilities (Nature's Compass / Explorer's Compass / Waystones) where useful
 
-## Tools & Equipment / Combat
+## Combat & Equipment
 
-Whether this is its own group or folded into Adventure/RPG is still open. Candidates:
+This is a **dedicated top-level section**.
 
-- **Just Hammers**
+Primary candidates:
+
+- **Simply Swords** — retain the strong existing source-derived content, but move it out of the misleading Collectibles group
 - **Immersive Armors**
-- Simply Swords (move out of a misleading Collectibles group unless the rare weapon collection remains the intended design)
+- **Just Hammers**
+- **Grappling Hook Mod: Skybound** — gear progression plus Create/Sable/Aeronautics movement integration
 - Traveler Tool Belt
-- other compact equipment mods with mechanics worth teaching
+- other compact combat/equipment mods with mechanics worth teaching
+
+The RPG Series remains separate because its class progression is large enough to warrant its own section.
 
 ## RPG Series
 
@@ -128,9 +137,19 @@ Create a dedicated top-level group. See `03-mod-coverage-plan.md` for the detail
 
 ## Bosses
 
-Create a dedicated top-level group or a prominent Adventure subgroup. Use Boss Checklist as the encyclopedia and FTB Quests as the guided progression/reward layer.
+Create a **dedicated top-level Bosses group**.
 
-Likely sources:
+Use a **guided progression** rather than a flat checklist. Boss Checklist remains the exhaustive encyclopedia, while FTB Quests organizes encounters into loose tiers / dimensions and gives players a path such as:
+
+1. discover or learn how to summon/find the encounter;
+2. prepare for its unique mechanic;
+3. defeat it;
+4. obtain its signature drop;
+5. follow links into equipment, RPG or other progression unlocked by that drop.
+
+Do not hard-gate unrelated bosses behind one another simply to make a single linear chain.
+
+Likely boss families:
 
 - Legendary Monsters
 - Mowzie's Mobs
