@@ -60,7 +60,7 @@
 				type: "advancement"
 			}]
 			x: 0d
-			y: 3.0d
+			y: 3d
 		}
 		{
 			dependencies: ["3F49B9EFAA6B736B"]
@@ -89,8 +89,8 @@
 					type: "item"
 				}
 			]
-			x: 0d
-			y: 4.5d
+			x: 2d
+			y: 3d
 		}
 		{
 			dependencies: ["569ECEC823CC39F8"]
@@ -106,8 +106,8 @@
 				item: { count: 1, id: "betterarcheology:radiance_totem" }
 				type: "item"
 			}]
-			x: -1.5d
-			y: 6.0d
+			x: 1d
+			y: 4.5d
 		}
 		{
 			dependencies: ["569ECEC823CC39F8"]
@@ -123,8 +123,8 @@
 				item: { count: 1, id: "betterarcheology:growth_totem" }
 				type: "item"
 			}]
-			x: -0.5d
-			y: 6.0d
+			x: 3d
+			y: 4.5d
 		}
 		{
 			dependencies: ["569ECEC823CC39F8"]
@@ -140,8 +140,8 @@
 				item: { count: 1, id: "betterarcheology:soul_totem" }
 				type: "item"
 			}]
-			x: 0.5d
-			y: 6.0d
+			x: 1d
+			y: 6d
 		}
 		{
 			dependencies: ["569ECEC823CC39F8"]
@@ -157,8 +157,8 @@
 				item: { count: 1, id: "betterarcheology:torrent_totem" }
 				type: "item"
 			}]
-			x: 1.5d
-			y: 6.0d
+			x: 3d
+			y: 6d
 		}
 		{
 			dependencies: ["3F9A72B4DDD3F9BC"]
@@ -174,8 +174,69 @@
 				item: { count: 1, id: "minecraft:sniffer_egg" }
 				type: "item"
 			}]
-			x: 2.5d
-			y: 1.5d
+			x: -2d
+			y: 0d
+		}
+		{
+			dependencies: ["180C4B36730D94DC"]
+			id: "1FF26858DB8E88F8"
+			rewards: [{
+				id: "2BBC5A13DD6DD333"
+				item: {
+					count: 1
+					id: "minecraft:emerald"
+				}
+				type: "item"
+			}]
+			tasks: [{
+				advancement: "betterarcheology:loot_vase_broken"
+				criterion: ""
+				id: "0C2CD08A3CAF07C5"
+				type: "advancement"
+			}]
+			x: -2d
+			y: 2d
+		}
+		{
+			dependencies: ["1FF26858DB8E88F8"]
+			id: "3D93780758BA7194"
+			rewards: [{
+				id: "5C068927E5D6A95C"
+				item: {
+					count: 1
+					id: "betterarcheology:artifact_shards"
+				}
+				type: "item"
+			}]
+			tasks: [{
+				advancement: "betterarcheology:artifact_shards"
+				criterion: ""
+				id: "363673AB8FDB53A7"
+				type: "advancement"
+			}]
+			x: -2d
+			y: 3.5d
+		}
+		{
+			dependencies: ["3D93780758BA7194"]
+			id: "3570097E250F33B0"
+			rewards: [{
+				count: 2
+				id: "0A387743D6AD3654"
+				item: {
+					count: 1
+					id: "betterarcheology:artifact_shards"
+				}
+				type: "item"
+			}]
+			tasks: [{
+				advancement: "betterarcheology:unidentified_artifact"
+				criterion: ""
+				id: "63314573E77F41FE"
+				type: "advancement"
+			}]
+			x: -2d
+			y: 5d
 		}
 	]
 }

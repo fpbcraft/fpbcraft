@@ -342,5 +342,64 @@
 			x: -3.0d
 			y: -4.0d
 		}
+		{
+			dependencies: ["70592309348547EC"]
+			id: "2C770179FF6B1F73"
+			rewards: [{
+				id: "3CA4E126998F92EC"
+				type: "xp"
+				xp: 100
+			}]
+			tasks: [{
+				id: "4F66B5AC2BDD1582"
+				item: { count: 1, id: "trading_floor:trading_depot" }
+				type: "item"
+			}]
+			x: -5.5d
+			y: -4.0d
+		}
+		{
+			dependencies: ["7ED00B80F264338D"]
+			icon: {
+				id: "create_hypertube:hypertube_accelerator"
+			}
+			id: "606349BB488D2422"
+			rewards: [{
+				id: "15DF0E2BC2F53D70"
+				type: "xp"
+				xp: 100
+			}]
+			tasks: [
+				{
+					id: "277E76BF0B8D1008"
+					item: { count: 1, id: "create_hypertube:hypertube" }
+					type: "item"
+				}
+				{
+					id: "74546C3836BCD2D5"
+					item: { count: 1, id: "create_hypertube:hypertube_entrance" }
+					type: "item"
+				}
+				{
+					id: "0B3F84A506248E81"
+					item: { count: 1, id: "create_hypertube:hypertube_accelerator" }
+					type: "item"
+				}
+				{
+					count: 2L
+					id: "527A56C4E08A2F20"
+					item: { count: 1, id: "create:cogwheel" }
+					type: "item"
+				}
+				{
+					count: 2L
+					id: "270148C91D99101C"
+					item: { count: 1, id: "create:large_cogwheel" }
+					type: "item"
+				}
+			]
+			x: -4.5d
+			y: 3.0d
+		}
 	]
 }
