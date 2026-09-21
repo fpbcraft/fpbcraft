@@ -3,24 +3,30 @@
 	default_quest_shape: "circle"
 	filename: "end_electricity"
 	group: "6DEDA2F315449415"
-	icon: {
-		id: "createaddition:large_connector"
-	}
+	icon: { id: "createaddition:large_connector" }
 	id: "06C461D2AA9B967D"
-	images: [{
-		color: 14522965
-		height: 1.0d
-		id: "7A28CEF9A79C7B02"
-		image: "fpbcraft_quests:textures/end_dcfac15f6a7772ca.png"
-		rotation: 90.0d
-		width: 1.0d
-		x: -5.0d
-		y: -1.5d
-	}]
-	order_index: 5
-	progression_mode: "flexible"
+	images: [ ]
+	order_index: 9
 	quest_links: [ ]
 	quests: [
+		{
+			id: "3C1EF575F1117F05"
+			rewards: [{
+				id: "0328FA6618287923"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			size: 1.3d
+			tasks: [{
+				consume_items: false
+				id: "5DDC86D45D8069A6"
+				item: { count: 1, id: "createaddition:rolling_mill" }
+				type: "item"
+			}]
+			x: 0d
+			y: 0d
+		},
 		{
 			dependencies: ["3C1EF575F1117F05"]
 			id: "75170F21A8A50D1E"
@@ -37,9 +43,9 @@
 				item: { count: 1, id: "createaddition:alternator" }
 				type: "item"
 			}]
-			x: -1.5d
-			y: -1.5d
-		}
+			x: 0d
+			y: 1.5d
+		},
 		{
 			dependencies: ["75170F21A8A50D1E"]
 			id: "16E4D85F15C28E66"
@@ -54,9 +60,9 @@
 				item: { count: 1, id: "createaddition:connector" }
 				type: "item"
 			}]
-			x: 0.5d
-			y: -1.5d
-		}
+			x: 2d
+			y: 1.5d
+		},
 		{
 			dependencies: ["16E4D85F15C28E66"]
 			id: "0E31BD4DE8F3FE89"
@@ -71,9 +77,9 @@
 				item: { count: 1, id: "createaddition:copper_spool" }
 				type: "item"
 			}]
-			x: 2.5d
-			y: -1.5d
-		}
+			x: 4d
+			y: 1.5d
+		},
 		{
 			dependencies: ["0E31BD4DE8F3FE89"]
 			id: "744DB62216A2E9ED"
@@ -88,9 +94,9 @@
 				item: { count: 1, id: "createaddition:tesla_coil" }
 				type: "item"
 			}]
-			x: 4.5d
-			y: -1.5d
-		}
+			x: 6d
+			y: 1.5d
+		},
 		{
 			dependencies: ["75170F21A8A50D1E"]
 			id: "2ED6612189365230"
@@ -105,26 +111,50 @@
 				item: { count: 1, id: "createaddition:modular_accumulator" }
 				type: "item"
 			}]
-			x: -1.5d
-			y: -3.5d
-		}
+			x: -2d
+			y: 3d
+		},
 		{
-			id: "3C1EF575F1117F05"
-			rewards: [{
-				id: "0328FA6618287923"
-				type: "xp"
-				xp: 10
-			}]
-			shape: "rsquare"
-			size: 1.3d
+			dependencies: ["75170F21A8A50D1E"]
+			id: "8942AC3C8F25CBE7"
+			rewards: [{ id: "E16D4CE20DBBA1E2", type: "xp", xp: 10 }]
+			shape: "gear"
 			tasks: [{
 				consume_items: false
-				id: "5DDC86D45D8069A6"
-				item: { count: 1, id: "createaddition:rolling_mill" }
+				id: "B0E8279ECD80DF5F"
+				item: { count: 1, id: "createaddition:electric_motor" }
 				type: "item"
 			}]
-			x: -3.9000000000000004d
-			y: -1.5d
+			x: 0d
+			y: 3.0d
+		},
+		{
+			dependencies: ["2ED6612189365230"]
+			id: "0476DA101D0EDB46"
+			rewards: [{ id: "514F62371192232A", type: "xp", xp: 10 }]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "F4C4E815A7721A60"
+				item: { count: 1, id: "createaddition:capacitor" }
+				type: "item"
+			}]
+			x: 2d
+			y: 3.0d
+		},
+		{
+			dependencies: ["0E31BD4DE8F3FE89"]
+			id: "7C51313A8F84959F"
+			rewards: [{ id: "0964A3692D555E61", type: "xp", xp: 10 }]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "DA5300BE2B811F98"
+				item: { count: 1, id: "createaddition:portable_energy_interface" }
+				type: "item"
+			}]
+			x: 4d
+			y: 3.0d
 		}
 	]
 }
