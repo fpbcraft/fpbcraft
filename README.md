@@ -10,4 +10,4 @@ Planning and progress documents live in [`docs/quest-overhaul/`](docs/quest-over
 
 The current working quest pack lives in [`ftbquests/quests/`](ftbquests/quests/). The unchanged pre-overhaul baseline and hash manifest are retained under [`ftbquests/current/`](ftbquests/current/).
 
-> Status: Phase 3B Aeronautics and Transportation complete. Phase 4 Farming/Food and Sea Exploration are next.
+> Status: Phases 4A and 4B Farming/Food and Fishing/Sea Exploration complete. Phase 5 is next.
