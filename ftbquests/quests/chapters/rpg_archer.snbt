@@ -16,7 +16,7 @@
 			tasks: [
 				{
 				consume_items: false
-				id: "6F10000000000000"
+				id: "6F10000000000001"
 				item: { count: 1, id: "archers:composite_longbow" }
 				type: "item"
 			}
@@ -32,7 +32,7 @@
 				{
 				advancement: "rpg_series:path_choose_archer"
 				criterion: ""
-				id: "6F10000000000000"
+				id: "6F10000000000002"
 				type: "advancement"
 			}
 			]
@@ -46,25 +46,25 @@
 			tasks: [
 				{
 				consume_items: false
-				id: "6F10000000000000"
+				id: "6F10000000000003"
 				item: { count: 1, id: "archers:archer_armor_head" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F10000000000000"
+				id: "6F10000000000004"
 				item: { count: 1, id: "archers:archer_armor_chest" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F10000000000000"
+				id: "6F10000000000005"
 				item: { count: 1, id: "archers:archer_armor_legs" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F10000000000000"
+				id: "6F10000000000006"
 				item: { count: 1, id: "archers:archer_armor_feet" }
 				type: "item"
 			}
@@ -79,25 +79,25 @@
 			tasks: [
 				{
 				consume_items: false
-				id: "6F10000000000000"
+				id: "6F10000000000007"
 				item: { count: 1, id: "archers:ranger_armor_head" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F10000000000000"
+				id: "6F10000000000008"
 				item: { count: 1, id: "archers:ranger_armor_chest" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F10000000000000"
+				id: "6F10000000000009"
 				item: { count: 1, id: "archers:ranger_armor_legs" }
 				type: "item"
 			}
 				{
 				consume_items: false
-				id: "6F10000000000000"
+				id: "6F1000000000000A"
 				item: { count: 1, id: "archers:ranger_armor_feet" }
 				type: "item"
 			}
@@ -112,7 +112,7 @@
 			tasks: [
 				{
 				consume_items: false
-				id: "6F10000000000000"
+				id: "6F1000000000000B"
 				item: { count: 1, id: "archers:large_quiver" }
 				type: "item"
 			}
@@ -129,7 +129,7 @@
 				{
 				advancement: "rpg_series:spell_master_archer"
 				criterion: ""
-				id: "6F10000000000000"
+				id: "6F1000000000000C"
 				type: "advancement"
 			}
 			]
