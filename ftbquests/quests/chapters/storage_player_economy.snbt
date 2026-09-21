@@ -1,0 +1,117 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "storage_player_economy"
+	group: "210CB4D563354A3F"
+	icon: {
+		id: "numismatics:banking_guide"
+	}
+	id: "50C4B67ED2727CAE"
+	images: [ ]
+	order_index: 2
+	quest_links: [ ]
+	quests: [
+		{
+			icon: {
+				id: "numismatics:banking_guide"
+			}
+			id: "3FA8BB65BB34118F"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "1EF112158B853C6C"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 0d
+		}
+		{
+			dependencies: ["3FA8BB65BB34118F"]
+			id: "3B114CD43935DC08"
+			rewards: [{
+				id: "490CA9D5983F30BD"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "724E56FEDC2DDCDB"
+				item: { count: 1, id: "numismatics:banking_guide" }
+				type: "item"
+			}]
+			x: 0d
+			y: 2d
+		}
+		{
+			dependencies: ["3B114CD43935DC08"]
+			id: "16B62072743D8EA9"
+			rewards: [{
+				id: "11CF3C33852B515F"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "4BDB65E5B479A59A"
+				item: { count: 1, id: "numismatics:bank_terminal" }
+				type: "item"
+			}]
+			x: -1d
+			y: 3.5d
+		}
+		{
+			dependencies: ["16B62072743D8EA9"]
+			id: "1A1D03622DC034D0"
+			rewards: [{
+				id: "1D19B565804A2C7B"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "1125CBE95859970A"
+				item: { count: 1, id: "numismatics:salepoint" }
+				type: "item"
+			}]
+			x: 1d
+			y: 5d
+		}
+		{
+			dependencies: ["3B114CD43935DC08"]
+			id: "64531F329E19756F"
+			rewards: [{
+							id: "6954DA10898D129A"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "7EA064D8FEB27D6D"
+				item: { count: 1, id: "numismatics:andesite_depositor" }
+				type: "item"
+			}]
+			x: 1d
+			y: 3.5d
+		}
+		{
+			dependencies: ["1A1D03622DC034D0", "64531F329E19756F"]
+			id: "6D1A61642339F2C4"
+			rewards: [{
+							id: "49C89663FA4BE459"
+							type: "xp"
+							xp: 10
+						}]
+			shape: "circle"
+			tasks: [{
+				id: "49962AF79A0859E1"
+				type: "checkmark"
+			}]
+			x: 0d
+			y: 6.5d
+		}
+	]
+}
