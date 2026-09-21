@@ -620,7 +620,8 @@
 	quest.29451136DDC83208.title: "Obtain Oil Scanner"
 	quest.2956B1D37C0C297D.title: "&6Mechanical Roller"
 	quest.29A157630356CC34.quest_desc: ["Craft or obtain create_submarine:electrolyzer. Use EMI to inspect its recipe and uses before adding it to your build."]
-	quest.29A157630356CC34.title: "Obtain Electrolyzer"	quest.2A38322D86E1B832.title: "Rope Winch"
+	quest.29A157630356CC34.title: "Obtain Electrolyzer"
+	quest.2A38322D86E1B832.title: "Rope Winch"
 	quest.2A5212A2374C113F.quest_desc: ["You can also switch the look of your &6Water Wheel&r by right-clicking it with pretty much any &awood plank&r (including ones from other mods)"]
 	quest.2A5212A2374C113F.title: "Water Wheel"
 	quest.2AA503F5CB265D58.title: "Directional Linked Receiver"
@@ -1243,7 +1244,8 @@
 		"and they'll need to be repaired."
 	]
 	quest.5327DC6C7A413EE9.title: "Candle golem"
-	quest.53563D4611FE239C.quest_desc: ["Craft or obtain cccbridge:animatronic_block. Use EMI to inspect its recipe and uses before adding it to your build."]	quest.53563D4611FE239C.title: "Obtain Animatronic Block"
+	quest.53563D4611FE239C.quest_desc: ["Craft or obtain cccbridge:animatronic_block. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.53563D4611FE239C.title: "Obtain Animatronic Block"
 	quest.53733AB3AC6CDA03.title: "Fluid Tank"
 	quest.53739D43378430B9.title: "Slumbering Lichblade"
 	quest.53C22587722CB4F2.title: "Arcanethyst"
@@ -1866,7 +1868,8 @@
 	quest.9807328BDFC3DFE7.title: "Obtain Takoyaki"
 	quest.9855E6EC7CD4B583.quest_desc: ["Craft or obtain exposure:black_and_white_film. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.9855E6EC7CD4B583.title: "Obtain Black And White Film"
-	quest.9A15CE552E1B8E4F.quest_desc: ["Look directly at a bee nest. Observation tasks reward exploration without requiring you to break the block."]	quest.9A15CE552E1B8E4F.title: "Study a Bee Nest"
+	quest.9A15CE552E1B8E4F.quest_desc: ["Look directly at a bee nest. Observation tasks reward exploration without requiring you to break the block."]
+	quest.9A15CE552E1B8E4F.title: "Study a Bee Nest"
 	quest.9A27D85B185C1EC1.quest_desc: ["Craft or obtain simulated:contraption_diagram. Use EMI to inspect its recipe and uses before adding it to your build."]
 	quest.9A27D85B185C1EC1.title: "Obtain Contraption Diagram"
 	quest.9BAE93601478896C.quest_desc: ["Craft or obtain exposure:color_film. Use EMI to inspect its recipe and uses before adding it to your build."]
