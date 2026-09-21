@@ -70,7 +70,7 @@ After the first Phase 5 implementation, the new pages were audited for excessive
 Reworked pages:
 
 - **Just Hammers** now requires the actual 3×3×1, 3×3×3, 5×5, 5×5×3 and 5×5×5 hammer progression, ending with a Diamond Destructor Hammer.
-- **Immersive Armors** now requires representative Wooden, Heavy, Slime, Divine, Steampunk and Wither chestplates.
+- **Immersive Armors** now requires the full four-piece Wooden, Heavy, Slime, Divine, Steampunk and Wither armor sets.
 - **Galosphere** now requires Allurite, Pink Salt, Palladium, Opal, an Echo Altar and Sterling equipment.
 - **Naturalist** now requires concrete mod items including the Knapsack and Shellstone.
 - **Hang Glider** now requires a Glider Wing, Hang Glider and Reinforced Hang Glider; only the actual flight challenge remains manual.
