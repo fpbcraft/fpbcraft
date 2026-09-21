@@ -108,14 +108,13 @@ This phase should not also add hundreds of new quests; its purpose is a clean ba
 
 This should be its own focused workstream due to size.
 
-Suggested sub-slices:
+Final layout:
 
-1. shared RPG onboarding / Gazebos / Spell Engine / Jewelry / Skill Tree;
-2. Archer;
-3. Rogue + Warrior (separate visual trees, shared implementation owner);
-4. Paladin + Priest (separate visual trees, shared implementation owner);
-5. Wizard Arcane/Fire/Frost;
-6. Armory / Arsenal / Relics end-game integration.
+1. one shared radial **RPG Classes** page with the class-choice node at the center;
+2. shared Spell Engine / Runes / Jewelry / Skill Tree onboarding clustered around the hub;
+3. Archer, Rogue, Warrior, Paladin, Priest, and Wizard as outward spokes on the same canvas;
+4. Wizard visibly splits into Arcane / Fire / Frost branches near the outer ring;
+5. Armory / Arsenal / Jewelry / Relics remain on the shared RPG end-game page.
 
 ## Phase 7 — Bosses
 
