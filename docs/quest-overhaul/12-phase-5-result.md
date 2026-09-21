@@ -61,3 +61,17 @@ Both locale files intentionally remain synchronized.
 ## Next phase
 
 Phase 6 is the RPG Series workstream: shared onboarding, then separate Archer, Rogue, Warrior, Paladin, Priest and Wizard trees, followed by shared Armory / Arsenal / Jewelry / Relics end-game integration.
+
+
+## Item-requirement revision
+
+After the first Phase 5 implementation, the new pages were audited for excessive manual/checkmark tasks. The phase now follows a stricter rule: if a meaningful representative item exists, the quest requires that item. Manual completion is reserved for actions that FTB Quests cannot reliably detect.
+
+Reworked pages:
+
+- **Just Hammers** now requires the actual 3×3×1, 3×3×3, 5×5, 5×5×3 and 5×5×5 hammer progression, ending with a Diamond Destructor Hammer.
+- **Immersive Armors** now requires representative Wooden, Heavy, Slime, Divine, Steampunk and Wither chestplates.
+- **Galosphere** now requires Allurite, Pink Salt, Palladium, Opal, an Echo Altar and Sterling equipment.
+- **Naturalist** now requires concrete mod items including the Knapsack and Shellstone.
+- **Hang Glider** now requires a Glider Wing, Hang Glider and Reinforced Hang Glider; only the actual flight challenge remains manual.
+- **Skybound** now requires the Grappling Hook and functional upgrade items including Motor, Rocket, Double Hook, Long Fall Boots, Magnet, Forcefield, Ender Staff and Hook Thrower upgrades. Manual checks remain only for swinging, hooking a moving Create contraption and boarding an Aeronautics/Sable airship.
