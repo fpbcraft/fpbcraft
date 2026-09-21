@@ -241,11 +241,22 @@ Each branch should ask for one or two representative pieces and explain the cons
 - reinforced glider upgrade;
 - optional travel challenge or link to Aeronautics/exploration.
 
-## Grappling Hook — compact/medium branch
+## Grappling Hook Mod: Skybound — medium equipment branch
 
-The exact installed `Grappling Hook Mod` project still needs confirmation. The mod list display name alone is ambiguous between multiple 1.21.1 projects. Do not author exact item IDs until the jar/project is verified.
+The installed project is confirmed as **Grappling Hook Mod: Skybound**. Its moving-structure integration is unusually relevant to FPBCraft, so this should be more than a single “craft a hook” quest.
 
-If the installed mod is **Grappling Hook Mod: Skybound**, explicitly teach grappling onto Create contraptions/Sable airships because that integration is unusually relevant to FPBCraft.
+Planned progression:
+
+- craft and use the basic Grappling Hook;
+- teach the core swing/reel movement loop;
+- explicit milestone for grappling onto an assembled **Create contraption**;
+- explicit milestone for grappling onto a **Sable / Create Aeronautics airship or sublevel**;
+- introduce Smithing Table upgrades;
+- representative upgrade branches for motors, rockets, ender teleport, magnets, dual hooks and forcefields;
+- Long Fall Boots as the safety/fall-damage branch;
+- optional advanced movement challenge that combines the hook with a moving vehicle.
+
+Do not require every rope-style/cosmetic variation. The interesting FPBCraft progression is movement mastery, moving-structure compatibility and functional upgrades.
 
 ## RPG Series — major new group
 
@@ -326,9 +337,11 @@ Boss quests should link to the RPG end-game because Armory/Arsenal/Relics explic
 
 ## Boss content — major new section
 
-FTB Quests should be the guided path, while **Boss Checklist** remains the exhaustive encyclopedia (model, drops, spawn info, defeated state).
+**Decision: use guided progression.**
 
-Proposed boss quest pattern:
+FTB Quests should be the guided path, while **Boss Checklist** remains the exhaustive encyclopedia (model, drops, spawn info, defeated state). Organize encounters into loose practical tiers/dimensions, but do not hard-gate unrelated bosses behind one another.
+
+Boss quest pattern:
 
 1. discovery / summoning requirement;
 2. short preparation note unique to that encounter;
