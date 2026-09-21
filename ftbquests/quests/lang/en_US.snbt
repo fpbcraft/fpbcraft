@@ -2792,17 +2792,17 @@
 \tquest.5C10000000000006.quest_desc: ["Upgrade the largest hammer to diamond. This is the practical high-durability bulk-excavation milestone before optional Netherite investment."]
 
 \tquest.5C20000000000001.title: "Wooden Armor"
-\tquest.5C20000000000001.quest_desc: ["Craft a Wooden Chestplate from Immersive Armors. It is an inexpensive introduction to the mod's armor families and their set-based design."]
+\tquest.5C20000000000001.quest_desc: ["Craft the full Wooden Armor set—helmet, chestplate, leggings and boots. It is an inexpensive introduction to Immersive Armors and makes the set-based progression explicit."]
 \tquest.5C20000000000002.title: "Heavy Armor"
-\tquest.5C20000000000002.quest_desc: ["Craft a Heavy Chestplate. Heavy Armor is the straightforward high-protection branch and a useful contrast with the more specialized sets."]
+\tquest.5C20000000000002.quest_desc: ["Craft the full Heavy Armor set. Heavy Armor is the straightforward high-protection branch and a useful contrast with the more specialized sets."]
 \tquest.5C20000000000003.title: "Slime Armor"
-\tquest.5C20000000000003.quest_desc: ["Craft a Slime Chestplate. This set represents Immersive Armors' more unusual effect-driven equipment rather than vanilla stat progression."]
+\tquest.5C20000000000003.quest_desc: ["Craft the full Slime Armor set. This branch represents Immersive Armors' more unusual effect-driven equipment rather than vanilla stat progression."]
 \tquest.5C20000000000004.title: "Divine Armor"
-\tquest.5C20000000000004.quest_desc: ["Craft a Divine Chestplate. Divine equipment sits deeper in the crafting progression and is a good milestone for the mod's stronger specialized sets."]
+\tquest.5C20000000000004.quest_desc: ["Craft the full Divine Armor set. Divine equipment sits deeper in the crafting progression and is a good milestone for the mod's stronger specialized gear."]
 \tquest.5C20000000000005.title: "Steampunk Armor"
-\tquest.5C20000000000005.quest_desc: ["Craft a Steampunk Chestplate. Use EMI to inspect the rest of the set and decide whether its style and effects fit your build."]
+\tquest.5C20000000000005.quest_desc: ["Craft the full Steampunk Armor set. Use EMI to inspect its recipes and compare its effects with the other complete sets you have built."]
 \tquest.5C20000000000006.title: "Wither Armor"
-\tquest.5C20000000000006.quest_desc: ["Craft a Wither Chestplate after completing the earlier armor branches. This provides a tangible late-game endpoint instead of a manual completion button."]
+\tquest.5C20000000000006.quest_desc: ["Craft the full Wither Armor set after completing the earlier branches. This gives the page a tangible late-game equipment endpoint instead of a manual completion button."]
 
 \tquest.5C30000000000001.title: "Skybound Grappling Hook"
 \tquest.5C30000000000001.quest_desc: ["Craft the basic Grappling Hook. Skybound turns terrain and moving structures into traversal tools, so the page starts with the actual equipment rather than a reading quest."]
