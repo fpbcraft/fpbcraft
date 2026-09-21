@@ -11,7 +11,7 @@
 	chapter.2F17721232295EBD.title: "&bSophisticated Backpacks"
 	chapter.36217E43B0A210E9.title: "Welcome and First Day"
 	chapter.3679B8BBD02A5192.title: " &eCopper Age"
-	chapter.375816172138499C.title: "Choose Your Loadout"
+	chapter.375816172138499C.title: "RPG Foundations"
 	chapter.3899210894FA98FA.title: "&6&nGetting Started!"
 	chapter.403C67A830521243.title: " &eTrains"
 	chapter.4425CF103834DA9D.title: "Storage and Computers"
@@ -2825,4 +2825,159 @@
 \tquest.5C3000000000000A.title: "Skybound Arsenal"
 \tquest.5C3000000000000A.quest_desc: ["Obtain an Ender Staff Upgrade and a Hook Thrower Upgrade after mastering moving structures. This gives the page a concrete advanced-equipment endpoint."]
 
+	chapter.5F1000000000C001.title: "Archer"
+	chapter.5F2000000000C001.title: "Rogue"
+	chapter.5F3000000000C001.title: "Warrior"
+	chapter.5F4000000000C001.title: "Paladin"
+	chapter.5F5000000000C001.title: "Priest"
+	chapter.5F6000000000C001.title: "Wizard"
+	chapter.5F7000000000C001.title: "RPG End Game"
+	quest.5E00000000000001.title: "Spell Binding"
+	quest.5E00000000000001.quest_desc: ["Craft a Spell Binding Table. It is the core workstation for creating and developing RPG Series spell books."]
+	quest.5E00000000000002.title: "Choose a Path"
+	quest.5E00000000000002.quest_desc: ["Unlock the RPG Series class-selection advancement. Each class page stays independent, so you can pursue one role or several."]
+	quest.5E00000000000003.title: "Runic Materials"
+	quest.5E00000000000003.quest_desc: ["Collect Arcane, Fire, Frost, and Healing Stones. These runes support several RPG spell and equipment recipes."]
+	quest.5E00000000000004.title: "Six Gemstones"
+	quest.5E00000000000004.quest_desc: ["Find all six Jewelry gemstones: Ruby, Topaz, Citrine, Jade, Sapphire, and Tanzanite."]
+	quest.5E00000000000005.title: "Jeweler's Kit"
+	quest.5E00000000000005.quest_desc: ["Obtain a Jeweler's Kit, a Ruby Ring, and a Sapphire Necklace to establish the basic Jewelry progression."]
+	quest.5E00000000000006.title: "Orb of Oblivion"
+	quest.5E00000000000006.quest_desc: ["Obtain an Orb of Oblivion. It can reset points spent in the class Skill Tree, so keep one before committing deeply to a build."]
+	quest.5E00000000000007.title: "Spend a Skill Point"
+	quest.5E00000000000007.quest_desc: ["Open the class Skill Tree and spend your first point. FTB Quests cannot reliably inspect Skill Tree state, so this interaction is the one manual onboarding milestone."]
+	quest.5F10000000000001.title: "A Proper Bow"
+	quest.5F10000000000001.quest_desc: ["Craft a Composite Longbow to begin the Archer equipment path."]
+	quest.5F10000000000002.title: "Path of Archery"
+	quest.5F10000000000002.quest_desc: ["Create the Archery Manual and complete the RPG Series Archer path advancement."]
+	quest.5F10000000000003.title: "Archer Armor"
+	quest.5F10000000000003.quest_desc: ["Craft the complete Archer armor set: hood, tunic, leggings, and boots."]
+	quest.5F10000000000004.title: "Ranger Armor"
+	quest.5F10000000000004.quest_desc: ["Craft the complete Ranger armor set for the stronger pre-end-game Archer equipment tier."]
+	quest.5F10000000000005.title: "Battle Quiver"
+	quest.5F10000000000005.quest_desc: ["Obtain a Large Quiver so your ranged build has substantial carried ammunition."]
+	quest.5F10000000000006.title: "Ballistics Expert"
+	quest.5F10000000000006.quest_desc: ["Fully bind the Archery Manual and complete the Archer mastery advancement."]
+	quest.5F20000000000001.title: "Tools of the Trade"
+	quest.5F20000000000001.quest_desc: ["Craft an Iron Dagger and Iron Sickle to begin the Rogue path."]
+	quest.5F20000000000002.title: "Path of Tricks"
+	quest.5F20000000000002.quest_desc: ["Create the Rogue Handbook and complete the Rogue path advancement."]
+	quest.5F20000000000003.title: "Rogue Armor"
+	quest.5F20000000000003.quest_desc: ["Craft the complete Rogue armor set."]
+	quest.5F20000000000004.title: "Assassin Armor"
+	quest.5F20000000000004.quest_desc: ["Craft the complete Assassin armor set as your stronger Rogue specialization gear."]
+	quest.5F20000000000005.title: "Diamond Blades"
+	quest.5F20000000000005.quest_desc: ["Upgrade to a Diamond Dagger and Diamond Sickle."]
+	quest.5F20000000000006.title: "Master of Deception"
+	quest.5F20000000000006.quest_desc: ["Fully bind the Rogue Handbook and complete the Rogue mastery advancement."]
+	quest.5F30000000000001.title: "Heavy Weapons"
+	quest.5F30000000000001.quest_desc: ["Craft an Iron Double Axe and Iron Glaive to begin the Warrior path."]
+	quest.5F30000000000002.title: "Path of Strength"
+	quest.5F30000000000002.quest_desc: ["Create the Warrior's Codex and complete the Warrior path advancement."]
+	quest.5F30000000000003.title: "Warrior Armor"
+	quest.5F30000000000003.quest_desc: ["Craft the complete Warrior armor set."]
+	quest.5F30000000000004.title: "Berserker Armor"
+	quest.5F30000000000004.quest_desc: ["Craft the complete Berserker armor set for a more aggressive Warrior build."]
+	quest.5F30000000000005.title: "Diamond Arsenal"
+	quest.5F30000000000005.quest_desc: ["Upgrade to a Diamond Double Axe and Diamond Glaive."]
+	quest.5F30000000000006.title: "Rampage"
+	quest.5F30000000000006.quest_desc: ["Fully bind the Warrior's Codex and complete the Warrior mastery advancement."]
+	quest.5F40000000000001.title: "Mace and Shield"
+	quest.5F40000000000001.quest_desc: ["Craft an Iron Mace and Iron Kite Shield to begin the Paladin path."]
+	quest.5F40000000000002.title: "Path of the Paladin"
+	quest.5F40000000000002.quest_desc: ["Create the Paladin Libram and complete the Paladin path advancement."]
+	quest.5F40000000000003.title: "Paladin Armor"
+	quest.5F40000000000003.quest_desc: ["Craft the complete Paladin armor set."]
+	quest.5F40000000000004.title: "Crusader Armor"
+	quest.5F40000000000004.quest_desc: ["Craft the complete Crusader armor set, the basis for Paladin Armory upgrades later."]
+	quest.5F40000000000005.title: "Sacred Heavy Weapons"
+	quest.5F40000000000005.quest_desc: ["Craft a Diamond Great Hammer and Diamond Claymore."]
+	quest.5F40000000000006.title: "Judgement Time"
+	quest.5F40000000000006.quest_desc: ["Fully bind the Paladin Libram and complete the Paladin mastery advancement."]
+	quest.5F50000000000001.title: "Holy Implements"
+	quest.5F50000000000001.quest_desc: ["Craft a Holy Wand and Holy Staff to begin the Priest path."]
+	quest.5F50000000000002.title: "Path of the Priest"
+	quest.5F50000000000002.quest_desc: ["Create the Holy Book and complete the Priest path advancement."]
+	quest.5F50000000000003.title: "Priest Vestments"
+	quest.5F50000000000003.quest_desc: ["Craft the complete Priest robe set."]
+	quest.5F50000000000004.title: "Prior Vestments"
+	quest.5F50000000000004.quest_desc: ["Craft the complete Prior robe set, the basis for Priest Armory upgrades later."]
+	quest.5F50000000000005.title: "Diamond Holy Implements"
+	quest.5F50000000000005.quest_desc: ["Craft a Diamond Holy Wand and Diamond Holy Staff."]
+	quest.5F50000000000006.title: "Servant of the Ori"
+	quest.5F50000000000006.quest_desc: ["Fully bind the Holy Book and complete the Priest mastery advancement."]
+	quest.5F60000000000001.title: "Apprentice Wizard"
+	quest.5F60000000000001.quest_desc: ["Obtain a Novice Wand and craft the complete Wizard robe set before specializing."]
+	quest.5F60000000000002.title: "Arcane School"
+	quest.5F60000000000002.quest_desc: ["Create the Tome of Arcane and choose the Arcane Wizard path."]
+	quest.5F60000000000003.title: "Arcane Equipment"
+	quest.5F60000000000003.quest_desc: ["Craft an Arcane Staff and the complete Arcane robe set."]
+	quest.5F60000000000004.title: "Mind Mastery"
+	quest.5F60000000000004.quest_desc: ["Fully bind the Tome of Arcane and complete Arcane mastery."]
+	quest.5F60000000000005.title: "Fire School"
+	quest.5F60000000000005.quest_desc: ["Create the Tome of Fire and choose the Fire Wizard path."]
+	quest.5F60000000000006.title: "Fire Equipment"
+	quest.5F60000000000006.quest_desc: ["Craft a Fire Staff and the complete Fire robe set."]
+	quest.5F60000000000007.title: "Pyromaniac"
+	quest.5F60000000000007.quest_desc: ["Fully bind the Tome of Fire and complete Fire mastery."]
+	quest.5F60000000000008.title: "Frost School"
+	quest.5F60000000000008.quest_desc: ["Create the Tome of Frost and choose the Frost Wizard path."]
+	quest.5F60000000000009.title: "Frost Equipment"
+	quest.5F60000000000009.quest_desc: ["Craft a Frost Staff and the complete Frost robe set."]
+	quest.5F6000000000000A.title: "Icy Veins"
+	quest.5F6000000000000A.quest_desc: ["Fully bind the Tome of Frost and complete Frost mastery."]
+	quest.5F70000000000001.title: "Epic Armor Upgrades"
+	quest.5F70000000000001.quest_desc: ["Obtain the Armory epic Smithing Template. End-game class armor uses this template together with class-group upgrade crystals."]
+	quest.5F70000000000002.title: "Vanquisher Crystal"
+	quest.5F70000000000002.quest_desc: ["Obtain a Vanquisher's Lost Crystal for Archer and Frost Wizard armor upgrades."]
+	quest.5F70000000000003.title: "Champion Crystal"
+	quest.5F70000000000003.quest_desc: ["Obtain a Champion's Lost Crystal for Rogue and Warrior armor upgrades."]
+	quest.5F70000000000004.title: "Redeemer Crystal"
+	quest.5F70000000000004.quest_desc: ["Obtain a Redeemer's Lost Crystal for Paladin and Priest armor upgrades."]
+	quest.5F70000000000005.title: "Conqueror Crystal"
+	quest.5F70000000000005.quest_desc: ["Obtain a Conqueror's Lost Crystal for Arcane and Fire Wizard armor upgrades."]
+	quest.5F70000000000006.title: "Strider Set"
+	quest.5F70000000000006.quest_desc: ["Upgrade into the complete Strider armor set, the Archer Armory milestone."]
+	quest.5F70000000000007.title: "Glacier Set"
+	quest.5F70000000000007.quest_desc: ["Upgrade into the complete Glacier robe set for Frost Wizard end-game equipment."]
+	quest.5F70000000000008.title: "Rimeweave Set"
+	quest.5F70000000000008.quest_desc: ["Upgrade into the complete Rimeweave robe set as the alternate Frost Wizard end-game path."]
+	quest.5F70000000000009.title: "Deathmantle Set"
+	quest.5F70000000000009.quest_desc: ["Upgrade into the complete Deathmantle armor set for Rogue end-game equipment."]
+	quest.5F7000000000000A.title: "Onslaught Set"
+	quest.5F7000000000000A.quest_desc: ["Upgrade into the complete Onslaught armor set for Warrior end-game equipment."]
+	quest.5F7000000000000B.title: "Justicar Set"
+	quest.5F7000000000000B.quest_desc: ["Upgrade into the complete Justicar armor set for one Paladin end-game path."]
+	quest.5F7000000000000C.title: "Lightbringer Set"
+	quest.5F7000000000000C.quest_desc: ["Upgrade into the complete Lightbringer armor set for the alternate Paladin end-game path."]
+	quest.5F7000000000000D.title: "Avatar Set"
+	quest.5F7000000000000D.quest_desc: ["Upgrade into the complete Avatar robe set for one Priest end-game path."]
+	quest.5F7000000000000E.title: "Absolution Set"
+	quest.5F7000000000000E.quest_desc: ["Upgrade into the complete Absolution robe set for the alternate Priest end-game path."]
+	quest.5F7000000000000F.title: "Tempest Set"
+	quest.5F7000000000000F.quest_desc: ["Upgrade into the complete Tempest robe set for one Arcane Wizard end-game path."]
+	quest.5F70000000000010.title: "Astral Set"
+	quest.5F70000000000010.quest_desc: ["Upgrade into the complete Astral robe set for the alternate Arcane Wizard end-game path."]
+	quest.5F70000000000011.title: "Scarlet Set"
+	quest.5F70000000000011.quest_desc: ["Upgrade into the complete Scarlet robe set for one Fire Wizard end-game path."]
+	quest.5F70000000000012.title: "Smouldering Set"
+	quest.5F70000000000012.quest_desc: ["Upgrade into the complete Smouldering robe set for the alternate Fire Wizard end-game path."]
+	quest.5F70000000000013.title: "Legendary Ranged Weapons"
+	quest.5F70000000000013.quest_desc: ["Find both a unique Arsenal longbow and heavy crossbow. Arsenal equipment is loot-driven rather than a crafting checklist."]
+	quest.5F70000000000014.title: "Legendary Agile Weapons"
+	quest.5F70000000000014.quest_desc: ["Find representative unique Arsenal weapons for fast melee builds: a dagger and double axe."]
+	quest.5F70000000000015.title: "Legendary Heavy Weapons"
+	quest.5F70000000000015.quest_desc: ["Find a unique Arsenal mace and shield for heavy frontline builds."]
+	quest.5F70000000000016.title: "Legendary Staves"
+	quest.5F70000000000016.quest_desc: ["Find both damage-oriented and healing-oriented unique Arsenal staves."]
+	quest.5F70000000000017.title: "Rare Agile Jewelry"
+	quest.5F70000000000017.quest_desc: ["Find rare Jewelry pieces suited to Archer and Rogue-style builds."]
+	quest.5F70000000000018.title: "Rare Frontline Jewelry"
+	quest.5F70000000000018.quest_desc: ["Find rare tank and healing Jewelry pieces."]
+	quest.5F70000000000019.title: "Rare Mage Jewelry"
+	quest.5F70000000000019.quest_desc: ["Find rare Arcane, Fire, and Frost Jewelry pieces."]
+	quest.5F7000000000001A.title: "Dungeon Relics"
+	quest.5F7000000000001A.quest_desc: ["Find a Holy Locket and Ender's Hand from Relics. These are acquisition milestones for dungeon and high-value loot."]
+	quest.5F7000000000001B.title: "Relic Hunter"
+	quest.5F7000000000001B.quest_desc: ["Find a Bastion Ring and Elytra Booster to complete the representative Relics branch."]
 }
