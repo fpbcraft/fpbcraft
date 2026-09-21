@@ -1,0 +1,549 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "aero_aquatic_ambitions"
+	group: "6DEDA2F315449415"
+	icon: {
+		id: "minecraft:conduit"
+	}
+	id: "09F0C87D85FE2EBB"
+	images: [{
+		height: 1.0d
+		id: "39F819D4B2AA4C95"
+		image: "fpbcraft_quests:textures/aero_ed3ab275f11b641c.png"
+		rotation: 0.0d
+		width: 1.0d
+		x: 0.5d
+		y: -6.5d
+	}]
+	order_index: 0
+	quest_links: [ ]
+	quests: [
+		{
+			icon: {
+				components: {
+					"ftbquests:icon": "ftblibrary:textures/faces/upgrade_aquatic/thrasher.png"
+				}
+				id: "ftbquests:custom_icon"
+			}
+			id: "4F1B4F48531D61EA"
+			rewards: [{
+				id: "3AD8BD9B9F42E68D"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "30B2E4C9361C7EA4"
+				type: "checkmark"
+			}]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["4F1B4F48531D61EA"]
+			icon: {
+				id: "minecraft:heart_of_the_sea"
+			}
+			id: "3E9AC1D58A93D390"
+			rewards: [{
+				id: "598045782FDE251B"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [
+				{
+					consume_items: false
+					id: "31B18F5C44AF1B60"
+					item: { count: 1, id: "minecraft:heart_of_the_sea" }
+					type: "item"
+				}
+				{
+					consume_items: false
+					count: 8L
+					id: "54EFAEC7CB979716"
+					item: { count: 1, id: "minecraft:nautilus_shell" }
+					type: "item"
+				}
+				{
+					consume_items: false
+					id: "1ABEE89F5F646DB9"
+					item: { count: 1, id: "minecraft:conduit" }
+					type: "item"
+				}
+			]
+			x: -1.5d
+			y: -1.5d
+		}
+		{
+			dependencies: ["14A3EFE32C7BA51B"]
+			icon: {
+				id: "minecraft:conduit"
+			}
+			id: "01B73200BE239BB6"
+			rewards: [{
+				id: "608C895F2D814CA8"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [
+				{
+					consume_items: false
+					id: "0D0047D125C6C585"
+					item: { count: 1, id: "minecraft:conduit" }
+					type: "item"
+				}
+				{
+					consume_items: false
+					count: 5L
+					id: "6B69EA29B82B63F4"
+					item: { count: 1, id: "create_aquatic_ambitions:prismarine_alloy_rod" }
+					type: "item"
+				}
+				{
+					consume_items: false
+					count: 2L
+					id: "26EE0DD2E16BE251"
+					item: { count: 1, id: "create_aquatic_ambitions:prismarine_alloy" }
+					type: "item"
+				}
+				{
+					consume_items: false
+					id: "77137E5C212EAACE"
+					item: { count: 1, id: "create:fluid_pipe" }
+					type: "item"
+				}
+			]
+			x: 0.0d
+			y: -4.5d
+		}
+		{
+			dependencies: ["4F1B4F48531D61EA"]
+			icon: {
+				id: "minecraft:prismarine"
+			}
+			id: "51E3751CC62EC584"
+			rewards: [{
+				id: "528C004DF6239309"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [
+				{
+					consume_items: false
+					count: 30L
+					id: "55FE614898D360E3"
+					item: { count: 1, id: "minecraft:prismarine" }
+					type: "item"
+				}
+				{
+					consume_items: false
+					count: 30L
+					id: "5C38F8CEBD2B9159"
+					item: { count: 1, id: "create:copper_nugget" }
+					type: "item"
+				}
+			]
+			x: 1.5d
+			y: -1.5d
+		}
+		{
+			dependencies: [
+				"3E9AC1D58A93D390"
+				"51E3751CC62EC584"
+			]
+			icon: {
+				id: "create_aquatic_ambitions:prismarine_alloy"
+			}
+			id: "14A3EFE32C7BA51B"
+			rewards: [{
+				id: "129A819CCED29BFA"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [
+				{
+					consume_items: false
+					id: "768B61288578F225"
+					item: { count: 1, id: "create_aquatic_ambitions:prismarine_alloy" }
+					type: "item"
+				}
+				{
+					consume_items: false
+					id: "53F1412711F2E00D"
+					item: { count: 1, id: "create_aquatic_ambitions:prismarine_alloy_rod" }
+					type: "item"
+				}
+			]
+			x: 0.0d
+			y: -3.0d
+		}
+		{
+			dependencies: ["01B73200BE239BB6"]
+			id: "17DAE28EF38F2987"
+			rewards: [{
+				id: "7D6D46006B658082"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "45BA4AFA81275DD0"
+				item: { count: 1, id: "create_aquatic_ambitions:mechanical_conduit" }
+				type: "item"
+			}]
+			x: 0.0d
+			y: -6.0d
+		}
+		{
+			dependencies: ["0442B31457FC6BC2"]
+			id: "3FCDA063769799D6"
+			rewards: [{
+				id: "76192C8989AC9934"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "6332FB24D309B52C"
+				item: { count: 1, id: "create:millstone" }
+				type: "item"
+			}]
+			x: -3.5d
+			y: 0.0d
+		}
+		{
+			dependencies: ["4F1B4F48531D61EA"]
+			id: "0442B31457FC6BC2"
+			rewards: [{
+				id: "012419D556EED6E6"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				count: 30L
+				id: "3C59CFC49CD95596"
+				item: { count: 1, id: "create:limestone" }
+				type: "item"
+			}]
+			x: -2.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["3FCDA063769799D6"]
+			id: "7C34A98BBAFAEE20"
+			rewards: [{
+				id: "7E4E91B9B0AA9615"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "2F03A94A3A6AECE5"
+				item: { count: 1, id: "create_aquatic_ambitions:suspicious_rock" }
+				type: "item"
+			}]
+			x: -3.5d
+			y: -2.5d
+		}
+		{
+			dependencies: ["7C34A98BBAFAEE20"]
+			icon: {
+				id: "minecraft:water_bucket"
+			}
+			id: "4A956CD5F69886ED"
+			rewards: [{
+				id: "4926D24193250DA4"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [
+				{
+					consume_items: false
+					id: "74A0EE98A54B282D"
+					item: { count: 1, id: "create:encased_fan" }
+					type: "item"
+				}
+				{
+					consume_items: false
+					id: "6D8C78E217F447A1"
+					item: { count: 1, id: "minecraft:water_bucket" }
+					type: "item"
+				}
+			]
+			x: -3.5d
+			y: -4.5d
+		}
+		{
+			dependencies: ["17DAE28EF38F2987"]
+			icon: {
+				id: "create:encased_fan"
+			}
+			id: "7E49052F6F8EAA1B"
+			rewards: [{
+				id: "15F0F26426CB43D0"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [
+				{
+					consume_items: false
+					id: "0056F7D17AD94B25"
+					item: { count: 1, id: "create:encased_fan" }
+					type: "item"
+				}
+				{
+					consume_items: false
+					id: "016C477E78F82ABD"
+					item: { count: 1, id: "create_aquatic_ambitions:mechanical_conduit" }
+					type: "item"
+				}
+			]
+			x: -1.5d
+			y: -6.0d
+		}
+		{
+			dependencies: [
+				"4A956CD5F69886ED"
+				"7E49052F6F8EAA1B"
+			]
+			id: "080B7781E8747877"
+			rewards: [{
+				id: "280E7AADC094ECB6"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "4C4432FA922FC6AD"
+				item: { count: 1, id: "minecraft:nautilus_shell" }
+				type: "item"
+			}]
+			x: -3.5d
+			y: -6.0d
+		}
+		{
+			dependencies: ["2EC2A1393412D7F8"]
+			id: "4B9964366980DA42"
+			rewards: [{
+				id: "47B257327CF3FE61"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "251F5B373DFA74BF"
+				item: { count: 1, id: "create_aquatic_ambitions:spiky_shell" }
+				type: "item"
+			}]
+			x: -3.5d
+			y: -9.0d
+		}
+		{
+			dependencies: ["080B7781E8747877"]
+			id: "2EC2A1393412D7F8"
+			rewards: [{
+				id: "7A3C2DCCB1FE2A7F"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "41E6A53111F05675"
+				item: { count: 1, id: "create:crushing_wheel" }
+				type: "item"
+			}]
+			x: -3.5d
+			y: -7.5d
+		}
+		{
+			dependencies: ["54612F9B903534D3"]
+			id: "0491660AE6DA9865"
+			rewards: [{
+				id: "0C415619EC26D449"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "30F792B4B815770C"
+				item: { components: { "minecraft:potion_contents": { potion: "minecraft:awkward" } }, count: 1, id: "minecraft:potion" }
+				type: "item"
+			}]
+			x: 1.5d
+			y: -7.5d
+		}
+		{
+			dependencies: ["17DAE28EF38F2987"]
+			icon: {
+				id: "create:blaze_burner"
+			}
+			id: "54612F9B903534D3"
+			rewards: [{
+				id: "2418DB8974B784A2"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [
+				{
+					consume_items: false
+					id: "06207B9A8A84226F"
+					item: { count: 1, id: "create:fluid_tank" }
+					type: "item"
+				}
+				{
+					consume_items: false
+					id: "7BEE939AA814E533"
+					item: { count: 1, id: "create:mechanical_pump" }
+					type: "item"
+				}
+				{
+					consume_items: false
+					id: "27EA4C3649763536"
+					item: { count: 1, id: "create:basin" }
+					type: "item"
+				}
+				{
+					consume_items: false
+					id: "3FB0B967F1179565"
+					item: { count: 1, id: "create:blaze_burner" }
+					type: "item"
+				}
+				{
+					consume_items: false
+					id: "1933B8DF60B35E60"
+					item: { count: 1, id: "create:mechanical_mixer" }
+					type: "item"
+				}
+			]
+			x: 0.0d
+			y: -7.5d
+		}
+		{
+			dependencies: ["0491660AE6DA9865"]
+			id: "738D06C9764760A5"
+			rewards: [{
+				id: "115924678514E8F0"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "054845055D6ECB96"
+				item: { components: { "ftbfiltersystem:filter": "item_tag(c:potions)" }, count: 1, id: "ftbfiltersystem:smart_filter" }
+				type: "item"
+			}]
+			x: 1.5d
+			y: -9.0d
+		}
+		{
+			can_repeat: false
+			dependencies: ["738D06C9764760A5"]
+			icon: {
+				components: {
+					"ftbquests:icon": "creategarnished:textures/mob_effect/volt_struck.png"
+				}
+				id: "ftbquests:custom_icon"
+			}
+			id: "2F39E4AF7A8004CE"
+			rewards: [{
+				id: "6F83F9C09790CD6A"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "47967D4791E586A1"
+				type: "checkmark"
+			}]
+			x: 0.0d
+			y: -9.0d
+		}
+		{
+			dependencies: ["4B9964366980DA42"]
+			id: "082CB8913F013810"
+			rewards: [{
+				id: "0818DBDAD849DC97"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "34A5F29FFB08A2AA"
+				item: { count: 1, id: "minecraft:trident" }
+				type: "item"
+			}]
+			x: -3.5d
+			y: -10.5d
+		}
+		{
+			dependencies: ["7E49052F6F8EAA1B"]
+			id: "43F01090BC46C56B"
+			rewards: [{
+				id: "0A37A5487EB188AB"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				count: 10L
+				id: "79D15CD7F1410A70"
+				item: { count: 1, id: "minecraft:flint" }
+				type: "item"
+			}]
+			x: -1.0d
+			y: -7.5d
+		}
+		{
+			dependencies: ["43F01090BC46C56B"]
+			id: "51586DAD2848DA71"
+			rewards: [{
+				id: "1D1A7078D4B436AE"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "6B3CF28160BE77C8"
+				item: { count: 1, id: "minecraft:prismarine_shard" }
+				type: "item"
+			}]
+			x: -1.0d
+			y: -9.0d
+		}
+		{
+			dependencies: ["7E49052F6F8EAA1B"]
+			id: "5C74998BA5206671"
+			rewards: [{
+				id: "50BAAC40157B1B6A"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				count: 10L
+				id: "24A77C74B9E411D9"
+				item: { count: 1, id: "minecraft:glowstone_dust" }
+				type: "item"
+			}]
+			x: -2.0d
+			y: -7.5d
+		}
+		{
+			dependencies: ["5C74998BA5206671"]
+			id: "5298F95BDA4B8702"
+			rewards: [{
+				id: "7A31B43BD174C0EF"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "2AC39D0E88F37447"
+				item: { count: 1, id: "minecraft:prismarine_crystals" }
+				type: "item"
+			}]
+			x: -2.0d
+			y: -9.0d
+		}
+	]
+}

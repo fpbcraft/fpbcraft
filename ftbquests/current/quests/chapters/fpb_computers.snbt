@@ -1,0 +1,237 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "fpb_computers"
+	group: "4A93CDBE321781DA"
+	icon: {
+		id: "computercraft:computer_normal"
+	}
+	id: "077E2D43C856BB30"
+	images: [ ]
+	order_index: 5
+	quest_links: [ ]
+	quests: [
+		{
+			icon: {
+				id: "toms_storage:inventory_interface"
+			}
+			id: "455357FC782D9375"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "2E6958AA594CE0D2"
+				type: "checkmark"
+			}]
+			x: 4.5d
+			y: 0.0d
+		}
+		{
+			dependencies: ["455357FC782D9375"]
+			id: "3F36C5E0D14513EA"
+			rewards: [{
+				id: "368F684B575A863E"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "5C1AA7798A975EB2"
+				item: { count: 1, id: "toms_storage:inventory_interface" }
+				type: "item"
+			}]
+			x: 4.5d
+			y: 1.5d
+		}
+		{
+			dependencies: ["3F36C5E0D14513EA"]
+			id: "151D5172C6774F6A"
+			rewards: [{
+				id: "261FBC177B91CDE4"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "20302E927AADAB0A"
+				item: { count: 1, id: "toms_storage:storage_terminal" }
+				type: "item"
+			}]
+			x: 4.5d
+			y: 3.0d
+		}
+		{
+			dependencies: ["151D5172C6774F6A"]
+			id: "56736A5CAD24DF39"
+			rewards: [{
+				id: "21A339D2B5499BB6"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "4E40ED1DB8E4832C"
+				item: { count: 1, id: "toms_storage:crafting_terminal" }
+				type: "item"
+			}]
+			x: 4.5d
+			y: 4.5d
+		}
+		{
+			icon: {
+				id: "computercraft:computer_normal"
+			}
+			id: "67B5550DF8D5086E"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "5F6A04E3885B0C72"
+				type: "checkmark"
+			}]
+			x: 8.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["67B5550DF8D5086E"]
+			id: "6BF2A24E4D7964E2"
+			rewards: [{
+				id: "0501C5160B3812A0"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "2E6803839A728BAB"
+				item: { count: 1, id: "computercraft:computer_normal" }
+				type: "item"
+			}]
+			x: 8.0d
+			y: 1.5d
+		}
+		{
+			dependencies: ["6BF2A24E4D7964E2"]
+			id: "1DDD869FDA5484E5"
+			rewards: [{
+				id: "00B504A793ED1676"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "4B8763F6B8D0E715"
+				item: { count: 1, id: "computercraft:wired_modem_full" }
+				type: "item"
+			}]
+			x: 8.0d
+			y: 3.0d
+		}
+		{
+			dependencies: ["1DDD869FDA5484E5"]
+			id: "5AA44FA7DD3AE545"
+			rewards: [{
+				id: "3E9EA96CF26F7C43"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "02D643F7CD5DBC9F"
+				item: { count: 1, id: "computercraft:monitor_normal" }
+				type: "item"
+			}]
+			x: 8.0d
+			y: 4.5d
+		}
+		{
+			dependencies: ["5AA44FA7DD3AE545"]
+			id: "0FCEF055CF03578C"
+			rewards: [{
+				id: "7C0A998FA01A4CA7"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "2A82D23E7562DC49"
+				item: { count: 1, id: "computercraft:turtle_normal" }
+				type: "item"
+			}]
+			x: 8.0d
+			y: 6.0d
+		}
+		{
+			icon: {
+				id: "advancedperipherals:player_detector"
+			}
+			id: "119F4FFDF9E3A97D"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "37767935F65185BD"
+				type: "checkmark"
+			}]
+			x: 11.25d
+			y: 0.0d
+		}
+		{
+			dependencies: ["119F4FFDF9E3A97D"]
+			id: "633BBDD7A6F7BB0F"
+			rewards: [{
+				id: "10299AF9B2093026"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "781E5E11596C15DA"
+				item: { count: 1, id: "advancedperipherals:player_detector" }
+				type: "item"
+			}]
+			x: 11.5d
+			y: 1.5d
+		}
+		{
+			dependencies: ["633BBDD7A6F7BB0F"]
+			id: "62D944E5A588674C"
+			rewards: [{
+				id: "57B5CFA105CA9538"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "10432FD15FFAF409"
+				item: { count: 1, id: "advancedperipherals:inventory_manager" }
+				type: "item"
+			}]
+			x: 11.5d
+			y: 3.0d
+		}
+		{
+			dependencies: ["62D944E5A588674C"]
+			id: "086F75C497ABB8FC"
+			rewards: [{
+				id: "1908CDA6EE4E9C9D"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "3A2666A34D717C27"
+				item: { count: 1, id: "cccbridge:redrouter_block" }
+				type: "item"
+			}]
+			x: 11.5d
+			y: 4.5d
+		}
+	]
+}

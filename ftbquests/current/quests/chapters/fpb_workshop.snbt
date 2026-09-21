@@ -1,0 +1,237 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "fpb_workshop"
+	group: "4A93CDBE321781DA"
+	icon: {
+		id: "createoreexcavation:vein_finder"
+	}
+	id: "2C98A0203051DEC7"
+	images: [ ]
+	order_index: 0
+	quest_links: [ ]
+	quests: [
+		{
+			icon: {
+				id: "createoreexcavation:vein_finder"
+			}
+			id: "4E387D2F5A72F4EE"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "2299BF4EBD9B520D"
+				type: "checkmark"
+			}]
+			x: 6.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["4E387D2F5A72F4EE"]
+			id: "00592DF981B90143"
+			rewards: [{
+				id: "457904C588AFD09F"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "6B79E98CBE56C388"
+				item: { count: 1, id: "createoreexcavation:vein_finder" }
+				type: "item"
+			}]
+			x: 6.0d
+			y: 1.5d
+		}
+		{
+			dependencies: ["00592DF981B90143"]
+			id: "645E620B51EFDA76"
+			rewards: [{
+				id: "7532997D86D0258C"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "787F5E22DA7C3D83"
+				item: { count: 1, id: "createoreexcavation:sample_drill" }
+				type: "item"
+			}]
+			x: 6.0d
+			y: 2.5d
+		}
+		{
+			dependencies: ["645E620B51EFDA76"]
+			id: "31016BBFD1D232AD"
+			rewards: [{
+				id: "4AA7902B23512FB1"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "3C8275CCAE17E356"
+				item: { count: 1, id: "createoreexcavation:drilling_machine" }
+				type: "item"
+			}]
+			x: 6.0d
+			y: 3.5d
+		}
+		{
+			icon: {
+				id: "createbigcannons:casting_sand"
+			}
+			id: "07EAFAB80CF38221"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "7D833A534F15610B"
+				type: "checkmark"
+			}]
+			x: 8.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["07EAFAB80CF38221"]
+			id: "1CDAAA97BDE8BF53"
+			rewards: [{
+				id: "649762EAD4FFF6DF"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "62CD0C7E5D792D0E"
+				item: { count: 1, id: "createbigcannons:casting_sand" }
+				type: "item"
+			}]
+			x: 8.0d
+			y: 1.5d
+		}
+		{
+			dependencies: ["1CDAAA97BDE8BF53"]
+			id: "010CD0B694E25FEC"
+			rewards: [{
+				id: "53D477725763A207"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "1B85936738B7251A"
+				item: { count: 1, id: "createbigcannons:cannon_drill" }
+				type: "item"
+			}]
+			x: 8.0d
+			y: 2.5d
+		}
+		{
+			dependencies: ["010CD0B694E25FEC"]
+			id: "6E9AFE75E609A2D7"
+			rewards: [{
+				id: "5AF8E5AE1722FF61"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "63BDC3257E8E911F"
+				item: { count: 1, id: "createbigcannons:cannon_builder" }
+				type: "item"
+			}]
+			x: 8.0d
+			y: 3.5d
+		}
+		{
+			dependencies: ["6E9AFE75E609A2D7"]
+			id: "740CCCDD79FF6B48"
+			rewards: [{
+				id: "1520530D05F2042F"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "3AB8D74DD114A576"
+				item: { count: 1, id: "createbigcannons:cannon_mount" }
+				type: "item"
+			}]
+			x: 8.0d
+			y: 4.5d
+		}
+		{
+			icon: {
+				id: "createnuclear:graphite_rod"
+			}
+			id: "74702A1045B526D5"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "20ED9CB2EF21C63A"
+				type: "checkmark"
+			}]
+			x: 9.94642857142857d
+			y: -0.0357142857142847d
+		}
+		{
+			dependencies: ["74702A1045B526D5"]
+			id: "796095B1E948CEC1"
+			rewards: [{
+				id: "53889B72F57CA90E"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "69DCA128AE19C745"
+				item: { count: 1, id: "createnuclear:graphite_rod" }
+				type: "item"
+			}]
+			x: 10.0d
+			y: 1.5d
+		}
+		{
+			dependencies: ["796095B1E948CEC1"]
+			id: "3999E4356A525276"
+			rewards: [{
+				id: "1864F248FEC9AF49"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "7D129C4A74826FC2"
+				item: { count: 1, id: "createnuclear:reactor_controller" }
+				type: "item"
+			}]
+			x: 10.0d
+			y: 2.5d
+		}
+		{
+			dependencies: ["3999E4356A525276"]
+			id: "511929D9CBC6E1AD"
+			rewards: [{
+				id: "010CB6BFDDC32AC1"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "4CB58B4640461815"
+				item: { count: 1, id: "createnuclear:uranium_rod" }
+				type: "item"
+			}]
+			x: 10.0d
+			y: 3.5d
+		}
+	]
+}

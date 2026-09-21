@@ -1,0 +1,169 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "aero_offroad"
+	group: "7DA377FCDB6BF5A7"
+	icon: {
+		id: "offroad:tire"
+	}
+	id: "717E2EBC94CCCB5C"
+	images: [ ]
+	order_index: 2
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: ["7AE67C6579909E7F"]
+			id: "7A331DBFCA3FDE6C"
+			rewards: [{
+				id: "1B7FD8C86E5B0662"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "78300EADFF677C56"
+				item: { components: { "ftbfiltersystem:filter": "or(item(simulated:light_gray_portable_engine)item(simulated:cyan_portable_engine)item(simulated:purple_portable_engine)item(simulated:blue_portable_engine)item(simulated:brown_portable_engine)item(simulated:green_portable_engine)item(simulated:red_portable_engine)item(simulated:black_portable_engine)item(simulated:white_portable_engine)item(simulated:orange_portable_engine)item(simulated:magenta_portable_engine)item(simulated:light_blue_portable_engine)item(simulated:yellow_portable_engine)item(simulated:lime_portable_engine)item(simulated:pink_portable_engine)item(simulated:gray_portable_engine))" }, count: 1, id: "ftbfiltersystem:smart_filter" }
+				type: "item"
+			}]
+			x: 0.5d
+			y: 0.5d
+		}
+		{
+			dependencies: ["7A331DBFCA3FDE6C"]
+			id: "2DE12D36338B0B4B"
+			rewards: [{
+				id: "737ABAE490149765"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "gear"
+			tasks: [{
+				consume_items: false
+				id: "24E8CBD570DD6B00"
+				item: { count: 1, id: "offroad:wheel_mount" }
+				type: "item"
+			}]
+			x: 0.5d
+			y: 2.0d
+		}
+		{
+			dependencies: ["650FE77690809B5D"]
+			id: "16B5ECA8A4615830"
+			rewards: [{
+				id: "22231F68BA5547F3"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "7A72F11C16DF14B7"
+				item: { count: 1, id: "offroad:borehead_bearing" }
+				type: "item"
+			}]
+			x: 2.0d
+			y: -1.0d
+		}
+		{
+			dependencies: ["650FE77690809B5D"]
+			id: "74BF85D3B7884B3B"
+			rewards: [{
+				id: "668184A04BBC7DF3"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "3D9451C7D394F3E9"
+				item: { count: 1, id: "offroad:rockcutting_wheel" }
+				type: "item"
+			}]
+			x: -1.0d
+			y: -1.0d
+		}
+		{
+			dependencies: ["7A331DBFCA3FDE6C"]
+			id: "650FE77690809B5D"
+			rewards: [{
+				id: "4974B39E43B6E47B"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "2A7184B42819B4B5"
+				item: { count: 1, id: "create:industrial_iron_block" }
+				type: "item"
+			}]
+			x: 0.5d
+			y: -1.0d
+		}
+		{
+			dependencies: ["2DE12D36338B0B4B"]
+			id: "3B8E3FCDC823702B"
+			rewards: [{
+				id: "4965DD05CDB58770"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "3AC53D70BDA5DE7F"
+				item: { count: 1, id: "offroad:small_tire" }
+				type: "item"
+			}]
+			x: 1.5d
+			y: 2.0d
+		}
+		{
+			dependencies: ["2DE12D36338B0B4B"]
+			id: "565C33F72EF97282"
+			rewards: [{
+				id: "0ED8E64B140CF38E"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "4399A5235D39D3B4"
+				item: { count: 1, id: "offroad:tire" }
+				type: "item"
+			}]
+			x: 1.0d
+			y: 3.0d
+		}
+		{
+			dependencies: ["2DE12D36338B0B4B"]
+			id: "74BFFB277F520C9B"
+			rewards: [{
+				id: "14539D9FCB500CB4"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "285A2E7DA172D067"
+				item: { count: 1, id: "offroad:large_tire" }
+				type: "item"
+			}]
+			x: 0.0d
+			y: 3.0d
+		}
+		{
+			dependencies: ["2DE12D36338B0B4B"]
+			id: "08C0482016F6FF46"
+			rewards: [{
+				id: "79C6606CDC905BC9"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "47300D6855DE8417"
+				item: { count: 1, id: "offroad:monstrous_tire" }
+				type: "item"
+			}]
+			x: -0.5d
+			y: 2.0d
+		}
+	]
+}

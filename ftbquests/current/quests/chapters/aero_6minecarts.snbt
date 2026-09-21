@@ -1,0 +1,267 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "aero_6minecarts"
+	group: "191CDC99EE58E587"
+	icon: {
+		id: "minecraft:minecart"
+	}
+	id: "67853D2EA996CB36"
+	images: [ ]
+	order_index: 1
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: ["704C1D971C5B5CC0"]
+			id: "75D9C1262BEBFAE0"
+			rewards: [{
+				id: "65DDA327A2F0AC11"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "hexagon"
+			size: 1.3d
+			tasks: [{
+				consume_items: false
+				id: "36D75C3B71D26152"
+				item: { count: 1, id: "minecraft:minecart" }
+				type: "item"
+			}]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["75D9C1262BEBFAE0"]
+			id: "72543326C467E2F4"
+			rewards: [{
+				id: "4AB74D0EA7FE7174"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "square"
+			tasks: [{
+				consume_items: false
+				id: "0D2782013429EBF6"
+				item: { count: 1, id: "minecraft:tnt_minecart" }
+				type: "item"
+			}]
+			x: 1.5d
+			y: -1.0d
+		}
+		{
+			dependencies: ["75D9C1262BEBFAE0"]
+			id: "505B820B7C590224"
+			rewards: [{
+				id: "19223EB5A4E83AD7"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "square"
+			tasks: [{
+				consume_items: false
+				id: "74470A8386FC8064"
+				item: { count: 1, id: "minecraft:hopper_minecart" }
+				type: "item"
+			}]
+			x: 0.0d
+			y: -1.5d
+		}
+		{
+			dependencies: ["75D9C1262BEBFAE0"]
+			id: "334FF5EA51FD789C"
+			rewards: [{
+				id: "4BECCCCFFB24307C"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "square"
+			tasks: [{
+				consume_items: false
+				id: "086902FC62FBE41F"
+				item: { count: 1, id: "minecraft:chest_minecart" }
+				type: "item"
+			}]
+			x: -1.5d
+			y: -1.0d
+		}
+		{
+			dependencies: ["75D9C1262BEBFAE0"]
+			id: "276CFAB858D715B3"
+			rewards: [{
+				id: "3756EE055DA3AEDE"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "square"
+			tasks: [{
+				consume_items: false
+				id: "4BD99E1F4B52C277"
+				item: { count: 1, id: "supplementaries:dispenser_minecart" }
+				type: "item"
+			}]
+			x: -1.5d
+			y: 0.5d
+		}
+		{
+			dependencies: ["75D9C1262BEBFAE0"]
+			id: "672F52B72D6BA6F1"
+			rewards: [{
+				id: "456430C60615B264"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "square"
+			tasks: [{
+				consume_items: false
+				id: "096B36AE259CAFC7"
+				item: { count: 1, id: "minecraft:furnace_minecart" }
+				type: "item"
+			}]
+			x: 1.5d
+			y: 0.5d
+		}
+		{
+			id: "704C1D971C5B5CC0"
+			rewards: [{
+				id: "1DC2BC5C6226DEFB"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "gear"
+			size: 1.2d
+			tasks: [{
+				consume_items: false
+				id: "3C59D665667F15A8"
+				item: { count: 1, id: "create:minecart_coupling" }
+				type: "item"
+			}]
+			x: 0.0d
+			y: 1.5d
+		}
+		{
+			dependencies: ["740189C0D57FFFE1"]
+			id: "0BB175444B6DEA6D"
+			rewards: [{
+				id: "4F7A29968D8076E2"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "hexagon"
+			size: 1.3d
+			tasks: [{
+				id: "4FF23B3E1CBC0C20"
+				type: "checkmark"
+			}]
+			x: 5.5d
+			y: 0.0d
+		}
+		{
+			dependencies: ["0BB175444B6DEA6D"]
+			id: "6A82CEDA5E818E99"
+			rewards: [{
+				id: "7C8CBF80E1BEE88B"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "square"
+			tasks: [{
+				consume_items: false
+				id: "1236C553F2DC3474"
+				item: { count: 1, id: "create:controller_rail" }
+				type: "item"
+			}]
+			x: 5.5d
+			y: -1.5d
+		}
+		{
+			dependencies: ["0BB175444B6DEA6D"]
+			id: "00AAB03763D01607"
+			rewards: [{
+				id: "355FB1733193E1EE"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "square"
+			tasks: [{
+				consume_items: false
+				id: "2B8281FC6E422C0F"
+				item: { count: 1, id: "minecraft:detector_rail" }
+				type: "item"
+			}]
+			x: 4.0d
+			y: 0.5d
+		}
+		{
+			dependencies: ["0BB175444B6DEA6D"]
+			id: "0C1E0A0A1DB3B5A0"
+			rewards: [{
+				id: "2B29584ABC531B45"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "square"
+			tasks: [{
+				consume_items: false
+				id: "3D2DA024EA5AFE00"
+				item: { count: 1, id: "minecraft:powered_rail" }
+				type: "item"
+			}]
+			x: 4.0d
+			y: -1.0d
+		}
+		{
+			dependencies: ["0BB175444B6DEA6D"]
+			id: "27AF9B0AC26490FB"
+			rewards: [{
+				id: "7F1E25D553E1ABFA"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "square"
+			tasks: [{
+				consume_items: false
+				id: "67873D963C4B1EBC"
+				item: { count: 1, id: "minecraft:activator_rail" }
+				type: "item"
+			}]
+			x: 7.0d
+			y: -1.0d
+		}
+		{
+			dependencies: ["0BB175444B6DEA6D"]
+			id: "3B43CD49D5B7924E"
+			rewards: [{
+				id: "6B7FB785F5F838C6"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "square"
+			tasks: [{
+				consume_items: false
+				id: "5C82673D5221E69A"
+				item: { count: 1, id: "minecraft:rail" }
+				type: "item"
+			}]
+			x: 7.0d
+			y: 0.5d
+		}
+		{
+			id: "740189C0D57FFFE1"
+			rewards: [{
+				id: "276054FC0B0C8015"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "gear"
+			size: 1.2d
+			tasks: [{
+				consume_items: false
+				id: "5200ED245344D57F"
+				item: { count: 1, id: "create:cart_assembler" }
+				type: "item"
+			}]
+			x: 5.5d
+			y: 1.5d
+		}
+	]
+}

@@ -1,0 +1,197 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "end_golem_ouverg"
+	group: "AD7E4E8A10A10001"
+	icon: {
+		id: "minecraft:iron_block"
+	}
+	id: "58A7199AB8213DAC"
+	images: [ ]
+	order_index: 3
+	progression_mode: "flexible"
+	quest_links: [ ]
+	quests: [
+		{
+			icon: {
+				id: "minecraft:iron_block"
+			}
+			id: "051FDB1120C694B2"
+			rewards: [{
+				id: "6EEFFE1F5D10ED99"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			size: 1.5d
+			tasks: [{
+				id: "0D3419240357CC4B"
+				type: "checkmark"
+			}]
+			x: -4.5d
+			y: 1.5d
+		}
+		{
+			dependencies: ["051FDB1120C694B2"]
+			icon: {
+				id: "minecraft:netherite_block"
+			}
+			id: "1C1E7C4EC3CF728A"
+			rewards: [{
+				id: "4885EB6ACFA20F11"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "0831B94FE9AE7ADF"
+				type: "checkmark"
+			}]
+			x: -4.5d
+			y: -0.5d
+		}
+		{
+			dependencies: ["051FDB1120C694B2"]
+			icon: {
+				id: "minecraft:barrel"
+			}
+			id: "193BA8394B3DE00E"
+			rewards: [{
+				id: "37036FAF33447F70"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "74C79A2281313DC7"
+				type: "checkmark"
+			}]
+			x: -3.5d
+			y: 0.0d
+		}
+		{
+			dependencies: ["051FDB1120C694B2"]
+			icon: {
+				id: "minecraft:candle"
+			}
+			id: "5327DC6C7A413EE9"
+			rewards: [{
+				id: "034FA348DB578696"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "658F28635125AAA1"
+				type: "checkmark"
+			}]
+			x: -3.0d
+			y: 1.0d
+		}
+		{
+			dependencies: ["051FDB1120C694B2"]
+			icon: {
+				id: "minecraft:honey_block"
+			}
+			id: "50967C581A5DCDED"
+			rewards: [{
+				id: "6C22D4089D9D2908"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "7B68B0F592866B6D"
+				type: "checkmark"
+			}]
+			x: -3.5d
+			y: 3.0d
+		}
+		{
+			dependencies: ["051FDB1120C694B2"]
+			icon: {
+				id: "minecraft:terracotta"
+			}
+			id: "59437525C325407A"
+			rewards: [{
+				id: "21194F556BEBE71A"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "3223F09A1EC5940C"
+				type: "checkmark"
+			}]
+			x: -4.5d
+			y: 3.5d
+		}
+		{
+			dependencies: ["051FDB1120C694B2"]
+			icon: {
+				id: "minecraft:dried_kelp_block"
+			}
+			id: "55DC568DD6BDDBF6"
+			rewards: [{
+				id: "60065AD180AA29F7"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "34FEBD81946E82EB"
+				type: "checkmark"
+			}]
+			x: -6.0d
+			y: 1.0d
+		}
+		{
+			dependencies: ["051FDB1120C694B2"]
+			icon: {
+				id: "minecraft:slime_block"
+			}
+			id: "3B731698EA862F9C"
+			rewards: [{
+				id: "445EC5B19A0267CE"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "66E8AC6BD297AB5A"
+				type: "checkmark"
+			}]
+			x: -6.0d
+			y: 2.0d
+		}
+		{
+			dependencies: ["051FDB1120C694B2"]
+			icon: {
+				id: "minecraft:hay_block"
+			}
+			id: "1545AB9D18B108D2"
+			rewards: [{
+				id: "5026F841CFBF8984"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "7EFC5E83377FDFDE"
+				type: "checkmark"
+			}]
+			x: -5.5d
+			y: 0.0d
+		}
+		{
+			dependencies: ["051FDB1120C694B2"]
+			icon: {
+				id: "minecraft:coal_block"
+			}
+			id: "194C38A81DBF3408"
+			rewards: [{
+				id: "3C41673A868C49BF"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				id: "05F0753FE53955FC"
+				type: "checkmark"
+			}]
+			x: -5.5d
+			y: 3.0d
+		}
+	]
+}

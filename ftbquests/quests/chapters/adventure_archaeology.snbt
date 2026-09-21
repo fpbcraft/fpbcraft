@@ -1,0 +1,181 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "adventure_archaeology"
+	group: "AD7E4E8A10A10001"
+	icon: {
+		id: "betterarcheology:archeology_table"
+	}
+	id: "A8C4AE0109F01001"
+	images: [ ]
+	order_index: 0
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: ["180C4B36730D94DC"]
+			id: "00AF98A12FCCD9EB"
+			rewards: [{
+				id: "33C2855F822E52F5"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				advancement: "betterarcheology:loot_vase_broken"
+				criterion: ""
+				id: "337F2DAFCBD7086C"
+				type: "advancement"
+			}]
+			x: 0d
+			y: 0d
+		}
+		{
+			dependencies: ["00AF98A12FCCD9EB"]
+			id: "457EB60D601C67FD"
+			rewards: [{
+				id: "3F38326035B13278"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				advancement: "betterarcheology:artifact_shards"
+				criterion: ""
+				id: "4AAA086D2E9AF071"
+				type: "advancement"
+			}]
+			x: 0d
+			y: 1.5d
+		}
+		{
+			dependencies: ["457EB60D601C67FD"]
+			id: "3F49B9EFAA6B736B"
+			rewards: [{
+				id: "62D3DCADE0FE2C75"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				advancement: "betterarcheology:unidentified_artifact"
+				criterion: ""
+				id: "5C04EA6C71F52BEC"
+				type: "advancement"
+			}]
+			x: 0d
+			y: 3.0d
+		}
+		{
+			dependencies: ["3F49B9EFAA6B736B"]
+			hide_until_deps_complete: false
+			icon: {
+				id: "betterarcheology:archeology_table"
+			}
+			id: "569ECEC823CC39F8"
+			rewards: [{
+				id: "2D87250B86763151"
+				type: "xp"
+				xp: 10
+			}]
+			size: 1.0d
+			tasks: [
+				{
+					consume_items: false
+					id: "2E80C4E9AB62F61C"
+					item: { count: 1, id: "minecraft:brush" }
+					type: "item"
+				}
+				{
+					consume_items: false
+					id: "7CEF34A9D8336D4A"
+					item: { count: 1, id: "betterarcheology:archeology_table" }
+					type: "item"
+				}
+			]
+			x: 0d
+			y: 4.5d
+		}
+		{
+			dependencies: ["569ECEC823CC39F8"]
+			id: "083CE775042EAB81"
+			rewards: [{
+				id: "5690826B42E04C47"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "14628E99EBF2C21C"
+				item: { count: 1, id: "betterarcheology:radiance_totem" }
+				type: "item"
+			}]
+			x: -1.5d
+			y: 6.0d
+		}
+		{
+			dependencies: ["569ECEC823CC39F8"]
+			id: "6EF6D879BA411315"
+			rewards: [{
+				id: "7070BEFE5E2D9E8B"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "41D539B2AF041456"
+				item: { count: 1, id: "betterarcheology:growth_totem" }
+				type: "item"
+			}]
+			x: -0.5d
+			y: 6.0d
+		}
+		{
+			dependencies: ["569ECEC823CC39F8"]
+			id: "3504EE4F5FF42629"
+			rewards: [{
+				id: "02B6A031F0190988"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "31106C7202D658BD"
+				item: { count: 1, id: "betterarcheology:soul_totem" }
+				type: "item"
+			}]
+			x: 0.5d
+			y: 6.0d
+		}
+		{
+			dependencies: ["569ECEC823CC39F8"]
+			id: "02A9C87CD5CFEE0D"
+			rewards: [{
+				id: "749C9EAE441CEFA1"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "7C09E8DB12962079"
+				item: { count: 1, id: "betterarcheology:torrent_totem" }
+				type: "item"
+			}]
+			x: 1.5d
+			y: 6.0d
+		}
+		{
+			dependencies: ["3F9A72B4DDD3F9BC"]
+			id: "6892C861151C2FC3"
+			rewards: [{
+				id: "44B72854A6D9630B"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "488ED8E38E531735"
+				item: { count: 1, id: "minecraft:sniffer_egg" }
+				type: "item"
+			}]
+			x: 2.5d
+			y: 1.5d
+		}
+	]
+}

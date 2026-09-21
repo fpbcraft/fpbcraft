@@ -1,13 +1,13 @@
 # FPBCraft
 
-Private modpack project for FPBCraft.
+Private modpack project for FPBcraft.
 
 ## Quest overhaul
 
-The current FTB Quests pack is being audited and expanded using the existing FPBCraft quests plus the quest packs from **All of Create Aeronautics** and **Create Chronicles** as source material.
+The FTB Quests pack is being expanded using the existing FPBcraft quests plus the quest packs from **All of Create Aeronautics** and **Create Chronicles** as reusable source material.
 
-Planning documents live in [`docs/quest-overhaul/`](docs/quest-overhaul/).
+Planning and progress documents live in [`docs/quest-overhaul/`](docs/quest-overhaul/).
 
-The current pre-overhaul quest pack will be checked in under `ftbquests/` as a baseline before implementation work begins.
+The current working quest pack lives in [`ftbquests/quests/`](ftbquests/quests/). The unchanged pre-overhaul baseline and hash manifest are retained under [`ftbquests/current/`](ftbquests/current/).
 
-> Status: planning/research only. No quest redesign has been implemented yet.
+> Status: Phase 1 structural cleanup complete. Large quest-content expansions have not started yet.

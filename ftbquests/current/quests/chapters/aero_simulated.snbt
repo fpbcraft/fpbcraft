@@ -1,0 +1,268 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "aero_simulated"
+	group: "7DA377FCDB6BF5A7"
+	icon: {
+		id: "aeronautics:aviators_goggles"
+	}
+	id: "2AC40A5D34D93FFC"
+	images: [ ]
+	order_index: 0
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: ["7AE67C6579909E7F"]
+			id: "328A73D96C93A941"
+			rewards: [{
+				id: "6CB5BA4DEA21C9C4"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "6AE4B28CA40D6F79"
+				item: { components: { "ftbfiltersystem:filter": "or(item(simulated:light_gray_portable_engine)item(simulated:cyan_portable_engine)item(simulated:purple_portable_engine)item(simulated:blue_portable_engine)item(simulated:brown_portable_engine)item(simulated:green_portable_engine)item(simulated:red_portable_engine)item(simulated:black_portable_engine)item(simulated:white_portable_engine)item(simulated:orange_portable_engine)item(simulated:magenta_portable_engine)item(simulated:light_blue_portable_engine)item(simulated:yellow_portable_engine)item(simulated:lime_portable_engine)item(simulated:pink_portable_engine)item(simulated:gray_portable_engine))" }, count: 1, id: "ftbfiltersystem:smart_filter" }
+				type: "item"
+			}]
+			x: 0.0d
+			y: 1.5d
+		}
+		{
+			dependencies: ["328A73D96C93A941"]
+			id: "15206DA572A5F9B0"
+			rewards: [{
+				id: "2D7CD4C284BAE14D"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "gear"
+			size: 2.0d
+			tasks: [{
+				consume_items: false
+				id: "0848ED315CF355C1"
+				item: { count: 1, id: "aeronautics:aviators_goggles" }
+				type: "item"
+			}]
+			x: 0.0d
+			y: -2.0d
+		}
+		{
+			dependencies: ["15206DA572A5F9B0"]
+			id: "6E162F922D28CD66"
+			rewards: [{
+				id: "483D1A50776E80CC"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "142C5807B8650C40"
+				item: { count: 1, id: "aeronautics:steam_vent" }
+				type: "item"
+			}]
+			x: -1.5d
+			y: -2.0d
+		}
+		{
+			dependencies: ["15206DA572A5F9B0"]
+			id: "3953A8F33F547DC3"
+			rewards: [{
+				id: "7EFF3A95A7C6DBC3"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "01B7C8217FBF1D86"
+				item: { count: 1, id: "aeronautics:propeller_bearing" }
+				type: "item"
+			}]
+			x: 1.0d
+			y: -3.0d
+		}
+		{
+			dependencies: ["15206DA572A5F9B0"]
+			id: "71A2EEC9052B40D2"
+			rewards: [{
+				id: "513D5AC5D1912585"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "643CA0BA53E85336"
+				item: { count: 1, id: "aeronautics:adjustable_burner" }
+				type: "item"
+			}]
+			x: 0.0d
+			y: -3.5d
+		}
+		{
+			dependencies: ["15206DA572A5F9B0"]
+			id: "05C4E0BCBC6D1E8F"
+			rewards: [{
+				id: "1604EB729ED9070F"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "58D401CEFC03F39F"
+				item: { count: 1, id: "aeronautics:gyroscopic_propeller_bearing" }
+				type: "item"
+			}]
+			x: 1.5d
+			y: -2.0d
+		}
+		{
+			dependencies: ["15206DA572A5F9B0"]
+			id: "09ABC17DF68F838A"
+			rewards: [{
+				id: "4A93CE5145F9CE47"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "7B014AB8D8F253C7"
+				item: { count: 1, id: "aeronautics:smart_propeller" }
+				type: "item"
+			}]
+			x: -1.0d
+			y: -3.0d
+		}
+		{
+			dependencies: ["15206DA572A5F9B0"]
+			id: "45C7967EAB5168EF"
+			rewards: [{
+				id: "661FDD774FF4F8D4"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [
+				{
+					consume_items: false
+					id: "70D72CABC4C8236B"
+					item: { count: 1, id: "aeronautics:andesite_propeller" }
+					type: "item"
+				}
+				{
+					consume_items: false
+					id: "3458FF5EDC1A0E55"
+					item: { count: 1, id: "aeronautics:wooden_propeller" }
+					type: "item"
+				}
+			]
+			x: 1.0d
+			y: -1.0d
+		}
+		{
+			dependencies: ["15206DA572A5F9B0"]
+			id: "6C9B6A56DF079134"
+			rewards: [{
+				id: "2A6557AA1F3F27A2"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "24105461ACEDF429"
+				item: { count: 1, id: "aeronautics:mounted_potato_cannon" }
+				type: "item"
+			}]
+			x: -1.0d
+			y: -1.0d
+		}
+		{
+			dependencies: ["71A2EEC9052B40D2"]
+			id: "4B9296346379B620"
+			rewards: [{
+				id: "1F191027C3CF0BED"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "635A62301F0FA82D"
+				item: { count: 1, id: "aeronautics:white_envelope" }
+				type: "item"
+			}]
+			x: 0.0d
+			y: -5.0d
+		}
+		{
+			dependencies: ["328A73D96C93A941"]
+			id: "1C5C626540BFF7D8"
+			rewards: [{
+				id: "03E26CED1DAF14F2"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "7DCF5A3204305688"
+				item: { count: 1, id: "aeronautics:end_stone_powder" }
+				type: "item"
+			}]
+			x: -1.5d
+			y: 1.5d
+		}
+		{
+			dependencies: ["1C5C626540BFF7D8"]
+			id: "67AC3FC09FA35D34"
+			rewards: [{
+				id: "423E598B2C66EB4C"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "389AD2E6253D6FDD"
+				item: { count: 1, id: "aeronautics:levitite_blend_bucket" }
+				type: "item"
+			}]
+			x: -3.5d
+			y: 1.5d
+		}
+		{
+			dependencies: ["67AC3FC09FA35D34"]
+			id: "3768C5E58EC24E42"
+			rewards: [{
+				id: "0EB979C5E7B3177C"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				icon: {
+					id: "aeronautics:levitite"
+				}
+				id: "614A703EBE0DF6C4"
+				observation_type: "block"
+				observe_type: 0
+				timer: 0L
+				to_observe: "aeronautics:levitite"
+				type: "observation"
+			}]
+			x: -4.5d
+			y: 1.5d
+		}
+		{
+			dependencies: ["328A73D96C93A941"]
+			id: "6AA61742DC4FADAE"
+			rewards: [{
+				id: "117BDE4484EF8A2A"
+				type: "xp"
+				xp: 10
+			}]
+			tasks: [{
+				consume_items: false
+				id: "11C95DAC895298ED"
+				item: { count: 1, id: "aeronautics:music_disc_cloud_skipper" }
+				type: "item"
+			}]
+			x: 2.0d
+			y: 1.5d
+		}
+	]
+}

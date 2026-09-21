@@ -1,0 +1,201 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "fpb_flight_tools"
+	group: "7DA377FCDB6BF5A7"
+	icon: {
+		id: "create_aeronautics_toolgun:survival_structure_tool"
+	}
+	id: "0B91282419AF1F71"
+	images: [ ]
+	order_index: 4
+	quest_links: [ ]
+	quests: [
+		{
+			icon: {
+				id: "create_aeronautics_toolgun:survival_structure_tool"
+			}
+			id: "4AAC777C53B0E32F"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "290C358F15F7987B"
+				type: "checkmark"
+			}]
+			x: 4.5d
+			y: 0.0d
+		}
+		{
+			dependencies: ["4AAC777C53B0E32F"]
+			id: "2560A19BA65ABA14"
+			rewards: [{
+				id: "321F4A9F77C5A28B"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "630473234B7C7E29"
+				item: { count: 1, id: "create_aeronautics_toolgun:survival_structure_tool" }
+				type: "item"
+			}]
+			x: 4.5d
+			y: 2.0d
+		}
+		{
+			dependencies: ["2560A19BA65ABA14"]
+			id: "2EB06B243632753B"
+			rewards: [{
+				id: "5B1BBA89FAE9033F"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "607C4DC64C7C62FA"
+				item: { count: 1, id: "create_aeronautics_toolgun:portable_structure_container" }
+				type: "item"
+			}]
+			x: 4.5d
+			y: 3.5d
+		}
+		{
+			icon: {
+				id: "create_aeronautics_throwable_rope_connector:throwable_rope_connector"
+			}
+			id: "16A90A131D040D60"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "2E2590B254883856"
+				type: "checkmark"
+			}]
+			x: 8.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["16A90A131D040D60"]
+			id: "2D420E7E1408CA7B"
+			rewards: [{
+				id: "3EA763E01ABC731A"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "26C09DE67906D98D"
+				item: { count: 1, id: "create_aeronautics_throwable_rope_connector:throwable_rope_connector" }
+				type: "item"
+			}]
+			x: 8.0d
+			y: 2.0d
+		}
+		{
+			dependencies: ["2D420E7E1408CA7B"]
+			id: "33F9DA1C941929AF"
+			rewards: [{
+				id: "28B2FD1208BE8CEC"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "238AE9F48064F447"
+				item: { count: 1, id: "create_aeronautics_throwable_rope_connector:rope_connector_launcher" }
+				type: "item"
+			}]
+			x: 8.0d
+			y: 3.5d
+		}
+		{
+			dependencies: ["33F9DA1C941929AF"]
+			id: "39FE1634844E05B3"
+			rewards: [{
+				id: "4EDAC6C636FB5368"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "3B0ED2F142880436"
+				item: { count: 1, id: "create_aeronautics_throwable_rope_connector:mounted_rope_launcher" }
+				type: "item"
+			}]
+			x: 8.0d
+			y: 5.0d
+		}
+		{
+			icon: {
+				id: "aeroworks:joystick"
+			}
+			id: "5D16915F16C1BE46"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "4D0A62B9A20EC9D2"
+				type: "checkmark"
+			}]
+			x: 10.5d
+			y: 0.0d
+		}
+		{
+			dependencies: ["5D16915F16C1BE46"]
+			id: "71A4F77CE44A4079"
+			rewards: [{
+				id: "0455B67F05955E8A"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "36C548A8831D4013"
+				item: { count: 1, id: "aeroworks:joystick" }
+				type: "item"
+			}]
+			x: 10.5d
+			y: 2.0d
+		}
+		{
+			dependencies: ["71A4F77CE44A4079"]
+			id: "453DC602E5FD4DEF"
+			rewards: [{
+				id: "0773532FB8E5DCBB"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "5647A5B744978B6F"
+				item: { count: 1, id: "aeroworks:gyroscope" }
+				type: "item"
+			}]
+			x: 10.5d
+			y: 3.5d
+		}
+		{
+			dependencies: ["453DC602E5FD4DEF"]
+			id: "6912BAE1F6715D30"
+			rewards: [{
+				id: "624B140525A600F4"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "5977C22FC6729CC2"
+				item: { count: 1, id: "aeroworks:control_desk" }
+				type: "item"
+			}]
+			x: 10.5d
+			y: 5.0d
+		}
+	]
+}

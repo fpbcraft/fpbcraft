@@ -1,0 +1,950 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "end_simply_swords"
+	group: "4863600DDEA1AF02"
+	icon: {
+		id: "simplyswords:stars_edge"
+	}
+	id: "561E050FDD5EA204"
+	images: [
+		{
+			height: 1.0d
+			id: "0B0A25B7D5A1901E"
+			image: "fpbcraft_quests:textures/end_526adcd1a6c760a4.png"
+			rotation: 0.0d
+			width: 1.0d
+			x: -7.0d
+			y: -3.0d
+		}
+		{
+			height: 1.0d
+			id: "4B48E7D6EBCB6CD7"
+			image: "fpbcraft_quests:textures/end_4ff95a974aada4d5.png"
+			rotation: 0.0d
+			width: 0.008333333333333333d
+			x: -1.0d
+			y: -5.0d
+		}
+		{
+			height: 1.0d
+			id: "21A4E6CC329A1BE9"
+			image: "fpbcraft_quests:textures/end_4ff95a974aada4d5.png"
+			rotation: 0.0d
+			width: 0.008333333333333333d
+			x: 0.5d
+			y: -4.5d
+		}
+	]
+	order_index: 1
+	progression_mode: "flexible"
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: [
+				"4C0BA749CF6F4494"
+				"187F5F1AA148C11C"
+				"5832C661571E67CF"
+				"308B3F6525C1E7C7"
+				"14DF47D3E9A7B01D"
+				"147A7AFCE8152E85"
+				"05C31485333F55C4"
+				"77254C1771EEC4D8"
+				"715DCA85971A7607"
+				"6F7C71B8F35AEAFF"
+				"595BC864876FA3E2"
+				"426AE090D52DB359"
+				"0F38D97AA0B224BD"
+				"03365A701A6C8849"
+				"1342F99BA0A42602"
+				"5BDC2AD73778ECE7"
+				"79A8D36A0943BDEB"
+				"5673525356596593"
+				"1D4ABD864404E2D1"
+				"042A5486EA918E0D"
+				"7604D138A9ADD183"
+				"51A46D8526AA9B93"
+				"45302D6847413C5C"
+				"2AE29E09125845FF"
+				"5BBF3CAEF0A0F731"
+				"70D52AF4E3EB4B69"
+				"556037D574BC1044"
+				"1C9CC78F2C3FF831"
+				"17407324AC65E23E"
+				"4BFC19FFA13C6239"
+				"20E27ACEEC60241D"
+				"117F8E513252AFD8"
+				"3AD6E6BAEDE817C6"
+				"3D3A82C8CF986896"
+				"38A74D27B9D30C98"
+				"4E080EAEBAF248DD"
+				"53C22587722CB4F2"
+				"1BC4F61DEA632F3B"
+				"1D86D0B450A0183F"
+				"2AB887E8DEF7BAD8"
+				"47B6492EFE4051D8"
+				"7253B9CF7DCB4C70"
+				"283E86B9543CD37F"
+				"6730B4B5518718D7"
+				"71B3EE01379B7B80"
+				"21ACA2FFF3225A31"
+			]
+			dependency_requirement: "all_started"
+			hide_dependency_lines: true
+			id: "56E4FF484DD75AEC"
+			rewards: [{
+				id: "0C336D96290D270B"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "hexagon"
+			size: 2.5d
+			tasks: [{
+				id: "5F7B3057F7B247E7"
+				type: "checkmark"
+			}]
+			x: 1.5d
+			y: -5.5d
+		}
+		{
+			id: "1C9CC78F2C3FF831"
+			rewards: [{
+				id: "263EF845A9B7959A"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "30D171131926328F"
+				item: { count: 1, id: "simplyswords:livyatan" }
+				type: "item"
+			}]
+			x: 2.5d
+			y: 1.5d
+		}
+		{
+			id: "77254C1771EEC4D8"
+			rewards: [{
+				id: "33D7E423D7766978"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "2A182C4D37517AC8"
+				item: { count: 1, id: "simplyswords:watching_warglaive" }
+				type: "item"
+			}]
+			x: -3.5d
+			y: 0.0d
+		}
+		{
+			icon: {
+				id: "simplyswords:mjolnir"
+			}
+			id: "1342F99BA0A42602"
+			rewards: [{
+				id: "3972373590B26708"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "31E9C803EFAFBCAF"
+				item: { count: 1, id: "simplyswords:mjolnir" }
+				type: "item"
+			}]
+			x: 4.0d
+			y: -1.5d
+		}
+		{
+			id: "03365A701A6C8849"
+			rewards: [{
+				id: "4FAC6CDA6FD859CE"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "09FC5F3D5082F0EB"
+				item: { count: 1, id: "simplyswords:emberblade" }
+				type: "item"
+			}]
+			x: 5.5d
+			y: 1.5d
+		}
+		{
+			id: "45302D6847413C5C"
+			rewards: [{
+				id: "70CF1807333E231F"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "695864EB35E53B09"
+				item: { count: 1, id: "simplyswords:stormbringer" }
+				type: "item"
+			}]
+			x: 7.0d
+			y: 0.0d
+		}
+		{
+			id: "4C0BA749CF6F4494"
+			rewards: [{
+				id: "70A65B4AD8656632"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "0FEF7E156580AC37"
+				item: { count: 1, id: "simplyswords:storms_edge" }
+				type: "item"
+			}]
+			x: -0.5d
+			y: -3.0d
+		}
+		{
+			id: "21ACA2FFF3225A31"
+			rewards: [{
+				id: "3676DA696BC76C94"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "7181FC89A879F87A"
+				item: { count: 1, id: "simplyswords:sword_on_a_stick" }
+				type: "item"
+			}]
+			x: 1.0d
+			y: -1.5d
+		}
+		{
+			id: "556037D574BC1044"
+			rewards: [{
+				id: "177D8D382701D62E"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "4B8D8C5771370240"
+				item: { count: 1, id: "simplyswords:bramblethorn" }
+				type: "item"
+			}]
+			x: -0.5d
+			y: -1.5d
+		}
+		{
+			id: "5673525356596593"
+			rewards: [{
+				id: "19635CCD7C203875"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "592EC476A8263DE0"
+				item: { count: 1, id: "simplyswords:toxic_longsword" }
+				type: "item"
+			}]
+			x: -3.5d
+			y: -3.0d
+		}
+		{
+			id: "0F38D97AA0B224BD"
+			rewards: [{
+				id: "539454EBC4AB0681"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "09BD30021580AFDB"
+				item: { count: 1, id: "simplyswords:emberlash" }
+				type: "item"
+			}]
+			x: 2.5d
+			y: -1.5d
+		}
+		{
+			id: "117F8E513252AFD8"
+			rewards: [{
+				id: "38416761F2A84F90"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "7ECE28D459E5E518"
+				item: { count: 1, id: "simplyswords:twisted_blade" }
+				type: "item"
+			}]
+			x: 4.0d
+			y: 0.0d
+		}
+		{
+			id: "38A74D27B9D30C98"
+			rewards: [{
+				id: "41C04ACA9EAF6671"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "4EC49B63DD885D9A"
+				item: { count: 1, id: "simplyswords:frostfall" }
+				type: "item"
+			}]
+			x: -2.0d
+			y: -1.5d
+		}
+		{
+			id: "2AE29E09125845FF"
+			rewards: [{
+				id: "2E4A5C04333CE88E"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "1869E2CD870BEB60"
+				item: { count: 1, id: "simplyswords:hearthflame" }
+				type: "item"
+			}]
+			x: 7.0d
+			y: -3.0d
+		}
+		{
+			id: "20E27ACEEC60241D"
+			rewards: [{
+				id: "0A0E42E0D4FEA4EC"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "4D10404DC7ABBC83"
+				item: { count: 1, id: "simplyswords:soulpyre" }
+				type: "item"
+			}]
+			x: 2.5d
+			y: 0.0d
+		}
+		{
+			id: "4E080EAEBAF248DD"
+			rewards: [{
+				id: "16ED2F7EEDAA7B79"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "08DC2E33ED84788C"
+				item: { count: 1, id: "simplyswords:soulkeeper" }
+				type: "item"
+			}]
+			x: -0.5d
+			y: 0.0d
+		}
+		{
+			id: "6730B4B5518718D7"
+			rewards: [{
+				id: "58DDE334E489D6A2"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "2AFCE6EC0EDD6EFE"
+				item: { count: 1, id: "simplyswords:soulstealer" }
+				type: "item"
+			}]
+			x: -2.0d
+			y: -3.0d
+		}
+		{
+			id: "05C31485333F55C4"
+			rewards: [{
+				id: "5BBD80F0EB8DE5BC"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "6DBCC9B3EA8E4DDA"
+				item: { count: 1, id: "simplyswords:soulrender" }
+				type: "item"
+			}]
+			x: 1.0d
+			y: 0.0d
+		}
+		{
+			id: "1D4ABD864404E2D1"
+			rewards: [{
+				id: "7F228CFE697CC720"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "6ACB064896509C6E"
+				item: { count: 1, id: "simplyswords:molten_edge" }
+				type: "item"
+			}]
+			x: -3.5d
+			y: -1.5d
+		}
+		{
+			id: "283E86B9543CD37F"
+			rewards: [{
+				id: "6B3CB4BA1628EB4B"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "03A3D9545D58D293"
+				item: { count: 1, id: "simplyswords:icewhisper" }
+				type: "item"
+			}]
+			x: -2.0d
+			y: 0.0d
+		}
+		{
+			id: "426AE090D52DB359"
+			rewards: [{
+				id: "67E1DC3F8CF35FE9"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "38673151DA4CC46A"
+				item: { count: 1, id: "simplyswords:thunderbrand" }
+				type: "item"
+			}]
+			x: 1.0d
+			y: 1.5d
+		}
+		{
+			id: "53739D43378430B9"
+			rewards: [{
+				id: "0E3DA021BFB4A110"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "1CF2827E3428BC66"
+				item: { count: 1, id: "simplyswords:slumbering_lichblade" }
+				type: "item"
+			}]
+			x: -6.0d
+			y: -3.0d
+		}
+		{
+			id: "17407324AC65E23E"
+			rewards: [{
+				id: "36BD45BFCD8C24D2"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "39165AC3696201ED"
+				item: { count: 1, id: "simplyswords:brimstone_claymore" }
+				type: "item"
+			}]
+			x: 7.0d
+			y: -1.5d
+		}
+		{
+			dependencies: ["53739D43378430B9"]
+			hide_dependency_lines: false
+			hide_until_deps_complete: false
+			id: "042A5486EA918E0D"
+			rewards: [{
+				id: "351FC825BB70E49B"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "77ADCA45AABA9811"
+				item: { count: 1, id: "simplyswords:waking_lichblade" }
+				type: "item"
+			}]
+			x: -6.0d
+			y: -1.5d
+		}
+		{
+			dependencies: ["042A5486EA918E0D"]
+			hide_dependency_lines: false
+			hide_until_deps_complete: false
+			id: "71B3EE01379B7B80"
+			rewards: [{
+				id: "06FC79650030F718"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "3DE48CEDFFDCFAAE"
+				item: { count: 1, id: "simplyswords:awakened_lichblade" }
+				type: "item"
+			}]
+			x: -6.0d
+			y: 0.0d
+		}
+		{
+			id: "51A46D8526AA9B93"
+			rewards: [{
+				id: "4EF2CB507CD1EAE8"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "705ADEA26FB640D7"
+				item: { count: 1, id: "simplyswords:tempest" }
+				type: "item"
+			}]
+			x: 5.5d
+			y: 0.0d
+		}
+		{
+			id: "6F7C71B8F35AEAFF"
+			rewards: [{
+				id: "737A2CAE16FA7BC9"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "33322FACBA67B89B"
+				item: { count: 1, id: "simplyswords:wickpiercer" }
+				type: "item"
+			}]
+			x: 5.5d
+			y: -3.0d
+		}
+		{
+			id: "147A7AFCE8152E85"
+			rewards: [{
+				id: "1ADD83E639A6558E"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "0922D3946BB84200"
+				item: { count: 1, id: "simplyswords:stars_edge" }
+				type: "item"
+			}]
+			x: 4.0d
+			y: 1.5d
+		}
+		{
+			id: "53C22587722CB4F2"
+			rewards: [{
+				id: "7EE8AA3D0A9C9219"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "6A635C564791361F"
+				item: { count: 1, id: "simplyswords:arcanethyst" }
+				type: "item"
+			}]
+			x: -0.5d
+			y: 1.5d
+		}
+		{
+			id: "4BFC19FFA13C6239"
+			rewards: [{
+				id: "1FABFC76F239AE78"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "26C67C7E3BE4232D"
+				item: { count: 1, id: "simplyswords:hiveheart" }
+				type: "item"
+			}]
+			x: 4.0d
+			y: -3.0d
+		}
+		{
+			id: "47B6492EFE4051D8"
+			rewards: [{
+				id: "7333DDE8EA81CF07"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "2E64AC8A43FB359D"
+				item: { count: 1, id: "simplyswords:waxweaver" }
+				type: "item"
+			}]
+			x: 2.5d
+			y: -3.0d
+		}
+		{
+			id: "7253B9CF7DCB4C70"
+			rewards: [{
+				id: "25380922293A42BF"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "2593D09040AA5A86"
+				item: { count: 1, id: "simplyswords:whisperwind" }
+				type: "item"
+			}]
+			x: 1.0d
+			y: -3.0d
+		}
+		{
+			id: "715DCA85971A7607"
+			rewards: [{
+				id: "05ED230AAD08D608"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "72E0CF989BDD947C"
+				item: { count: 1, id: "simplyswords:dormant_relic" }
+				type: "item"
+			}]
+			x: -8.25d
+			y: -3.0d
+		}
+		{
+			id: "187F5F1AA148C11C"
+			rewards: [{
+				id: "3BC98690BFB1FD73"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "71149FE09AB77049"
+				item: { count: 1, id: "simplyswords:shadowsting" }
+				type: "item"
+			}]
+			x: -3.5d
+			y: 1.5d
+		}
+		{
+			id: "5BDC2AD73778ECE7"
+			rewards: [{
+				id: "187D4BBFF92C05D1"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "2D270455BCFD7FB4"
+				item: { count: 1, id: "simplyswords:flamewind" }
+				type: "item"
+			}]
+			x: -2.0d
+			y: 1.5d
+		}
+		{
+			id: "308B3F6525C1E7C7"
+			rewards: [{
+				id: "79E411C005FC71A7"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "78317D7F88022DA6"
+				item: { count: 1, id: "simplyswords:watcher_claymore" }
+				type: "item"
+			}]
+			x: 5.5d
+			y: -1.5d
+		}
+		{
+			dependencies: ["715DCA85971A7607"]
+			hide_dependency_lines: false
+			hide_until_deps_complete: false
+			id: "14DF47D3E9A7B01D"
+			rewards: [{
+				id: "7B2B47B425CE42EE"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "7FA0B7AD15A493BE"
+				item: { count: 1, id: "simplyswords:righteous_relic" }
+				type: "item"
+			}]
+			x: -7.5d
+			y: -1.5d
+		}
+		{
+			dependencies: ["715DCA85971A7607"]
+			hide_dependency_lines: false
+			hide_until_deps_complete: false
+			id: "1BC4F61DEA632F3B"
+			rewards: [{
+				id: "41922B76D960D192"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "07A1A334F5F4F1C0"
+				item: { count: 1, id: "simplyswords:tainted_relic" }
+				type: "item"
+			}]
+			x: -9.0d
+			y: -1.5d
+		}
+		{
+			dependencies: ["1BC4F61DEA632F3B"]
+			hide_dependency_lines: false
+			hide_until_deps_complete: false
+			id: "79A8D36A0943BDEB"
+			rewards: [{
+				id: "7DD52F41B682EBB8"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "58B5E023479A5133"
+				item: { count: 1, id: "simplyswords:harbinger" }
+				type: "item"
+			}]
+			x: -9.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["14DF47D3E9A7B01D"]
+			hide_dependency_lines: false
+			hide_until_deps_complete: false
+			id: "5BBF3CAEF0A0F731"
+			rewards: [{
+				id: "0E254CCF915123C5"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "1966C8259839C05A"
+				item: { count: 1, id: "simplyswords:sunfire" }
+				type: "item"
+			}]
+			x: -7.5d
+			y: 0.0d
+		}
+		{
+			id: "595BC864876FA3E2"
+			rewards: [{
+				id: "3B6A28F873872504"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "153CB840E01B70DB"
+				item: { count: 1, id: "simplyswords:enigma" }
+				type: "item"
+			}]
+			x: 7.0d
+			y: 1.5d
+		}
+		{
+			dependencies: ["5ED3F3572A8BA495"]
+			id: "70D52AF4E3EB4B69"
+			rewards: [{
+				id: "71B17126B2DF2E1D"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "35478B337FAF6420"
+				item: { count: 1, id: "simplyswords:magiblade" }
+				type: "item"
+			}]
+			x: -6.0d
+			y: 3.0d
+		}
+		{
+			dependencies: ["5ED3F3572A8BA495"]
+			id: "3AD6E6BAEDE817C6"
+			rewards: [{
+				id: "20BE80BD7E2FFAFF"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "68DE56D6EFEACD88"
+				item: { count: 1, id: "simplyswords:magispear" }
+				type: "item"
+			}]
+			x: -7.5d
+			y: 3.0d
+		}
+		{
+			dependencies: ["5ED3F3572A8BA495"]
+			id: "3D3A82C8CF986896"
+			rewards: [{
+				id: "7D97632C6AE7F3A8"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "039577161AA4A9A1"
+				item: { count: 1, id: "simplyswords:magiscythe" }
+				type: "item"
+			}]
+			x: -9.0d
+			y: 3.0d
+		}
+		{
+			id: "5832C661571E67CF"
+			rewards: [{
+				id: "0800E64C519A9CE2"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "3BB4919F41F74FDA"
+				item: { count: 1, id: "simplyswords:ribboncleaver" }
+				type: "item"
+			}]
+			x: 8.5d
+			y: -3.0d
+		}
+		{
+			id: "1D86D0B450A0183F"
+			rewards: [{
+				id: "1F5EE2AEDB62F49A"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "6C70A32251550DF4"
+				item: { count: 1, id: "simplyswords:caelestis" }
+				type: "item"
+			}]
+			x: 8.5d
+			y: 0.0d
+		}
+		{
+			id: "2AB887E8DEF7BAD8"
+			rewards: [{
+				id: "47594B9F420FB115"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "311D456C7C009863"
+				item: { count: 1, id: "simplyswords:wraithfang" }
+				type: "item"
+			}]
+			x: 8.5d
+			y: -1.5d
+		}
+		{
+			id: "5ED3F3572A8BA495"
+			rewards: [{
+				id: "3B9EB8C2661F091D"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "077D69A14513F268"
+				item: { count: 1, id: "simplyswords:contained_remnant" }
+				type: "item"
+			}]
+			x: -7.5d
+			y: 1.5d
+		}
+		{
+			id: "7604D138A9ADD183"
+			rewards: [{
+				id: "6D63EAE366E604F7"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "rsquare"
+			tasks: [{
+				consume_items: false
+				id: "4A5B94B63B3A83B8"
+				item: { count: 1, id: "simplyswords:chompolotl" }
+				type: "item"
+			}]
+			x: 8.5d
+			y: 1.5d
+		}
+	]
+}

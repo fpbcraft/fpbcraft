@@ -1,0 +1,255 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "fpb_deep_seas"
+	group: "AD7E4E8A10A10001"
+	icon: {
+		id: "create_submarine:submarine_propeller"
+	}
+	id: "723CD0BDFFF3D894"
+	images: [ ]
+	order_index: 1
+	quest_links: [ ]
+	quests: [
+		{
+			icon: {
+				id: "create_submarine:ballast_tank"
+			}
+			id: "281BD363F284F932"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "41ED90F4FD0319E7"
+				type: "checkmark"
+			}]
+			x: 4.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["281BD363F284F932"]
+			id: "1FC668B6558DA140"
+			rewards: [{
+				id: "1C07A06336BEF83D"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "3DE8FD2036184DA3"
+				item: { count: 1, id: "create_submarine:ballast_tank" }
+				type: "item"
+			}]
+			x: 4.0d
+			y: 2.0d
+		}
+		{
+			dependencies: ["1FC668B6558DA140"]
+			id: "281AAF5A1EBB212C"
+			rewards: [{
+				id: "5A78730439DBFF74"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "781672CF82CABDD8"
+				item: { count: 1, id: "create_submarine:ballast_vent" }
+				type: "item"
+			}]
+			x: 4.0d
+			y: 3.5d
+		}
+		{
+			dependencies: ["281AAF5A1EBB212C"]
+			id: "03E17063E9341DDE"
+			rewards: [{
+				id: "10A544F71F267063"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "0DA8117EB3BB75B8"
+				item: { count: 1, id: "create_submarine:submarine_propeller" }
+				type: "item"
+			}]
+			x: 4.0d
+			y: 5.0d
+		}
+		{
+			dependencies: ["03E17063E9341DDE"]
+			id: "1CE7FAEAC4B62C92"
+			rewards: [{
+				id: "2247C27783DFD96D"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "1BF7BAED0AF82CA8"
+				item: { count: 1, id: "create_submarine:barometer" }
+				type: "item"
+			}]
+			x: 4.0d
+			y: 6.5d
+		}
+		{
+			dependencies: ["1CE7FAEAC4B62C92"]
+			id: "4BA083BACB930550"
+			rewards: [{
+				id: "681DC76ACADFF896"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "4A91C9B17353CCE9"
+				item: { count: 1, id: "create_submarine:iron_pressurizer" }
+				type: "item"
+			}]
+			x: 4.0d
+			y: 8.0d
+		}
+		{
+			icon: {
+				id: "tide:fishing_journal"
+			}
+			id: "1C8C1A28A1695E83"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "4338EF2E5E7AEDDD"
+				type: "checkmark"
+			}]
+			x: 7.5d
+			y: 0.0d
+		}
+		{
+			dependencies: ["1C8C1A28A1695E83"]
+			id: "5B31509FFB46D929"
+			rewards: [{
+				id: "14B00488C37B080F"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "350F91831F799F1B"
+				item: { count: 1, id: "tide:fishing_journal" }
+				type: "item"
+			}]
+			x: 7.5d
+			y: 2.0d
+		}
+		{
+			dependencies: ["5B31509FFB46D929"]
+			id: "32A3F067AEC41928"
+			rewards: [{
+				id: "757B752E71E8C76D"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "2E28FA40992ACE3A"
+				item: { count: 1, id: "tide:depth_meter" }
+				type: "item"
+			}]
+			x: 7.5d
+			y: 3.5d
+		}
+		{
+			dependencies: ["32A3F067AEC41928"]
+			id: "6CC8BDCE66C1A34E"
+			rewards: [{
+				id: "40A706AC44D5BB61"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "5C4E541E1C3BFBF2"
+				item: { count: 1, id: "tide:fish_finder" }
+				type: "item"
+			}]
+			x: 7.5d
+			y: 5.0d
+		}
+		{
+			icon: {
+				id: "aquamirae:echo_compass"
+			}
+			id: "4981D51AAAC7558C"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "466585F29D1FFE4D"
+				type: "checkmark"
+			}]
+			x: 10.5d
+			y: 0.0d
+		}
+		{
+			dependencies: ["4981D51AAAC7558C"]
+			id: "645B6465697F8BF3"
+			rewards: [{
+				id: "349A469B73202F4E"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "3ECFD8D400A39036"
+				item: { count: 1, id: "aquamirae:echo_compass" }
+				type: "item"
+			}]
+			x: 10.5d
+			y: 2.0d
+		}
+		{
+			dependencies: ["645B6465697F8BF3"]
+			id: "00F533B24884272C"
+			rewards: [{
+				id: "6923B05B18F88E7E"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "45C3948120F37AB1"
+				item: { count: 1, id: "betterfishtanks:guide_book" }
+				type: "item"
+			}]
+			x: 10.5d
+			y: 3.5d
+		}
+		{
+			dependencies: ["00F533B24884272C"]
+			id: "784568DA925E8116"
+			rewards: [{
+				id: "63D517597B948BAC"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "2EF797493E7EE221"
+				item: { count: 1, id: "betterfishtanks:aquarist_table" }
+				type: "item"
+			}]
+			x: 10.5d
+			y: 5.0d
+		}
+	]
+}

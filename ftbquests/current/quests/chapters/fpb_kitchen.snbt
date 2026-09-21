@@ -1,0 +1,219 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "fpb_kitchen"
+	group: "4A93CDBE321781DA"
+	icon: {
+		id: "farmersdelight:cooking_pot"
+	}
+	id: "27AC45BF67882B5D"
+	images: [ ]
+	order_index: 4
+	quest_links: [ ]
+	quests: [
+		{
+			icon: {
+				id: "farmersdelight:cutting_board"
+			}
+			id: "6B26BDD04CD60943"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "5FAD786F0EDCE941"
+				type: "checkmark"
+			}]
+			x: 5.25d
+			y: 0.75d
+		}
+		{
+			dependencies: ["6B26BDD04CD60943"]
+			id: "4C04C08F5E39A2FF"
+			rewards: [{
+				id: "2E772278C66A97E9"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "60FC584173558A82"
+				item: { count: 1, id: "farmersdelight:cutting_board" }
+				type: "item"
+			}]
+			x: 5.0d
+			y: 2.5d
+		}
+		{
+			dependencies: ["4C04C08F5E39A2FF"]
+			id: "6A24580EECB10EA3"
+			rewards: [{
+				id: "674CFD86C07261C7"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "5E2E0AB7B3F6457F"
+				item: { count: 1, id: "farmersdelight:iron_knife" }
+				type: "item"
+			}]
+			x: 5.0d
+			y: 4.0d
+		}
+		{
+			dependencies: ["6A24580EECB10EA3"]
+			id: "67775101CE48D0E2"
+			rewards: [{
+				id: "640F34C726A6B210"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "23BA2669D205EFAC"
+				item: { count: 1, id: "farmersdelight:cooking_pot" }
+				type: "item"
+			}]
+			x: 5.0d
+			y: 5.5d
+		}
+		{
+			icon: {
+				id: "cookingforblockheads:cooking_table"
+			}
+			id: "3E802E9141493698"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "32941FC992E460E5"
+				type: "checkmark"
+			}]
+			x: 8.25d
+			y: 0.75d
+		}
+		{
+			dependencies: ["3E802E9141493698"]
+			id: "1EFE17AB704F4543"
+			rewards: [{
+				id: "3B645B2442A63E1F"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "3B9B101D99BFA013"
+				item: { count: 1, id: "cookingforblockheads:cooking_table" }
+				type: "item"
+			}]
+			x: 8.0d
+			y: 2.5d
+		}
+		{
+			dependencies: ["1EFE17AB704F4543"]
+			id: "391ACF97C33C56DC"
+			rewards: [{
+				id: "3F005603713DC803"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "59F1A61C38A33596"
+				item: { count: 1, id: "cookingforblockheads:white_fridge" }
+				type: "item"
+			}]
+			x: 8.0d
+			y: 4.0d
+		}
+		{
+			dependencies: ["391ACF97C33C56DC"]
+			id: "41153EBD5EDA4C33"
+			rewards: [{
+				id: "29D5D6E287D19230"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "2D1F56E698082C5E"
+				item: { count: 1, id: "cookingforblockheads:sink" }
+				type: "item"
+			}]
+			x: 8.0d
+			y: 5.5d
+		}
+		{
+			icon: {
+				id: "sliceanddice:slicer"
+			}
+			id: "6C276AB832889BFF"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "1B02421E1298FFD5"
+				type: "checkmark"
+			}]
+			x: 10.5d
+			y: 0.75d
+		}
+		{
+			dependencies: ["6C276AB832889BFF"]
+			id: "05CB35A61CF8A113"
+			rewards: [{
+				id: "2DBCD953BC63F10D"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "171CAB5E406BB9D7"
+				item: { count: 1, id: "sliceanddice:slicer" }
+				type: "item"
+			}]
+			x: 10.5d
+			y: 2.5d
+		}
+		{
+			dependencies: ["05CB35A61CF8A113"]
+			id: "7EA6DD9D3FFCDBCE"
+			rewards: [{
+				id: "2FFC33C2B5D51A68"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "09FC5245750A7DFE"
+				item: { count: 1, id: "create_integrated_farming:roost" }
+				type: "item"
+			}]
+			x: 10.5d
+			y: 4.0d
+		}
+		{
+			dependencies: ["7EA6DD9D3FFCDBCE"]
+			id: "06A9B7616B756567"
+			rewards: [{
+				id: "3A29F4BF381544A0"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "520531041D47CFC9"
+				item: { count: 1, id: "create_integrated_farming:vacuum_harvester" }
+				type: "item"
+			}]
+			x: 10.5d
+			y: 5.5d
+		}
+	]
+}

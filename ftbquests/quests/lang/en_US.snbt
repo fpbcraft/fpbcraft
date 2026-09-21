@@ -1,0 +1,113 @@
+{
+	chapter.58A7199AB8213DAC.title: "&dGolem Overhaul"
+	chapter.775994AE63FF3CA4.title: " &eFun Additions"
+	quest.051FDB1120C694B2.quest_desc: [
+		"&aGolem Overhaul &radds 9 new golem types, all with their own unique mechanics!"
+		""
+		"Some are passive, like the hay golem, who can protect your crops from being trampled, while others are strong enough to take on mobs like the warden itself."
+		"&a"
+	]
+	quest.051FDB1120C694B2.title: "&aGolem Overhaul"
+	quest.140DE34C44095442.quest_desc: [
+		"&6&lCreate&r offers great guides for most of its items by hovering over them in &d&lEMI&r or in your inventory and holding down &eW&r to &bponder&r the item, but sometimes it's best just to test each thing out"
+		""
+		"{image:fpbcraft_quests:textures/aero_69dbd6638a268985.png width:397 height:140 align:center fit:true}"
+		""
+		"Because of this, this chapter is mostly focused on letting you know what exists and giving you a rough outline of the progression of the mod, but at the same time, it will not handhold you all the way to the end since &6&lCreate&r is a sandbox mechanic mod"
+	]
+	quest.140DE34C44095442.title: "Welcome to &b&lFPBCRAFT New Age&r!"
+	quest.1545AB9D18B108D2.quest_desc: [
+		"{image:fpbcraft_quests:textures/end_21573d4ed821d22c.png width:150 height:60 align:center}"
+		""
+		"&eHay golems&r can either be built by the player, or found naturally in villages. "
+		""
+		"They are passive, but will protect crops from being trampled within a 10x10 radius."
+	]
+	quest.1545AB9D18B108D2.title: "Hay golem"
+	quest.193BA8394B3DE00E.quest_desc: [
+		"Can be found naturally in villages. When attacked, the &ebarrel golem&r will close its lid and hide as a barrel, reducing damage taken by 90%. "
+		""
+		"It will also enter this state while sleeping through the night."
+		""
+		"The &ebarrel golem&r can be bartered with by dropping emeralds."
+	]
+	quest.193BA8394B3DE00E.title: "Barrel golem"
+	quest.194C38A81DBF3408.quest_desc: [
+		"&eUnlit coal golems&r will spawn naturally around coal ore, and are passive towards mobs. "
+		""
+		"&eCoal golems&r can be turned into&e lit coal golems&r by &cright clicking them with flint and steel&r,"
+		"and will become hostile towards mobs, but will die after attacking."
+	]
+	quest.194C38A81DBF3408.title: "Coal golem"
+	quest.1C1E7C4EC3CF728A.quest_desc: [
+		"{image:fpbcraft_quests:textures/end_c57fac0b31837836.png width:150 height:60 align:center}"
+		"&dRight click&r to ride the &enetherite golem.&r Use your jump key to attack."
+		""
+		"&dRight click&r with a gold ingot to apply a gold trim to turn all piglins neutral towards the golem."
+		""
+		"&dRight click&r with a lava bucket to unlock the &enetherite golems&r summon ability - This ability will summon a group of coal golems to fight for the netherite golem. The keybind for this is set to \"R\" by default."
+		""
+		"This will, however, make the &enetherite golem&r vulnerable to water damage."
+	]
+	quest.1C1E7C4EC3CF728A.title: "Netherite golem"
+	quest.1CDAAA97BDE8BF53.quest_desc: ["Inspect the casting recipes and prepare a casting area for the barrel material you intend to use."]
+	quest.1CDAAA97BDE8BF53.title: "Prepare the Foundry"
+	quest.3B731698EA862F9C.quest_desc: ["Can be found naturally in &aslime chunks,&r and will spawn as one of two size variants, each with their own stats."]
+	quest.3B731698EA862F9C.title: "Slime golem"
+	quest.467062AF0D47CA42.quest_desc: [
+		"Use &aFTB Teams&r to share quest progress with your group."
+		""
+		"Agree on shared storage and build space before connecting factories. Let the server administrator know about broken recipes or quest objectives."
+	]
+	quest.467062AF0D47CA42.title: "&6Playing Together"
+	quest.50967C581A5DCDED.quest_desc: [
+		"Can be found naturally in birch forests. The&e honey golem&r will shoot mobs with a honey projectile, which applies slowness."
+		""
+		"&eThe honey golem&r can function as a bee hive, and will contain bees which both defend, and heal the honey golem."
+		""
+		"These bees will also produce honey, which can be harvested from the golem for honey blobs."
+		"Honey blobs are throwable items that function the same as the honey golems projectile."
+	]
+	quest.50967C581A5DCDED.title: "Honey golem"
+	quest.5327DC6C7A413EE9.quest_desc: [
+		"{image:fpbcraft_quests:textures/end_42bcc92b46fccafc.png width:150 height:60 align:center}"
+		""
+		"&eCandle golems&r can be spawned by right clicking a &ccandle golem block.&r"
+		""
+		"They can be told to sit or stand by right clicking. While sitting, they take 90% reduced damage from projectiles."
+		""
+		"&eCandle golems&r can be lit with flint and steel. When lit, they will shoot mobs with flame projectiles. "
+		""
+		"Using this attack too much will deplete the golems health until their candle goes out, "
+		"and they'll need to be repaired."
+	]
+	quest.5327DC6C7A413EE9.title: "Candle golem"
+	quest.55DC568DD6BDDBF6.quest_desc: [
+		"{image:fpbcraft_quests:textures/end_03af14862e366ee0.png width:150 height:60 align:center}"
+		""
+		"&eThe kelp golem&r moves fastest in water."
+		""
+		"When within range of a conduit, the&e kelp golem&r will switch to its charged state and receive +100% strength, gradual regeneration, and +100% resistance until out of range of the conduit."
+	]
+	quest.55DC568DD6BDDBF6.title: "Kelp golem"
+	quest.55EA0119442CF333.quest_desc: ["The &6iron backpack&r is the upgrade of the basic &ebackpack&r. It has 54 slots and can hold 2 upgrades"]
+	quest.55EA0119442CF333.title: "Iron Backpack"
+	quest.59437525C325407A.quest_desc: [
+		"{image:fpbcraft_quests:textures/end_ba031feefb9b6cd1.png width:150 height:60 align:center}"
+		"&eThe terracotta golems&r can be found naturally in badlands biomes, or summoned by placing terracotta golem statues near heat sources."
+		""
+		"&eTerracotta golems&r are naturally hostile to mobs, and can be right clicked with cacti or dead bushes to improve their attacks. "
+		""
+		"A cactus will increase the golems attack from 4 to 6, while a dead bush will give it a ranged attack."
+	]
+	quest.59437525C325407A.title: "Terracotta golem"
+
+	chapter_group.B17DDEC0A7E6F001.title: "&6Building & Decoration"
+	chapter_group.AD7E4E8A10A10001.title: "&6Adventure & Exploration"
+	chapter_group.B055E50000000001.title: "&6Bosses"
+	chapter.51A9AEEA7D5D1001.title: "&6Supplementaries"
+	chapter.A8C4AE0109F01001.title: "&6Archaeology"
+	chapter.7A4E1001A0B10001.title: "&6Travel & Exploration"
+	chapter.B01D1E6F0A100001.title: "&6Building & Furniture"
+	chapter.C0B47BA51C500001.title: "&6Combat Basics"
+}

@@ -1,0 +1,219 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "fpb_classes"
+	group: "4A93CDBE321781DA"
+	icon: {
+		id: "archers:composite_longbow"
+	}
+	id: "375816172138499C"
+	images: [ ]
+	order_index: 6
+	quest_links: [ ]
+	quests: [
+		{
+			icon: {
+				id: "archers:archers_workbench"
+			}
+			id: "54443DCF1F4FC500"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "0CE17DC34444B5BF"
+				type: "checkmark"
+			}]
+			x: 4.5d
+			y: 0.0d
+		}
+		{
+			dependencies: ["54443DCF1F4FC500"]
+			id: "75CFCEEEDD3C679C"
+			rewards: [{
+				id: "3C0071FDCBEB7B5E"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "5F415F8BC6C17B07"
+				item: { count: 1, id: "archers:archers_workbench" }
+				type: "item"
+			}]
+			x: 4.5d
+			y: 2.0d
+		}
+		{
+			dependencies: ["75CFCEEEDD3C679C"]
+			id: "49281E60DFDE522F"
+			rewards: [{
+				id: "180772FD64937292"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "018DF10C1D8F1487"
+				item: { count: 1, id: "archers:composite_longbow" }
+				type: "item"
+			}]
+			x: 4.5d
+			y: 3.5d
+		}
+		{
+			dependencies: ["49281E60DFDE522F"]
+			id: "14A6521B585F85B5"
+			rewards: [{
+				id: "76D06DB91B04670E"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "7E417C473E1C2E99"
+				item: { count: 1, id: "archers:medium_quiver" }
+				type: "item"
+			}]
+			x: 4.5d
+			y: 5.0d
+		}
+		{
+			icon: {
+				id: "paladins:iron_mace"
+			}
+			id: "6F184532D2515EC5"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "424189F19B383038"
+				type: "checkmark"
+			}]
+			x: 8.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["6F184532D2515EC5"]
+			id: "218D97C945555608"
+			rewards: [{
+				id: "17FE2F43729DB563"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "34DD1B8C7921738A"
+				item: { count: 1, id: "paladins:iron_mace" }
+				type: "item"
+			}]
+			x: 8.0d
+			y: 2.0d
+		}
+		{
+			dependencies: ["218D97C945555608"]
+			id: "452A5581870B0573"
+			rewards: [{
+				id: "4265FD80AEB7C617"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "046F3106ABAA9429"
+				item: { count: 1, id: "paladins:iron_kite_shield" }
+				type: "item"
+			}]
+			x: 8.0d
+			y: 3.5d
+		}
+		{
+			dependencies: ["452A5581870B0573"]
+			id: "39F13BA17DD246F8"
+			rewards: [{
+				id: "45C3ECD68D4EE0D3"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "00385BC3392F59F7"
+				item: { count: 1, id: "rogues:iron_dagger" }
+				type: "item"
+			}]
+			x: 8.0d
+			y: 5.0d
+		}
+		{
+			icon: {
+				id: "wizards:staff_wizard"
+			}
+			id: "6569A45114216A83"
+			shape: "gear"
+			size: 1.5d
+			tasks: [{
+				id: "13211B4B133B48BC"
+				type: "checkmark"
+			}]
+			x: 10.5d
+			y: 0.0d
+		}
+		{
+			dependencies: ["6569A45114216A83"]
+			id: "137C2BEA35275D8D"
+			rewards: [{
+				id: "1567189ADB65BFFB"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "0F32D04DFA75C29E"
+				item: { count: 1, id: "wizards:staff_wizard" }
+				type: "item"
+			}]
+			x: 10.5d
+			y: 2.0d
+		}
+		{
+			dependencies: ["137C2BEA35275D8D"]
+			id: "3DBD16563B2DC920"
+			rewards: [{
+				id: "759D78C98DBC0B66"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "047FD3559B5E5532"
+				item: { components: { "ftbquests:missing_item": "jewelry:jewelers_kit" }, count: 1, id: "ftbquests:missing_item" }
+				type: "item"
+			}]
+			x: 10.5d
+			y: 3.5d
+		}
+		{
+			dependencies: ["3DBD16563B2DC920"]
+			id: "40B0B2D7F52941A0"
+			rewards: [{
+				id: "29F78362593B8873"
+				type: "xp"
+				xp: 10
+			}]
+			shape: "circle"
+			tasks: [{
+				consume_items: false
+				id: "7DFD8D1F0D67B086"
+				item: { components: { "ftbquests:missing_item": "jewelry:iron_ring" }, count: 1, id: "ftbquests:missing_item" }
+				type: "item"
+			}]
+			x: 10.5d
+			y: 5.0d
+		}
+	]
+}
