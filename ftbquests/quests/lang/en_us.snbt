@@ -2986,11 +2986,11 @@
 	quest.5072000000000003.title: "Umvuthi, the Sunbird"
 	quest.5072000000000003.quest_desc: ["Defeat Umvuthi and claim the Sol Visage. The visage is a guaranteed player-kill drop and makes a concrete trophy for this encounter."]
 	quest.5073000000000001.title: "Cloud Golem"
-	quest.5073000000000001.quest_desc: ["Defeat the Cloud Golem. Legendary Monsters exposes a dedicated boss advancement, so the quest uses that instead of a manual checkmark."]
+	quest.5073000000000001.quest_desc: ["Defeat the Cloud Golem using Legendary Monsters' native boss advancement, then recover its guaranteed Air Rune and Atmospheric Boots."]
 	quest.5073000000000002.title: "Possessed Paladin"
-	quest.5073000000000002.quest_desc: ["Defeat the Possessed Paladin in the Collapsed Kingdom progression. Completion uses Legendary Monsters' native boss advancement."]
+	quest.5073000000000002.quest_desc: ["Defeat the Possessed Paladin in the Collapsed Kingdom progression, then recover its guaranteed Corrupted Soul and Soul Great Sword."]
 	quest.5073000000000003.title: "The Obliterator"
-	quest.5073000000000003.quest_desc: ["Defeat The Obliterator, the late Legendary Monsters boss associated with the Space Station progression. This is shown as the outer-tier encounter without hard-gating the other Legendary bosses behind it."]
+	quest.5073000000000003.quest_desc: ["Defeat The Obliterator, the late Legendary Monsters boss associated with the Space Station progression, and recover a Portal Shard. It is shown as an outer-tier encounter without hard-gating the other Legendary bosses behind it."]
 	quest.5074000000000001.title: "Mother of the Maze"
 	quest.5074000000000001.quest_desc: ["After reaching the Ship Graveyard, defeat the Maze Mother and obtain a Maze Rose. The Adventure page owns discovery; the Bosses page owns the actual kill."]
 	quest.5074000000000002.title: "Captain Cornelia"
