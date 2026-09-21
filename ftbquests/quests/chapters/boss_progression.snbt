@@ -1,0 +1,250 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "boss_progression"
+	group: "5055E50000000001"
+	icon: { id: "minecraft:nether_star" }
+	id: "507000000000C001"
+	images: [ ]
+	order_index: 0
+	quest_links: [ ]
+	quests: [
+		{
+			icon: { id: "minecraft:nether_star" }
+			id: "5071000000000001"
+			shape: "hexagon"
+			rewards: [{ id: "7071000000000001", type: "xp", xp: 50 }]
+			tasks: [
+				{
+				entity: "minecraft:wither"
+				icon: "minecraft:wither_skeleton_skull"
+				id: "6071000000000001"
+				type: "kill"
+				value: 1L
+			}
+				{
+				consume_items: false
+				id: "6071000000000002"
+				item: { count: 1, id: "minecraft:nether_star" }
+				type: "item"
+			}
+			]
+			x: -9d
+			y: 0d
+		},
+		{
+			icon: { id: "minecraft:dragon_head" }
+			id: "5071000000000002"
+			shape: "hexagon"
+			rewards: [{ id: "7071000000000002", type: "xp", xp: 75 }]
+			tasks: [
+				{
+				entity: "minecraft:ender_dragon"
+				icon: "minecraft:dragon_head"
+				id: "6071000000000003"
+				type: "kill"
+				value: 1L
+			}
+			]
+			x: -9d
+			y: 4d
+		},
+		{
+			icon: { id: "mowziesmobs:wrought_helmet" }
+			id: "5072000000000001"
+			rewards: [{ id: "7072000000000001", type: "xp", xp: 40 }]
+			tasks: [
+				{
+				advancement: "mowziesmobs:kill_ferrous_wroughtnaut"
+				criterion: ""
+				id: "6072000000000001"
+				type: "advancement"
+			}
+				{
+				consume_items: false
+				id: "6072000000000002"
+				item: { count: 1, id: "mowziesmobs:wrought_helmet" }
+				type: "item"
+			}
+				{
+				consume_items: false
+				id: "6072000000000003"
+				item: { count: 1, id: "mowziesmobs:wrought_axe" }
+				type: "item"
+			}
+			]
+			x: -3d
+			y: 0d
+		},
+		{
+			icon: { id: "mowziesmobs:ice_crystal" }
+			id: "5072000000000002"
+			rewards: [{ id: "7072000000000002", type: "xp", xp: 40 }]
+			tasks: [
+				{
+				advancement: "mowziesmobs:kill_frostmaw"
+				criterion: ""
+				id: "6072000000000004"
+				type: "advancement"
+			}
+			]
+			x: -3d
+			y: 4d
+		},
+		{
+			icon: { id: "mowziesmobs:sol_visage" }
+			id: "5072000000000003"
+			rewards: [{ id: "7072000000000003", type: "xp", xp: 50 }]
+			tasks: [
+				{
+				advancement: "mowziesmobs:kill_umvuthi"
+				criterion: ""
+				id: "6072000000000005"
+				type: "advancement"
+			}
+				{
+				consume_items: false
+				id: "6072000000000006"
+				item: { count: 1, id: "mowziesmobs:sol_visage" }
+				type: "item"
+			}
+			]
+			x: -3d
+			y: 8d
+		},
+		{
+			icon: { id: "minecraft:lightning_rod" }
+			id: "5073000000000001"
+			rewards: [{ id: "7073000000000001", type: "xp", xp: 50 }]
+			tasks: [
+				{
+				advancement: "legendary_monsters:defeat_cloud_golem"
+				criterion: ""
+				id: "6073000000000001"
+				type: "advancement"
+			}
+			]
+			x: 3d
+			y: 0d
+		},
+		{
+			icon: { id: "minecraft:iron_chestplate" }
+			id: "5073000000000002"
+			rewards: [{ id: "7073000000000002", type: "xp", xp: 50 }]
+			tasks: [
+				{
+				advancement: "legendary_monsters:defeat_posessed_paladin"
+				criterion: ""
+				id: "6073000000000002"
+				type: "advancement"
+			}
+			]
+			x: 3d
+			y: 4d
+		},
+		{
+			icon: { id: "minecraft:netherite_sword" }
+			id: "5073000000000003"
+			shape: "hexagon"
+			rewards: [{ id: "7073000000000003", type: "xp", xp: 75 }]
+			tasks: [
+				{
+				advancement: "legendary_monsters:defeat_the_obliterator"
+				criterion: ""
+				id: "6073000000000003"
+				type: "advancement"
+			}
+			]
+			x: 3d
+			y: 8d
+		},
+		{
+			dependencies: ["1C11995A1A04DDC7"]
+			icon: { id: "aquamirae:maze_rose" }
+			id: "5074000000000001"
+			rewards: [{ id: "7074000000000001", type: "xp", xp: 40 }]
+			tasks: [
+				{
+				entity: "aquamirae:maze_mother"
+				icon: "aquamirae:maze_rose"
+				id: "6074000000000001"
+				type: "kill"
+				value: 1L
+			}
+				{
+				consume_items: false
+				id: "6074000000000002"
+				item: { count: 1, id: "aquamirae:maze_rose" }
+				type: "item"
+			}
+			]
+			x: 9d
+			y: 0d
+		},
+		{
+			dependencies: ["5551333BF6400CD0"]
+			icon: { id: "aquamirae:shell_horn" }
+			id: "5074000000000002"
+			shape: "hexagon"
+			rewards: [{ id: "7074000000000002", type: "xp", xp: 60 }]
+			tasks: [
+				{
+				entity: "aquamirae:captain_cornelia"
+				icon: "aquamirae:shell_horn"
+				id: "6074000000000003"
+				type: "kill"
+				value: 1L
+			}
+			]
+			x: 9d
+			y: 4d
+		},
+		{
+			dependencies: ["6AD3AF711015FA06"]
+			icon: { id: "myths_of_the_sea:kraken_tentacle" }
+			id: "5074000000000003"
+			rewards: [{ id: "7074000000000003", type: "xp", xp: 50 }]
+			tasks: [
+				{
+				entity: "myths_of_the_sea:kraken"
+				icon: "myths_of_the_sea:kraken_tentacle"
+				id: "6074000000000004"
+				type: "kill"
+				value: 1L
+			}
+				{
+				consume_items: false
+				id: "6074000000000005"
+				item: { count: 1, id: "myths_of_the_sea:kraken_tentacle" }
+				type: "item"
+			}
+			]
+			x: 9d
+			y: 8d
+		},
+		{
+			dependencies: ["74DCAEFEE72B2873"]
+			icon: { id: "myths_of_the_sea:leviathan_heart" }
+			id: "5074000000000004"
+			shape: "hexagon"
+			rewards: [{ id: "7074000000000004", type: "xp", xp: 75 }]
+			tasks: [
+				{
+				entity: "myths_of_the_sea:leviathan"
+				icon: "myths_of_the_sea:leviathan_heart"
+				id: "6074000000000006"
+				type: "kill"
+				value: 1L
+			}
+				{
+				consume_items: false
+				id: "6074000000000007"
+				item: { count: 1, id: "myths_of_the_sea:leviathan_heart" }
+				type: "item"
+			}
+			]
+			x: 9d
+			y: 12d
+		}
+	]
+}
