@@ -1,5 +1,1003 @@
-The requested file reference is not currently visible. Use files.search or files.list to rediscover the file, then retry with a returned ref_id or file_id.
-The requested file reference is not currently visible. Use files.search or files.list to rediscover the file, then retry with a returned ref_id or file_id.
+{
+	chapter.01014DDC205ECA93.title: " &ePump Dat Oil"
+	chapter.077E2D43C856BB30.title: "Storage & Computers"
+	chapter.08CDC01FE839E5A6.title: " &eBrass Age"
+	chapter.09F0C87D85FE2EBB.title: "&e Aquatic Ambitions"
+	chapter.0B91282419AF1F71.title: "Flight Workshop"
+	chapter.16C5FD7375E8F1C9.title: "Photography"
+	chapter.1E8F36011DDBC0E7.title: " &eGetting Started"
+	chapter.24588CE3822D1A5E.title: " &eCreate Kitchen"
+	chapter.254243CAD3B3043A.title: "Food and Farming"
+	chapter.25856E7FE5EAA126.title: "Railway Services"
+	chapter.27AC45BF67882B5D.title: "Farm to Table"
+	chapter.2AC40A5D34D93FFC.title: "&e Aeronautics"
+	chapter.2C98A0203051DEC7.title: "Heavy Industry"
+	chapter.2F17721232295EBD.title: "&bSophisticated Backpacks"
+	chapter.36217E43B0A210E9.title: "Welcome and First Day"
+	chapter.3679B8BBD02A5192.title: " &eCopper Age"
+	chapter.375816172138499C.title: "Choose Your Loadout"
+	chapter.3899210894FA98FA.title: "&6&nGetting Started!"
+	chapter.403C67A830521243.title: " &eTrains"
+	chapter.4425CF103834DA9D.title: "Storage and Computers"
+	chapter.4AF998E68D803CCA.title: " &eTutorial"
+	chapter.4B8B8CDDB159A20E.title: " &eLocomotive Age"
+	chapter.51C059AC100AAC04.title: "&e Propulsion"
+	chapter.561E050FDD5EA204.title: "Simply Swords"
+	chapter.5808AD298B80591C.title: "&e Simulated"
+	chapter.58A7199AB8213DAC.title: "Golem Overhaul"
+	chapter.67853D2EA996CB36.title: " &eMinecarts"
+	chapter.688DB3F5E1CE4FCD.title: "Aeronautics and Moving Contraptions"
+	chapter.695BADC1E8DFAD85.title: " &eAndesite Age"
+	chapter.6FBBFF7714F75AF3.title: " &eEnchantment Industry"
+	chapter.717E2EBC94CCCB5C.title: "&e Off-Road"
+	chapter.723CD0BDFFF3D894.title: "Deep Seas"
+	chapter.775994AE63FF3CA4.title: " &eFun Additions"
+	chapter.77A2785C01AA06AE.title: " &eConnected"
+	chapter.7C6B8E6E2496CF8D.title: "Oceans and Submarines"
+	chapter.8980682301332757.title: "Railways and Logistics"
+	chapter.8F98D5D388AC2EBA.title: "Building and Decoration"
+	chapter.B923A30BC060FDF8.title: "Industry and Power"
+	chapter.D2EA8E03741A5014.title: "World, Travel, and Discovery"
+	chapter.D937BC0889D39BCD.title: "Photography and Collecting"
+	chapter.F695A64CBA07DE8D.title: "Create Foundations"
+	chapter.F6B7688A978F114D.title: "Combat, Classes, and Bosses"
+	chapter_group.171B0F909A01E9E1.title: "&6Farming and Food"
+	chapter_group.191CDC99EE58E587.title: "&6 Transportation"
+	chapter_group.210CB4D563354A3F.title: "Storage"
+	chapter_group.45A8E931C4697E91.title: "Others"
+	chapter_group.4863600DDEA1AF02.title: "Combat & Equipment"
+	chapter_group.4A93CDBE321781DA.title: "RPG Series"
+	chapter_group.67C285939F8460F0.title: "&6Create"
+	chapter_group.6DEDA2F315449415.title: "&6Engineer's Paradise"
+	chapter_group.7AC71148ECE40691.title: "Create"
+	chapter_group.7DA377FCDB6BF5A7.title: "&6Aeronautics"
+	chapter_group.AC861BA84816F81C.title: "Creative Life"
+	chapter_group.B88F2E01453ACD13.title: "Getting Started"
+	chapter_group.D837879A44F907F8.title: "Engineering"
+	chapter_group.E5E2EDB777582C2A.title: "Adventure"
+	file.0000000000000001.title: "FPBCRAFT New Age"
+	quest.0027425C5A8469B6.quest_desc: ["Craft or obtain createbigcannons:casting_sand. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.0027425C5A8469B6.title: "Obtain Casting Sand"
+	quest.00592DF981B90143.quest_desc: ["Use the vein finder to locate a deposit. Mark its position before bringing machinery."]
+	quest.00592DF981B90143.title: "Find the Deposit"
+	quest.009B07704933A8FD.quest_desc: ["Craft or obtain create_aeronautics_toolgun:portable_structure_container. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.009B07704933A8FD.title: "Obtain Portable Structure Container"
+	quest.00AAB03763D01607.title: "&2Detector Rail"
+	quest.00AF98A12FCCD9EB.title: "Milestone"
+	quest.00B01883BE42A871.quest_desc: ["Craft or obtain createrailwaysnavigator:train_station_clock. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.00B01883BE42A871.title: "Obtain Train Station Clock"
+	quest.00EE843F384DB938.title: "Laser Blocks"
+	quest.00F533B24884272C.quest_desc: ["Consult the guide before selecting a tank and inhabitants."]
+	quest.00F533B24884272C.title: "Plan an Aquarium"
+	quest.010CD0B694E25FEC.quest_desc: ["Use Ponder to follow the boring setup. Check the barrel material and recipe before powering the drill."]
+	quest.010CD0B694E25FEC.title: "Machine the Barrel"
+	quest.013A20A3DCF9B129.quest_desc: ["Craft or obtain computercraft:computer_advanced. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.013A20A3DCF9B129.title: "Obtain Computer Advanced"
+	quest.01B73200BE239BB6.title: "&aGather Materials to craft a &3Conduit Cage"
+	quest.01CD06BB6D33EAAE.title: "Mechanical Drill"
+	quest.0226C2548F38E48A.title: "Redstone Link"
+	quest.02475E1B27BA15E9.quest_desc: ["Craft or obtain createbigcannons:cannon_builder. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.02475E1B27BA15E9.title: "Obtain Cannon Builder"
+	quest.028F66BF34942B40.quest_desc: ["Craft or obtain fetzisdisplays:workbench. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.028F66BF34942B40.title: "Obtain Workbench"
+	quest.029D7397535A7948.quest_desc: ["Craft or obtain bellsandwhistles:andesite_pilot. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.029D7397535A7948.title: "Obtain Andesite Pilot"
+	quest.02A9C87CD5CFEE0D.title: "Totem of Torrents"
+	quest.030692F7128E9643.title: "&eCraft a &bRoost"
+	quest.030B152D2CBFE489.title: "&dDimensional Commuter"
+	quest.03365A701A6C8849.title: "Emberblade"
+	quest.035B0118D5A57323.title: "Honey Glue"
+	quest.0381BDE243632036.title: "Threshold Switch"
+	quest.03E17063E9341DDE.quest_desc: ["Test forward movement, stopping, and turning close to shore."]
+	quest.03E17063E9341DDE.title: "Add Propulsion"
+	quest.0405C3D134D951AF.title: "Accumulator"
+	quest.042A5486EA918E0D.title: "Waking Lichblade"
+	quest.0442B31457FC6BC2.title: "&aObtain Limestone"
+	quest.04879E1AF2DD1230.quest_desc: ["Craft or obtain paladins:iron_kite_shield. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.04879E1AF2DD1230.title: "Obtain Iron Kite Shield"
+	quest.0491660AE6DA9865.title: "&aObtain &5Awkward potion"
+	quest.04A75048FB3F9D09.quest_desc: ["Craft or obtain offroad:monstrous_tire. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.04A75048FB3F9D09.title: "Obtain Monstrous Tire"
+	quest.04C09689A911FC2F.quest_desc: [
+		"When the &6Eating Upgrade&r is in your backpack, it will automatically feed you when you start to get hungry!"
+		""
+		"If you make the &badvanced&r version of the upgrade, you can set it to feed you where you won't waste ANY food!"
+	]
+	quest.04C09689A911FC2F.title: "Auto Feeder"
+	quest.050D25A4D533416C.title: "&6Lighting Rod"
+	quest.051FDB1120C694B2.quest_desc: [
+		"&aGolem Overhaul &radds 9 new golem types, all with their own unique mechanics!"
+		""
+		"Some are passive, like the hay golem, who can protect your crops from being trampled, while others are strong enough to take on mobs like the warden itself."
+		"&a"
+	]
+	quest.051FDB1120C694B2.title: "&aGolem Overhaul"
+	quest.05C31485333F55C4.title: "Soulrender"
+	quest.05C4E0BCBC6D1E8F.title: "Gyroscopic Propeller Bearing"
+	quest.05CB35A61CF8A113.quest_desc: ["Use the slicer’s recipe viewer and Ponder scene to build a small processing line."]
+	quest.05CB35A61CF8A113.title: "Automate Preparation"
+	quest.0614DF1F882FF7FD.quest_desc: ["These doors can be opened with hand but NOT redstone signals."]
+	quest.0614DF1F882FF7FD.title: "Gold Door"
+	quest.06478CE9F8304E6F.quest_desc: ["You can search in &d&lREI&r for the fluids that apply by typing &e\"$create:bottomless\"&r"]
+	quest.06478CE9F8304E6F.title: "Bottomless Lava"
+	quest.064927EDA7AE9A22.title: "&6Flanged Cogwheels"
+	quest.069D2992558D8BED.quest_desc: ["Craft or obtain create_aeronautics_throwable_rope_connector:mounted_rope_launcher. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.069D2992558D8BED.title: "Obtain Mounted Rope Launcher"
+	quest.06A9B7616B756567.quest_desc: ["Test the harvester on a small growing area and route produce to storage before scaling up."]
+	quest.06A9B7616B756567.title: "Collect the Harvest"
+	quest.06C60CD1909A2890.title: "White Nameplate"
+	quest.070727B5CE7B9FCE.quest_desc: ["Craft or obtain numismatics:andesite_depositor. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.070727B5CE7B9FCE.title: "Obtain Andesite Depositor"
+	quest.071DBDD53BDFB2A9.title: "Gather Supplies"
+	quest.077578BEE2304A7D.quest_desc: [
+		"&eOrganic Compost&r can be placed in sunlight to decompose it into &3Rich Soil&r. "
+		""
+		"Having water or decomposing agents like Mushrooms nearby can speed up the decomposition process."
+	]
+	quest.077578BEE2304A7D.title: "Organic Compost"
+	quest.07D303ABCE43AFAA.title: "Train Signal"
+	quest.080B7781E8747877.title: "&aObtain &eNautilus Shell"
+	quest.082CB8913F013810.title: "&aCraft &dTrident"
+	quest.0832882D51C2828A.quest_desc: ["Explore FPBCRAFT's expanded continents without turning exploration into a checklist of every biome. Mark your base, portals, transport hubs, and dangerous discoveries. Carry recovery supplies and avoid removing unique structure blocks before you understand their purpose."]
+	quest.0832882D51C2828A.title: "Begin World, Travel, and Discovery"
+	quest.083CE775042EAB81.title: "Totem of Radiance"
+	quest.085CBDF6E6E9C1F7.quest_desc: ["Craft or obtain createfood:cloth_filter_egg. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.085CBDF6E6E9C1F7.title: "Obtain Cloth Filter Egg"
+	quest.086F75C497ABB8FC.quest_desc: ["Use the bridge’s documentation to connect a small redstone test circuit. Keep a manual override for the real machine."]
+	quest.086F75C497ABB8FC.title: "Connect the Factory"
+	quest.0889B9CC680044B2.quest_desc: ["A &eCompass&r can be bound to a &3Lodestones&r with &7[&rRight-Click&7]&r, causing the needle to point towards it when in the same dimension."]
+	quest.0889B9CC680044B2.title: "Lodestone"
+	quest.08A723B7E97A43D2.quest_desc: ["Craft or obtain legendary_monsters:annihilation_lantern. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.08A723B7E97A43D2.title: "Obtain Annihilation Lantern"
+	quest.08A93C3DB204A69A.quest_desc: ["Craft or obtain minecraft:chest. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.08A93C3DB204A69A.title: "Obtain Chest"
+	quest.08C0482016F6FF46.title: "Monstrous Tire"
+	quest.0922AF692CC1EE68.quest_desc: ["Use the navigator with your rail network. Check that the destination and station names are meaningful to another player."]
+	quest.0922AF692CC1EE68.title: "Plan a Journey"
+	quest.09303FAB3B7317BD.title: "&d&lWelcome to the Fun Section"
+	quest.09ABC17DF68F838A.title: "Smart Propeller"
+	quest.09F8889A001D8A02.title: "Huge Diesel Engine"
+	quest.0A136CE09B556247.quest_desc: ["A &6spyglass&r can be equipped in your Curios slot. The default key to access it is &d\"Z\".&r"]
+	quest.0A136CE09B556247.title: "Spyglass"
+	quest.0ACF6DEBDF0E7FA1.title: "Redstone Equipments"
+	quest.0AECD79E03B7D1B3.title: "Attribute Filter"
+	quest.0B27E5681EF09F62.title: "Rotation Speed Controller"
+	quest.0B7505A2FAA349EA.title: "&6Train Station"
+	quest.0BAD1B6DAFB44161.title: "Encased Fan"
+	quest.0BB06BF4D861CBE3.quest_desc: ["Craft or obtain createaddition:alternator. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.0BB06BF4D861CBE3.title: "Obtain Alternator"
+	quest.0BB175444B6DEA6D.title: "&aRails"
+	quest.0BCFC45DD29FBE0D.quest_desc: ["Hover items and use EMI recipe/uses keys. Look at blocks for Jade details. Hover a Create item and use the Ponder key for an animated explanation."]
+	quest.0BCFC45DD29FBE0D.title: "Learn EMI, Jade, and Ponder"
+	quest.0C015486EDED92C4.quest_desc: ["Craft or obtain create:mechanical_mixer. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.0C015486EDED92C4.title: "Obtain Mechanical Mixer"
+	quest.0C1E0A0A1DB3B5A0.title: "&6Powered Rail"
+	quest.0C75C8D376F32D8E.quest_desc: ["Craft or obtain create_enchantment_industry:infuser. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.0C75C8D376F32D8E.title: "Obtain Infuser"
+	quest.0CE3111596ADA68D.title: "&4Fan Seething Catalyst"
+	quest.0D149B0AE3F9A751.title: "Item Vault"
+	quest.0DB74467E850AE47.title: "Stack Upgrade Tier 3"
+	quest.0DF4E30D035B7195.quest_desc: ["Craft or obtain create_integrated_farming:vacuum_harvester. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.0DF4E30D035B7195.title: "Obtain Vacuum Harvester"
+	quest.0E0EB0FF68675772.quest_desc: ["Complete the vanilla progression milestone with a prepared return route."]
+	quest.0E0EB0FF68675772.title: "Defeat the Ender Dragon"
+	quest.0E1E03622447AF0D.quest_desc: ["Craft or obtain create_train_parts:pole. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.0E1E03622447AF0D.title: "Obtain Pole"
+	quest.0E31BD4DE8F3FE89.quest_desc: [
+		"An &eEmpty Spool&r can be crafted into four different wire types using their respective materials:"
+		""
+		"* Copper Spool"
+		"* Gold Spool"
+		"* Electrum Spool"
+		"* Copper Spool with Festive Lights"
+		""
+		"The main difference &ebetween Copper and Gold/Electrum&r spools is the type of connectors they can attach to and the amount of energy they transfer:"
+		""
+		"* &6Copper Wires&r connect to &aSmall Connectors&r"
+		"* &6Gold and Electrum&r Wires connect to &aLarge Connectors&r"
+		""
+		"When a Spool is fully used, it will return to an Empty Spool, ready to be refilled or reused."
+	]
+	quest.0E31BD4DE8F3FE89.title: "&e🧵 Spools and Wire Types"
+	quest.0E3C425C3E41725B.title: "Package Frogport"
+	quest.0EB54DBB3540331E.quest_desc: ["Use the crossing in a test section and check both routes before connecting it to the main line."]
+	quest.0EB54DBB3540331E.title: "Build a Crossing"
+	quest.0ED9B5FAAF0A1152.title: "Mechanical Harvester"
+	quest.0EE161A63A5AAFCA.quest_desc: ["Inspect the lens’s uses and compare the same scene with your usual camera setup."]
+	quest.0EE161A63A5AAFCA.title: "Change Your Perspective"
+	quest.0F09DAD5693B8184.quest_desc: [
+		"&6Comforts&r is a mod that adds sleeping bags and hammocks to Minecraft. These items can be used just like beds except they do not set a player's spawn point on use, safely preserving a player's spawn point at their home base."
+		""
+		"&2Hammocks&r are like an inverse bed, turning day to night."
+	]
+	quest.0F09DAD5693B8184.title: "Comfort Sleeping Bag"
+	quest.0F38D97AA0B224BD.title: "Emberlash"
+	quest.0F82B3658342CB37.quest_desc: [
+		"A small early-game shulker box that can only hold 5 items. "
+		""
+		"Carry too many in your inventory and you get &4slowed down.&r"
+	]
+	quest.0F82B3658342CB37.title: "Sack"
+	quest.0FA426A7B60DDC25.title: "Campfire"
+	quest.0FA8FE0E13924D71.title: "Modular Diesel Engine"
+	quest.0FCEF055CF03578C.quest_desc: ["Test movement and fuel on an empty floor. Keep the first program short and provide a way to stop it."]
+	quest.0FCEF055CF03578C.title: "Teach a Turtle"
+	quest.0FE928A32F188AF9.title: "Sequenced Gearshift"
+	quest.102E01DF4056C8F3.title: "Basin Lid"
+	quest.10B989BA405741A5.title: "Mechanical Press"
+	quest.1143B7ACB2267613.quest_desc: ["Can also be used to create infinite &9water&r by extracting from a source block that has 2 source blocks adjacent to it"]
+	quest.1143B7ACB2267613.title: "Fluid Pipes"
+	quest.117F8E513252AFD8.title: "Twisted Blade"
+	quest.119F4FFDF9E3A97D.quest_desc: ["Test each peripheral separately before combining it with a control program."]
+	quest.119F4FFDF9E3A97D.title: "&6Workshop Interfaces"
+	quest.11C3B9214C94A5E9.quest_desc: ["Craft or obtain advancedperipherals:player_detector. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.11C3B9214C94A5E9.title: "Obtain Player Detector"
+	quest.12241B02E88AEA00.quest_desc: [
+		"Can be written on to create interesting pattern in black and white."
+		""
+		"Can also be directly edited without the GUI by holding a dye item."
+		""
+		"Can be cleared by using a wet sponge or soap"
+		""
+		"Can be waxed to prevent interactions"
+		""
+		"Can accept glow ink"
+	]
+	quest.12241B02E88AEA00.title: "Blackboard"
+	quest.1232057A0CBAA242.title: "Mechanical Saw"
+	quest.1279B47F0689ED42.quest_desc: [
+		"Photographs are printed using the &6Lightroom&r block from developed film, which requires a &elight source to function.&r"
+		""
+		"You can preview negatives to help choose the best exposure before printing."
+		""
+		"->&n Black and White prints&r require Paper and Black Dye."
+		""
+		"-> &nColor prints&r need Cyan, Magenta, and Yellow Dyes in addition to Paper."
+	]
+	quest.1279B47F0689ED42.title: "Lightroom"
+	quest.12A36E1F1EAEA871.quest_desc: ["Craft or obtain create:depot. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.12A36E1F1EAEA871.title: "Obtain Depot"
+	quest.12B8D781D7E61A07.quest_desc: ["Craft or obtain computercraft:wired_modem_full. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.12B8D781D7E61A07.title: "Obtain Wired Modem Full"
+	quest.12B91215BFFF67CA.quest_desc: ["Start with a small route and expand after it completes a reliable round trip."]
+	quest.12B91215BFFF67CA.title: "&6Railway Infrastructure"
+	quest.12BD42304D81C2B9.quest_desc: ["Craft or obtain oceansdelight:fugu_roll. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.12BD42304D81C2B9.title: "Obtain Fugu Roll"
+	quest.12E8EDE461EE10E1.quest_desc: ["Craft or obtain simulated:rope_coupling. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.12E8EDE461EE10E1.title: "Obtain Rope Coupling"
+	quest.1342F99BA0A42602.title: "Mjolnir"
+	quest.1355E6138364B725.title: "&6Cross Connector"
+	quest.1356D5F736EDB4E7.title: "Rod of Constant Rotation"
+	quest.13574ED0839D82F3.title: "&eFan Sanding Catalyst"
+	quest.137C2BEA35275D8D.quest_desc: ["Read the staff’s abilities and practice on ordinary enemies before a long expedition."]
+	quest.137C2BEA35275D8D.title: "Begin Spell Combat"
+	quest.13B1879DBC01507D.quest_desc: [
+		"In order to make a train, you're going to need at least:"
+		""
+		"- 1 &6Train Casing&r"
+		"- 1 &6Train Station&r"
+		"- Enough &6Train Tracks&r to make your railroad"
+		""
+		"In order to see how you assemble a train, &b&lponder&r the &6Train Station&r"
+	]
+	quest.13B1879DBC01507D.title: "Sturdy Sheet"
+	quest.13C0AF8CAA3708D0.quest_desc: ["Document the world with film cameras, instant photography, albums, frames, and collected media. Finish by recording an expedition: departure, destination, discovery, group portrait, and safe return. Display a small curated set instead of hoarding every photograph."]
+	quest.13C0AF8CAA3708D0.title: "Begin Photography and Collecting"
+	quest.140DE34C44095442.quest_desc: [
+		"&6&lCreate&r offers great guides for most of its items by hovering over them in &d&lEMI&r or in your inventory and holding down &eW&r to &bponder&r the item, but sometimes it's best just to test each thing out"
+		""
+		"{image:fpbcraft_quests:textures/aero_69dbd6638a268985.png width:397 height:140 align:center fit:true}"
+		""
+		"Because of this, this chapter is mostly focused on letting you know what exists and giving you a rough outline of the progression of the mod, but at the same time, it will not handhold you all the way to the end since &6&lCreate&r is a sandbox mechanic mod"
+	]
+	quest.140DE34C44095442.title: "Welcome to &b&lFPBCRAFT New Age&r!"
+	quest.14425350C27FA54F.title: "Obtain Copper Ingot"
+	quest.146AB8C2F860C978.title: "Gearbox"
+	quest.147A7AFCE8152E85.title: "Star's Edge"
+	quest.148A3DA3FCEDB160.title: "Mechanical Arm"
+	quest.148F31241E705AC5.title: "Small Connector"
+	quest.14A3EFE32C7BA51B.title: "&aObtain some &bPrismarine Alloy&r &aand &bPrismarine Rods&r"
+	quest.14A6521B585F85B5.quest_desc: ["Configure your quiver and carry enough ammunition for a trip and its return."]
+	quest.14A6521B585F85B5.title: "Prepare Ammunition"
+	quest.14DF47D3E9A7B01D.title: "Righteous Relic"
+	quest.151D5172C6774F6A.quest_desc: ["Test inserting and withdrawing common materials through the terminal."]
+	quest.151D5172C6774F6A.title: "Search Your Supplies"
+	quest.15206DA572A5F9B0.title: "Aviator's Goggles"
+	quest.1527A4F23B2A44A6.title: "Stack Upgrade Tier 2"
+	quest.1545AB9D18B108D2.quest_desc: [
+		"{image:fpbcraft_quests:textures/end_21573d4ed821d22c.png width:150 height:60 align:center}"
+		""
+		"&eHay golems&r can either be built by the player, or found naturally in villages. "
+		""
+		"They are passive, but will protect crops from being trampled within a 10x10 radius."
+	]
+	quest.1545AB9D18B108D2.title: "Hay golem"
+	quest.156867B9444CDDF1.title: "Analog Transmission"
+	quest.15894942317D63F5.title: "Mechanical Bearing"
+	quest.15AC86878BDE3189.title: "&6Welcome to Enchantment Industry."
+	quest.15B37F2033DE3A43.quest_desc: ["What could you do with this tools?"]
+	quest.15B37F2033DE3A43.title: "Let's Get Cooking"
+	quest.15F468F42F7E0DAA.quest_desc: ["Craft or obtain create:basin. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.15F468F42F7E0DAA.title: "Obtain Basin"
+	quest.16A4F5B99841D9D3.quest_desc: ["Craft or obtain toms_storage:item_filter. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.16A4F5B99841D9D3.title: "Obtain Item Filter"
+	quest.16A90A131D040D60.quest_desc: ["Practice connections at ground level where both ends are easy to reach."]
+	quest.16A90A131D040D60.title: "&6Rope Connections"
+	quest.16B089CEA0086976.quest_desc: [
+		"Bee Nests house wild Bees! They can't be moved but produce &cHoneycomb&r, which can be used to craft a &eBeehive.&r"
+		""
+		"To safely shear a full hive or nest, light a Campfire underneath. Otherwise, Bees will get angry."
+		""
+		"Carpet can be placed over Campfires to prevent fire damage."
+	]
+	quest.16B089CEA0086976.title: "Find a Bee Nest"
+	quest.16B5ECA8A4615830.title: "Borehead Bearing"
+	quest.16B62072743D8EA9.quest_desc: ["Configure a terminal and test it with a small transaction."]
+	quest.16B62072743D8EA9.title: "Set Up Banking"
+	quest.16BB8F1BEBB5231D.title: "Analog Lever"
+	quest.16C5B7FEB0A5A883.title: "Simulated"
+	quest.16C7279B94679735.quest_desc: ["Craft or obtain jewelry:jewelers_kit. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.16C7279B94679735.title: "Obtain Jewelers Kit"
+	quest.16E4D85F15C28E66.quest_desc: [
+		"There are three types of connectors:"
+		""
+		"* Small Connector"
+		"* Small Connector with Light"
+		"* Large Connector"
+		""
+		"The difference between &esmall and large connectors&r is the amount of energy they can input/output, and the number of connections they can handle simultaneously."
+		""
+		""
+		"&dUse a wrench to cycle each connector between Push, Pull, and None modes.&r"
+	]
+	quest.16E4D85F15C28E66.title: "&e🔌 Connectors Overview"
+	quest.17407324AC65E23E.title: "Brimstone Claymore"
+	quest.17787B197BCF9C15.quest_desc: ["Read its controls and prepare compatible supplies."]
+	quest.17787B197BCF9C15.title: "Carry an Instant Camera"
+	quest.17C1EEF93BEF371D.title: "Wand Of Symmetry"
+	quest.17DAE28EF38F2987.title: "&3Conduit Cage"
+	quest.180C4B36730D94DC.quest_desc: [
+		"I’m going to assume you’ve been out mining, right?"
+		""
+		"With your &6furnace&r ready, it’s time to &6smelt your first Iron and Copper ingots.&r"
+		""
+		"These basic metals are key to unlocking better tools and machines."
+		""
+		"From here on out, things are only going to get more exciting."
+	]
+	quest.180C4B36730D94DC.title: "The Age of Metal"
+	quest.18122C319BB93107.quest_desc: ["Craft or obtain create_integrated_farming:fishing_net. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.18122C319BB93107.title: "Obtain Fishing Net"
+	quest.184163B5F53833B9.title: "&aCrossing Gate"
+	quest.187F5F1AA148C11C.title: "Shadowsting"
+	quest.18B556CA859729F1.title: "&6Train Schedule&r"
+	quest.18B60A5730BE2811.title: "Rope Pulley"
+	quest.193BA8394B3DE00E.quest_desc: [
+		"Can be found naturally in villages. When attacked, the &ebarrel golem&r will close its lid and hide as a barrel, reducing damage taken by 90%. "
+		""
+		"It will also enter this state while sleeping through the night."
+		""
+		"The &ebarrel golem&r can be bartered with by dropping emeralds."
+	]
+	quest.193BA8394B3DE00E.title: "Barrel golem"
+	quest.1947EB0CA7C71601.quest_desc: [
+		"This amazing tool lets you &ahook yourself to a block and swing from it&r gaining momentum along the way and letting you launch yourself and get enough distance to hook yourself &ato the next block&r"
+		""
+		"You can even enchant it with the &dImpact enchantment&r to deal damage to whoever dares to get in your way"
+		""
+		"&o&8You can pair these with the&r &aSlime Boots&r &o&8and go even faster"
+	]
+	quest.1947EB0CA7C71601.title: "&dGrapplin Whisk"
+	quest.1948826B5D8C7124.title: "Elevator Pulley"
+	quest.194C38A81DBF3408.quest_desc: [
+		"&eUnlit coal golems&r will spawn naturally around coal ore, and are passive towards mobs. "
+		""
+		"&eCoal golems&r can be turned into&e lit coal golems&r by &cright clicking them with flint and steel&r,"
+		"and will become hostile towards mobs, but will die after attacking."
+	]
+	quest.194C38A81DBF3408.title: "Coal golem"
+	quest.1A1D03622DC034D0.quest_desc: ["Choose a common product, clearly advertise its price, and have another player test a purchase."]
+	quest.1A1D03622DC034D0.title: "Open a Small Shop"
+	quest.1A8CB63A3DD02B6C.title: "Netherite Diving Boots"
+	quest.1AA9280A2C910B3E.title: "&eCraft &bFishing Net"
+	quest.1B17D90D4096418D.quest_desc: [
+		"With your &ewooden pickaxe&r in hand, breaking stone is no longer a problem."
+		""
+		"Gather some &7cobblestone&r to craft a &afurnace&r—your first step toward smelting and cooking."
+		""
+		"While you're at it, consider upgrading to a stone pickaxe so you can start mining better ores like &bIron&r!"
+	]
+	quest.1B17D90D4096418D.title: "Stone and Flame"
+	quest.1B5373DEACFEAFFF.quest_desc: ["Craft or obtain createbigcannons:cannon_drill. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.1B5373DEACFEAFFF.title: "Obtain Cannon Drill"
+	quest.1B5A8F69FA996BE0.quest_desc: ["Can be obtained by &aright-clicking&r a piece of Stripped Log with a &6Brass Ingot&r"]
+	quest.1B5A8F69FA996BE0.title: "&6Brass Casing"
+	quest.1B5EB49F9665F261.quest_desc: ["Add a station clock to a waiting area and test it while a scheduled service runs."]
+	quest.1B5EB49F9665F261.title: "Equip the Station"
+	quest.1B9559364523CB42.quest_desc: ["Craft or obtain createaddition:rolling_mill. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.1B9559364523CB42.title: "Obtain Rolling Mill"
+	quest.1B9ED4AE2B210340.quest_desc: ["Craft or obtain createdieselgenerators:pumpjack_bearing. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.1B9ED4AE2B210340.title: "Obtain Pumpjack Bearing"
+	quest.1BBF300B35717E67.title: "Stressometer"
+	quest.1BC4F61DEA632F3B.title: "Tainted Relic"
+	quest.1C1E7C4EC3CF728A.quest_desc: [
+		"{image:fpbcraft_quests:textures/end_c57fac0b31837836.png width:150 height:60 align:center}"
+		"&dRight click&r to ride the &enetherite golem.&r Use your jump key to attack."
+		""
+		"&dRight click&r with a gold ingot to apply a gold trim to turn all piglins neutral towards the golem."
+		""
+		"&dRight click&r with a lava bucket to unlock the &enetherite golems&r summon ability - This ability will summon a group of coal golems to fight for the netherite golem. The keybind for this is set to \"R\" by default."
+		""
+		"This will, however, make the &enetherite golem&r vulnerable to water damage."
+	]
+	quest.1C1E7C4EC3CF728A.title: "Netherite golem"
+	quest.1C48390568DBD91B.title: "&eWelcome to Create Kitchen"
+	quest.1C5C626540BFF7D8.title: "End Stone Powder"
+	quest.1C5D6A111BA7EE6C.title: "Millstone"
+	quest.1C812AE015CB5309.quest_desc: ["Choose a small set of images that work together and give them space to be seen."]
+	quest.1C812AE015CB5309.title: "&6The Gallery"
+	quest.1C8C1A28A1695E83.quest_desc: ["Keep a record of fishing spots and what you catch there."]
+	quest.1C8C1A28A1695E83.title: "&6Tide Fishing"
+	quest.1C9CC78F2C3FF831.title: "Livyatan"
+	quest.1CDAAA97BDE8BF53.quest_desc: ["Inspect the casting recipes and prepare a casting area for the barrel material you intend to use."]
+	quest.1CDAAA97BDE8BF53.title: "Prepare the Foundry"
+	quest.1CE7FAEAC4B62C92.quest_desc: ["Install the instrument where the pilot can read it and observe it during a short test dive."]
+	quest.1CE7FAEAC4B62C92.title: "Watch the Dive"
+	quest.1CF72A9EACD0EA9A.quest_desc: ["Craft or obtain waystones:waystone. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.1CF72A9EACD0EA9A.title: "Obtain Waystone"
+	quest.1D063CCB3C104970.title: "&aCraft Expericence Hatch"
+	quest.1D1DD45F6D676F05.quest_desc: ["Craft or obtain aeronautics:andesite_propeller. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.1D1DD45F6D676F05.title: "Obtain Andesite Propeller"
+	quest.1D4ABD864404E2D1.title: "Molten Edge"
+	quest.1D4D8D0FD16853E3.quest_desc: ["Craft or obtain create_enchantment_industry:printer. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.1D4D8D0FD16853E3.title: "Obtain Printer"
+	quest.1D86D0B450A0183F.title: "Caelestis"
+	quest.1DDD869FDA5484E5.quest_desc: ["Connect a peripheral and inspect peripheral.getNames() in the Lua shell. Use its actual name in your program."]
+	quest.1DDD869FDA5484E5.title: "Discover Peripherals"
+	quest.1E1B12347C017401.quest_desc: ["Craft or obtain createdieselgenerators:bulk_fermenter. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.1E1B12347C017401.title: "Obtain Bulk Fermenter"
+	quest.1E5089031ACDE88E.title: "Cogwheels"
+	quest.1E861FB34D4B81E0.quest_desc: [
+		"Used to unlock lock blocks like &enetherite doors&r, &elock block&r or the &esafe&r. You can put it in any curios slot."
+		""
+		"You can also rename the key using an anvil."
+	]
+	quest.1E861FB34D4B81E0.title: "Key"
+	quest.1E9B45E582BEDC55.quest_desc: ["Craft or obtain create_train_parts:crossing. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.1E9B45E582BEDC55.title: "Obtain Crossing"
+	quest.1ECA32256012FBB4.quest_desc: [
+		"And finally you have your photograph, a captured moment in time! Now it's time to admire the result."
+		""
+		"Can be placed in a &6Photograph Frame&r, &6Photo Album&r or shared with friends."
+		""
+		"Aged Photograph is created by crafting Photograph with Brown Dye and Brush."
+		""
+		"Photographs can be stacked by right-clicking a Photograph or Stacked Photographs with another Photograph."
+	]
+	quest.1ECA32256012FBB4.title: "Photograph"
+	quest.1EFE17AB704F4543.quest_desc: ["Start with a cooking table and explore which recipes are available from your ingredients."]
+	quest.1EFE17AB704F4543.title: "Plan the Menu"
+	quest.1F020B868C41BB41.quest_desc: [
+		"The world feels more alive with &eSupplementaries&r. This mod adds a variety of interactive and decorative blocks that bring charm, utility, and realism to your builds."
+		""
+		"From signposts, ropes, slingshots, globes, and even spring-loaded traps, there’s something for every adventurer and builder."
+		""
+		"Experiment, decorate, and tinker — &6Supplementaries&r rewards creativity and clever thinking."
+		""
+		""
+		"&d@supplementaries&r"
+	]
+	quest.1F020B868C41BB41.title: "&6Supplementaries&r"
+	quest.1F0D3C39FD440894.title: "Wing"
+	quest.1F9B9479A52B2825.quest_desc: ["Craft or obtain create_connected:inverted_gearshift. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.1F9B9479A52B2825.title: "Obtain Inverted Gearshift"
+	quest.1FC668B6558DA140.quest_desc: ["Read the ballast tank’s Ponder scene and plan space for its supporting components."]
+	quest.1FC668B6558DA140.title: "Plan Buoyancy"
+	quest.20E27ACEEC60241D.title: "Soul Pyre"
+	quest.213D01CE5AA45F04.title: "Powered Latch"
+	quest.215917EEFCD93696.quest_desc: ["Craft or obtain create:water_wheel. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.215917EEFCD93696.title: "Obtain Water Wheel"
+	quest.21696F471E26A59D.quest_desc: ["Craft or obtain createpropulsion:thruster. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.21696F471E26A59D.title: "Obtain Thruster"
+	quest.21796375637765B0.title: "Engineer's Goggles"
+	quest.218D88743E1CA2CB.title: "Brass Tunnel"
+	quest.218D97C945555608.quest_desc: ["Learn its attack rhythm against common enemies."]
+	quest.218D97C945555608.title: "Try the Mace"
+	quest.219ED97EA6784B4E.title: "Spout"
+	quest.21ACA2FFF3225A31.title: "Sword on a Stick"
+	quest.22BB4FD92631FF2F.quest_desc: [
+		"Build a home, explore the world, and grow a Create workshop at your own pace."
+		""
+		"This map follows the original Endventure survival layout. The Create and Aeronautics groups use the original All of Create maps."
+		""
+		"Choose a branch from the sidebar. The Endventure eye-fragment campaign and quest currency do not apply here."
+	]
+	quest.22BB4FD92631FF2F.title: "&6Welcome to FPBCRAFT New Age!"
+	quest.23483FC058CFEDD9.title: "Alternator"
+	quest.234B94D55C74FCDA.quest_desc: ["Craft or obtain create_sa:drone_controller. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.234B94D55C74FCDA.title: "Obtain Drone Controller"
+	quest.2372BEFEDDE42401.quest_desc: [
+		"&6Arts and Crafts&r mainly adds a variety of unique and colorful building blocks for your builds. "
+		""
+		"It also allows you to craft &apaintbrushes&r to quickly recolor blocks such as wool, terracotta, mud, and more."
+		""
+		"&d@arts&r"
+	]
+	quest.2372BEFEDDE42401.title: "&6Arts and Crafts"
+	quest.23A1751B99525587.quest_desc: ["Craft or obtain betterarcheology:archeology_table. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.23A1751B99525587.title: "Obtain Archeology Table"
+	quest.23AA10E7E65198DC.title: "Lava Bucket"
+	quest.23D37871FE505961.title: "Solid and Liquid Burners"
+	quest.241B1263BD340743.quest_desc: ["Craft or obtain create_simulated_additions:ckbgv_4_engine. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.241B1263BD340743.title: "Obtain Ckbgv 4 Engine"
+	quest.2543EBF86EFAEAA0.quest_desc: ["Craft or obtain createdieselgenerators:engine_piston. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.2543EBF86EFAEAA0.title: "Obtain Engine Piston"
+	quest.25484B6775FCF549.title: "&6The 6-way Gearboxes"
+	quest.2560A19BA65ABA14.quest_desc: ["Read the tool’s controls and try each needed operation on an expendable frame."]
+	quest.2560A19BA65ABA14.title: "Shape a Test Frame"
+	quest.256EE2934D3F225F.quest_desc: [
+		"When crafted, a respawn anchor has no (zero) charge and can't yet be used until charged. Using a glowstone block (not glowstone dust) on it adds a charge. The anchor accepts up to 4 charges, and the charge level is indicated by a dial on the side of the block"
+		""
+		"The first charge makes the respawn anchor glow with a light level of 3. Each glowstone after the first increases the light level by 4, up to a maximum of 15."
+		""
+		""
+		"{@pagebreak}"
+		"&6Setting respawn&r"
+		""
+		"To set the player's spawn location to the respawn anchor they must use it, just like one does with a bed. The anchor must at least have one charge, and it must be in the Nether. A confirmation appears when the player's respawn location is set. Other players can also set their spawn point to the same respawn anchor. "
+		""
+		"Each respawn uses up one charge, even if used by another player."
+		""
+		"Using a charged anchor overrides any other spawn location the player might have had, as with a bed. The respawn anchor does not serve as a backup spawn point to a missing or obstructed bed."
+		""
+		""
+		"{@pagebreak}"
+		"&6Respawn upon player death&r"
+		""
+		"Upon death, the player respawns next to the anchor, and it loses one charge."
+		""
+		"If a player's respawn anchor is destroyed, if its charges have been exhausted, or if the area around it is made unsuitable for respawning, a message appears saying \"You have no home bed or charged Respawn Anchor, or it was obstructed\", and the player respawns at the world spawn point. Returning through an end portal is not counted as a respawn against the charges."
+		""
+		""
+		"{@pagebreak}"
+		"&6Exploding&r"
+		""
+		"If the player attempts to set their spawn at a charged respawn anchor in the Overworld, the End, or custom dimensions in which they are disabled, the block explodes (and is destroyed) similar to when a bed is used in the Nether or the End. The explosion has a power of 5 and sets fire to surrounding blocks."
+		""
+		""
+		"{@pagebreak}"
+		"&6Redstone component&r"
+		""
+		"When charged, a redstone comparator gives a signal depending on the number of charges: 3 for one charge, 7 for two charges, 11 for three charges, 15 for four charges. An empty anchor gives a signal of 0."
+		""
+		"The respawn anchor can also be charged with a dispenser."
+		""
+		"The respawn anchor cannot be pushed by a piston."
+		""
+		""
+		"{@pagebreak}"
+		"&6Mobs&r"
+		""
+		"Hoglins run away from respawn anchors."
+		""
+		"&6Note blocks&r"
+		""
+		"Respawn anchors can be placed under note blocks to produce the \"bass drum\" sound."
+	]
+	quest.256EE2934D3F225F.title: "Respawn Anchor"
+	quest.2582A8EC35B1117E.title: "Encased Chain Drive"
+	quest.264C981E0B47E0B9.title: "&bWater Bucket"
+	quest.265A6022F522B8DA.title: "&6Track Factory"
+	quest.26883E0F5FB91532.quest_desc: [
+		"To make it, combine a &bRunic Tablet&r with a &cEmpowered Remnant&r in a Smithing Table."
+		""
+		"Click to identify which power you have rolled."
+	]
+	quest.26883E0F5FB91532.title: "Runefused Gem"
+	quest.2690FD9C96CFC8E2.title: "Train Schedule"
+	quest.274FB884213BFAE0.quest_desc: ["Craft or obtain create_connected:brass_gearbox. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.274FB884213BFAE0.title: "Obtain Brass Gearbox"
+	quest.276CFAB858D715B3.title: "&2Minecart with Dispenser"
+	quest.2773A370B478FE5B.quest_desc: ["Craft or obtain supplementaries:pedestal. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.2773A370B478FE5B.title: "Obtain Pedestal"
+	quest.278D7C4D0CF7D939.title: "Netherite Backtank"
+	quest.27AA6374BEFA5BC9.title: "&6The Parallel Gearboxes"
+	quest.27AF9B0AC26490FB.title: "&cActivator Rail"
+	quest.27F1DC2DFB8CAA98.quest_desc: ["Craft or obtain create:mechanical_saw. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.27F1DC2DFB8CAA98.title: "Obtain Mechanical Saw"
+	quest.281AAF5A1EBB212C.quest_desc: ["Fit the vent and test its behavior in shallow water before attempting a deep dive."]
+	quest.281AAF5A1EBB212C.title: "Control the Ballast"
+	quest.281BD363F284F932.quest_desc: ["Begin in shallow water with a small craft and a recovery route. See Aquatic Ambitions for the related underwater Create systems."]
+	quest.281BD363F284F932.title: "&6Submarine Workshop"
+	quest.2827F9DB62704B2E.title: "Materials for &3Crates"
+	quest.283E86B9543CD37F.title: "Icewhisper"
+	quest.286BBA52B26F5D97.quest_desc: ["Craft or obtain quark:backpack. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.286BBA52B26F5D97.title: "Obtain Backpack"
+	quest.28755C111CEBB63B.title: "Thruster"
+	quest.291B6503FB8853A5.quest_desc: ["Craft or obtain createpropulsion:tilt_adapter. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.291B6503FB8853A5.title: "Obtain Tilt Adapter"
+	quest.29451136DDC83208.quest_desc: ["Craft or obtain createdieselgenerators:oil_scanner. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.29451136DDC83208.title: "Obtain Oil Scanner"
+	quest.2956B1D37C0C297D.title: "&6Mechanical Roller"
+	quest.29A157630356CC34.quest_desc: ["Craft or obtain create_submarine:electrolyzer. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.29A157630356CC34.title: "Obtain Electrolyzer"
+	quest.2A38322D86E1B832.title: "Rope Winch"
+	quest.2A5212A2374C113F.quest_desc: ["You can also switch the look of your &6Water Wheel&r by right-clicking it with pretty much any &awood plank&r (including ones from other mods)"]
+	quest.2A5212A2374C113F.title: "Water Wheel"
+	quest.2AA503F5CB265D58.title: "Directional Linked Receiver"
+	quest.2AB887E8DEF7BAD8.title: "Wraithfang"
+	quest.2AD939A578BBDEE3.quest_desc: [
+		"&9Tasks &rare things that need to be done to complete a quest. If a task is an item, clicking on it will show its recipe"
+		""
+		"&6Rewards &rare what you get after completing all &9Tasks&r. Click to claim"
+		""
+		"The pin icon at the top left will pin a quest to your screen"
+	]
+	quest.2AD939A578BBDEE3.title: "&6Quests"
+	quest.2AE29E09125845FF.title: "Hearthflame"
+	quest.2B12C4A251B2D649.title: "Redstone Magnet"
+	quest.2B1C31A2EAD5CD7B.quest_desc: ["Craft or obtain bellsandwhistles:station_platform. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.2B1C31A2EAD5CD7B.title: "Obtain Station Platform"
+	quest.2B27E865B4BF384D.quest_desc: [
+		"The &6Farming for Blockheads Market&r provides farming supplies through its configured trades."
+		""
+		"Check the available offers before planning your farm. FPBCRAFT does not use Endventure’s token shop or Magic Coins rewards."
+	]
+	quest.2B27E865B4BF384D.title: "&6Seeds and Saplings at the Market"
+	quest.2B5168AEC50F20FC.title: "&cLava Bucket"
+	quest.2B8F16FB00DB8BA1.title: "&eTrain Casing"
+	quest.2BC682D95835B7AA.title: "Honey Bottle"
+	quest.2BC7146E78A53E8E.quest_desc: [
+		"The way you locate structures has also changed you'll now need to &6buy special maps from the Market.&r "
+		""
+		"These maps work differently &ethey don’t guide you to the nearest location, but instead give you random coordinates&r for the structure you’re looking for."
+		""
+		"Because of that, buying more than one map might point you to different spots. That randomness is part of the challenge!"
+	]
+	quest.2BC7146E78A53E8E.title: "&aFinding Structures with Maps"
+	quest.2BC97011590F4BB5.title: "&2Craft Cake o' Enchanting"
+	quest.2C052193A40DBB04.quest_desc: ["The &6upgrade base&r is the main thing needed for each upgrade that you can use within the mod, it is used to craft every single upgrade"]
+	quest.2C052193A40DBB04.title: "Upgrade Base"
+	quest.2C167EF3B2484CBE.quest_desc: [
+		"Transform your Minecraft world with elegant and stylish decor. From modern furniture to classic pieces, add a touch of sophistication to your builds"
+		""
+		"Decorate with style and make your Minecraft creations truly stand out."
+	]
+	quest.2C167EF3B2484CBE.title: "Decoration and Building Options."
+	quest.2C2E9669B7CF255F.quest_desc: ["Give your railway useful station names before adding passenger displays."]
+	quest.2C2E9669B7CF255F.title: "&6Passenger Information"
+	quest.2C58ED9D4CFD1505.quest_desc: [
+		"Activate a Waystone when you discover one so it becomes a useful stop on your journeys."
+		""
+		"Name important destinations clearly. Travel costs and placement rules depend on this server’s Waystones settings."
+	]
+	quest.2C58ED9D4CFD1505.title: "&eWaystones"
+	quest.2C5F1702C6691336.title: "&bSturdy Sheet"
+	quest.2C797CB1AFEEAE12.title: "Netherite Diving Helmet"
+	quest.2C9B2A91DF51A9B4.quest_desc: ["Craft or obtain fetzisdisplays:acacia_horse_armor_stand. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.2C9B2A91DF51A9B4.title: "Obtain Acacia Horse Armor Stand"
+	quest.2CB70E6D236A5599.quest_desc: ["The &6diamond backpack&r is the upgrade of the &egold backpack&r. It has 108 storage slots and can hold 5 upgrades"]
+	quest.2CB70E6D236A5599.title: "Diamond Backpack"
+	quest.2D420E7E1408CA7B.quest_desc: ["Try a short rope connection and inspect how the frames move relative to one another."]
+	quest.2D420E7E1408CA7B.title: "Connect Nearby Frames"
+	quest.2DA35CE521EA5341.quest_desc: ["Craft or obtain create_vibrant_vaults:vertical_shipping_container. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.2DA35CE521EA5341.title: "Obtain Vertical Shipping Container"
+	quest.2DA9042005E23D71.title: "&aInventory Access Port"
+	quest.2DE12D36338B0B4B.title: "Wheel Mount"
+	quest.2E55E3F116F3D3F0.quest_desc: ["Craft or obtain cccbridge:scroller_block. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.2E55E3F116F3D3F0.title: "Obtain Scroller Block"
+	quest.2E9BB5BB1FC9A449.quest_desc: [
+		"&cSimply Swords&r brings an entirely new arsenal of weapons to explore."
+		"From fast daggers to heavy greatswords, each type offers unique combat styles and effects."
+		""
+		"It also introduces extremely rare &6Legendary weapons&r with powerful abilities — these can only be found as drops from specific bosses."
+		""
+		"Even more, the mod features the unique &3Runic Powers&r system. Certain weapons can roll up to &6two sockets&r when looted, allowing you to enhance them with special gems."
+		""
+		"There are two socket types: &bNetherfused&r and &3Runefused&r."
+		"To socket a weapon, left-click the gem, then left-click the matching weapon."
+		"&c⚠Note: Socketing is permanent — gems cannot be removed.&r"
+		""
+		"It’s the best way to understand the mechanics, weapon types, and upgrade systems Simply Swords has to offer."
+	]
+	quest.2E9BB5BB1FC9A449.title: "Guide Book"
+	quest.2EB06B243632753B.quest_desc: ["Inspect the container’s supported operations before relying on it to recover a vehicle."]
+	quest.2EB06B243632753B.title: "Prepare Recovery Storage"
+	quest.2EC2A1393412D7F8.title: "&aThrow a &eNautilus Shell&a into the &6Crushing Wheel"
+	quest.2ED6612189365230.quest_desc: [
+		"&eThe Accumulator&r is a block used for storing electrical energy."
+		""
+		"After generating energy with an &6Alternator&r, it can be stored in an &eAccumulator&r by placing at least one &binput Connector&r on top of it. "
+		""
+		"You can also place a second &bConnector&r as an energy output. Each &eAccumulator&r holds 2 MFE of energy."
+		""
+		"Like Item Vaults and Fluid Tanks, Accumulators can be merged into 2×2 or 3×3 multiblocks, and extended vertically up to 5 blocks tall. "
+		""
+		"The largest possible structure is 3×5×3, made of 45 Accumulators, storing a total of 90 MFE."
+		""
+		"Merging &eAccumulators&r reduces the number of required &bConnectors&r and saves space."
+	]
+	quest.2ED6612189365230.title: "&e⚡ Electrical Energy Storage – Accumulator"
+	quest.2EDE309E3E5A7541.title: "Extendo Grip"
+	quest.2F1F40E7DE297A04.quest_desc: ["Progress from personal storage to a searchable inventory network, then automate it with computers, turtles, and peripherals. Name computers, save programs before rebooting, test peripheral names with the Lua shell, and keep a manual recovery route for every automated store."]
+	quest.2F1F40E7DE297A04.title: "Begin Storage and Computers"
+	quest.2F39E4AF7A8004CE.title: "Milestone"
+	quest.2F421645C4D12F90.quest_desc: [
+		"&6Film rolls&r are loaded into a Camera to store your exposures."
+		""
+		"Each roll can hold up to 16 frames. To capture an image, you’ll need to expose light-sensitive film."
+		""
+		"You can choose between basic black and white film, which is simple to use, or color film, which is more complex to craft and develop but rewards you with vibrant, full-color photos."
+		""
+		"You can also rename the film by &dright click&r."
+	]
+	quest.2F421645C4D12F90.title: "Film rolls "
+	quest.2FF6D3CEB00FB1EE.quest_desc: ["Craft or obtain natures_spirit:travertine. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.2FF6D3CEB00FB1EE.title: "Obtain Travertine"
+	quest.304C08AD8F2D3227.quest_desc: [
+		"Use the &dEMI&r search bar to find items by name."
+		""
+		"Type &b@create&r to filter to Create. Hover an item and use &bR&r for recipes or &bU&r for uses."
+		""
+		"Use EMI bookmarks to keep the components for your next build close at hand. Check Options > Controls for your bookmark binding."
+	]
+	quest.304C08AD8F2D3227.title: "&bEMI Recipe Browser"
+	quest.30619225AF542214.quest_desc: ["Craft or obtain paladins:iron_mace. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.30619225AF542214.title: "Obtain Iron Mace"
+	quest.3083E239B6591E57.title: "Rolling Mill"
+	quest.308B3F6525C1E7C7.title: "The Watcher"
+	quest.31016BBFD1D232AD.quest_desc: ["Connect the drilling machine to power and output storage. Watch one complete operating cycle before leaving it unattended."]
+	quest.31016BBFD1D232AD.title: "Build the Extraction Line"
+	quest.310F04BC8F904770.title: "Empty Pattern Schematic"
+	quest.318A183111C86581.title: "Engine Turbocharger"
+	quest.32170ED1D4201965.quest_desc: [
+		"&6Better Combat&r changes weapon attacks and animations."
+		""
+		"Try your weapon’s reach and attack rhythm against ordinary enemies before seeking bosses. Build a loadout around your class and keep recovery equipment at home."
+	]
+	quest.32170ED1D4201965.title: "Combat Mechanics"
+	quest.323322C27D4630CD.quest_desc: ["Craft or obtain create_submarine:water_thruster. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.323322C27D4630CD.title: "Obtain Water Thruster"
+	quest.3233DDD823D4139B.title: "&6Transmission Chain"
+	quest.328A73D96C93A941.title: "Engine"
+	quest.32A3F067AEC41928.quest_desc: ["Compare shallow and deeper water and note which catches change."]
+	quest.32A3F067AEC41928.title: "Compare Fishing Depths"
+	quest.32F350560FF91E9E.title: "Docking Connector"
+	quest.334FF5EA51FD789C.title: "&6Minecart with Chest"
+	quest.33F9DA1C941929AF.quest_desc: ["Use the launcher in a clear test area. Keep a route back to both anchors."]
+	quest.33F9DA1C941929AF.title: "Reach a Distant Anchor"
+	quest.33FFB796891872AB.quest_desc: ["Tree Fertilizer can grow Saplings instantly regardless of their spacing conditions. "]
+	quest.33FFB796891872AB.title: "Tree Fertilizer"
+	quest.342EBDAD1623E863.quest_desc: ["Craft or obtain create:gearshift. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.342EBDAD1623E863.title: "Obtain Gearshift"
+	quest.348B374D9CE45DC0.title: "Linked Typewriter"
+	quest.34AF1D47DD550D56.title: "&6Printer"
+	quest.3504EE4F5FF42629.title: "Totem of Souls"
+	quest.351B1DEFEAAFF17C.title: "Optical Sensor"
+	quest.351E55DB5CE3B5AE.quest_desc: ["Craft or obtain create_sa:block_picker. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.351E55DB5CE3B5AE.title: "Obtain Block Picker"
+	quest.355FE59008453744.title: "Gearshift"
+	quest.36076450010AA17C.title: "Wrench"
+	quest.368085B4ADC8B548.quest_desc: [
+		"With the &6deposit upgrade&r, you can shift-right-click on any storage, and it will instantly deposit the backpack contents!"
+		""
+		"If you use the &badvanced&r upgrade, you can filter to match contents of the storage!"
+	]
+	quest.368085B4ADC8B548.title: "Deposit Upgrade"
+	quest.3680E625DFFF1C10.quest_desc: ["Craft or obtain createpropulsion:vector_thruster. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.3680E625DFFF1C10.title: "Obtain Vector Thruster"
+	quest.36895DC7E485B98F.title: "Auger Blocks"
+	quest.36ECA831E370C3B9.title: "Cable"
+	quest.3724830D6E007420.quest_desc: ["Captures small mobs like chickens"]
+	quest.3724830D6E007420.title: "Cage"
+	quest.372AFB01A22354A6.title: "&l&dConnected"
+	quest.3766791B74FFFEC0.title: "Powered Toggle Latch"
+	quest.3768C5E58EC24E42.quest_desc: ["At low movement speeds, &bLevitite&r significantly resists motion. This resistance drops at higher movement speeds"]
+	quest.3768C5E58EC24E42.title: "Levitite"
+	quest.3774FB4F7530A509.quest_desc: ["Needs to rotate at at least &630 RPM&r to function."]
+	quest.3774FB4F7530A509.title: "Mechanical Mixer"
+	quest.378687116DC759C5.title: "Mechanical Plough"
+	quest.37AD2EEC0C098F8D.title: "&bKinetic Bridge"
+	quest.37D8EA6082EFDDD0.quest_desc: ["Craft or obtain minecraft:torch. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.37D8EA6082EFDDD0.title: "Obtain Torch"
+	quest.37EB5ADDF8EED394.quest_desc: ["Display a finished photograph somewhere another player will see it."]
+	quest.37EB5ADDF8EED394.title: "Frame a Favorite"
+	quest.381FD366B8DEA67E.quest_desc: ["Craft or obtain create:display_board. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.381FD366B8DEA67E.title: "Obtain Display Board"
+	quest.3850F2C155A37E24.title: "Train Controls"
+	quest.38693BC7ABAC7D8F.title: "Ethanol Bucket"
+	quest.38A74D27B9D30C98.title: "Frostfall"
+	quest.38C3324FD9F057ED.quest_desc: ["Craft or obtain supplementaries:blackboard. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.38C3324FD9F057ED.title: "Obtain Blackboard"
+	quest.3903A364D3B6334E.title: "Pumpjack"
+	quest.391ACF97C33C56DC.quest_desc: ["Add a fridge and keep ingredients separate from finished meals."]
+	quest.391ACF97C33C56DC.title: "Organize Ingredients"
+	quest.394F44D3FF246D07.quest_desc: ["Needs to rotate at at least &630 RPM&r to function"]
+	quest.394F44D3FF246D07.title: "Mechanical Mixer"
+	quest.3953A8F33F547DC3.title: "Propeller Bearing"
+	quest.3980DD561018E983.quest_desc: ["Craft or obtain sophisticatedbackpacks:backpack. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.3980DD561018E983.title: "Obtain Backpack"
+	quest.39C04484804E5D4A.quest_desc: ["Use the slide with the instant camera and give a finished picture to a friend."]
+	quest.39C04484804E5D4A.title: "Capture a Shared Moment"
+	quest.39C224031316D458.quest_desc: ["Inspect the film’s uses and load it into your camera. Photograph a few different subjects."]
+	quest.39C224031316D458.title: "Load Your First Film"
+	quest.39EB7E7CB1EF02BF.title: "Crude Oil Bucket"
+	quest.39F13BA17DD246F8.quest_desc: ["Compare the dagger’s reach and timing with your heavier weapon."]
+	quest.39F13BA17DD246F8.title: "Try a Lighter Weapon"
+	quest.39FE1634844E05B3.quest_desc: ["Mount the launcher at a test dock and rehearse departure and recovery."]
+	quest.39FE1634844E05B3.title: "Build a Docking Station"
+	quest.3A2BE2B49EBA3445.title: "Redstone Transmission"
+	quest.3A40D77D084CB093.title: "Redstone Converter"
+	quest.3A73F444D62F80C6.title: "Brass Casing"
+	quest.3A9145B14C47CC68.quest_desc: ["Craft or obtain brick_and_mortar:kiln. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.3A9145B14C47CC68.title: "Obtain Kiln"
+	quest.3A9F5B0E832B2143.title: "Stirling Engine"
+	quest.3ABDF1023D85E891.quest_desc: ["Craft or obtain exposure:lightroom. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.3ABDF1023D85E891.title: "Obtain Lightroom"
+	quest.3AC170107CE472AC.title: "&eChoo Choo!"
+	quest.3AD6E6BAEDE817C6.quest_desc: ["Keep the relic in your inventory and get inflicted with &6Darkness.&r Wait briefly for the transformation."]
+	quest.3AD6E6BAEDE817C6.title: "Magispear"
+	quest.3B114CD43935DC08.quest_desc: ["Start with the mod’s own guide so you understand accounts and transactions before opening a shop."]
+	quest.3B114CD43935DC08.title: "Read the Banking Guide"
+	quest.3B43CD49D5B7924E.title: "&dRail"
+	quest.3B57514B1D0DA58B.quest_desc: ["Craft or obtain create:portable_storage_interface. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.3B57514B1D0DA58B.title: "Obtain Portable Storage Interface"
+	quest.3B66A8BECF486D75.quest_desc: ["Craft or obtain create:encased_fan. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.3B66A8BECF486D75.title: "Obtain Encased Fan"
+	quest.3B731698EA862F9C.quest_desc: ["Can be found naturally in &aslime chunks,&r and will spawn as one of two size variants, each with their own stats."]
+	quest.3B731698EA862F9C.title: "Slime golem"
+	quest.3B7FDEA8E83ECFFF.quest_desc: ["Craft or obtain tide:fish_satchel. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.3B7FDEA8E83ECFFF.title: "Obtain Fish Satchel"
+	quest.3B8E3FCDC823702B.title: "Small Tire"
+	quest.3B9859534043A89B.title: "Oil Scanner"
+	quest.3BB020375315EC8C.quest_desc: ["Craft or obtain create_sa:flamethrower. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.3BB020375315EC8C.title: "Obtain Flamethrower"
+	quest.3BEE2CAA67591FDE.title: "&6Brake"
+	quest.3C1EF575F1117F05.quest_desc: [
+		"The &n&eRolling Mill&r&r uses rotational force to roll metals into &eRods&r and &eWires.&r"
+		""
+		"To manually input items, drop &3Ingots&r or &3Plates&r on the top of the &aMill.&r"
+		""
+		"&dRight-click&r the Mill to manually retrieve the output items."
+		""
+		"This process can be automated with Funnels or Chutes."
+	]
+	quest.3C1EF575F1117F05.title: "Rolling Mill"
+	quest.3C566E2503F3B9E6.quest_desc: [
+		"&6Expure &rlets you take photos in a realistic and immersive way or even upload your own custom images!"
+		""
+		"To get started, you’ll need a &eCamera&r. Using it is easy:"
+		"Load a roll of film, look through the viewfinder, frame your shot, and press right-click to take a photo."
+		""
+		"&nWhile sneaking&r, right-click with the camera to open the &eAttachments Menu&r. From here, you can:"
+		""
+		"-> &fLoad Film&r"
+		""
+		"-> &fEquip a Flash&r (use a Redstone Lamp)"
+		""
+		"-> &fAttach a Lens&r (Spyglass)"
+		""
+		"-> &fAdd a Filter&r (Glass Pane)"
+		""
+		"&nWhen looking through the viewfinder&r, you can also customize camera settings by sneaking:"
+		""
+		"-> &fShutter Speed&r (brightens or darkens the image)"
+		""
+		"-> &fComposition Guides&r"
+		""
+		"-> &fSelf Timer&r Off/1/2/5/10 seconds - (when ticking, nearby entities will be attracted by the noise, and will look at the camera)"
+		""
+		"-> &fFlash Mode&r on/off/auto (if installed)"
+		""
+		"For those iconic selfies, just press &bF5&r to switch the camera to &nSelfie Mode&r."
+		""
+		""
+		"&d@exposure&r"
+	]
+	quest.3C566E2503F3B9E6.title: "&eCapturing the Moment: Expure Photography&r"
+	quest.3C5C9B6A36243E74.title: "&eMake a &dSweet Berry Cake"
+	quest.3C946DA546A25322.title: "Andesite Alloy"
+	quest.3C9945B82C422643.quest_desc: ["Craft or obtain crabbersdelight:turtle_stew. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.3C9945B82C422643.title: "Obtain Turtle Stew"
+	quest.3CB51169AB0AD075.quest_desc: ["Craft or obtain offroad:borehead_bearing. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.3CB51169AB0AD075.title: "Obtain Borehead Bearing"
+	quest.3CC352FF22296785.quest_desc: ["Craft or obtain createpropulsion:wing. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.3CC352FF22296785.title: "Obtain Wing"
+	quest.3CDE1E606917EEB9.title: "Smart Observer"
+	quest.3D3A82C8CF986896.quest_desc: ["Hold the relic in your hand and get hit by the &6Warden's Sonic Boom.&r"]
+	quest.3D3A82C8CF986896.title: "Magiscythe"
+	quest.3D8571BDACF74581.title: "Gyroscopic Mechanism"
+	quest.3DB85E4AA9130A29.title: "Copper Casing"
+	quest.3DBBE6F39BEA35CA.quest_desc: ["One thing not mentioned by &b&lponder&r is that the funnel can drop items on the ground when placed on an inventory and will only keep one item on the ground if it's close enough to the block the item lands on"]
+	quest.3DBBE6F39BEA35CA.title: "Andesite Funnel"
+	quest.3DBD16563B2DC920.quest_desc: ["Inspect the jewelry recipes and choose bonuses that support your loadout."]
+	quest.3DBD16563B2DC920.title: "Plan Accessories"
+	quest.3DC8C4187877A46D.title: "Potato Cannon"
+	quest.3DD836D6A5D3FFEC.title: "&aSuper Glue"
+	quest.3DEFB6AD6F9E0B95.quest_desc: [
+		"You’ve made it — the moment every miner dreams of."
+		""
+		"Dig deep and find your first &bDiamonds&r."
+		""
+		"These rare gems are not just for bragging rights; they’re used in powerful tools and machines."
+	]
+	quest.3DEFB6AD6F9E0B95.title: "&bShiny and Rare"
+	quest.3E133C2270E16D12.title: "&2Craft Experience Lantern"
+	quest.3E6787EA08BAFD05.title: "Fluid Tank"
+	quest.3E802E9141493698.quest_desc: ["Connect the kitchen around a convenient cooking area with room to move and store ingredients."]
+	quest.3E802E9141493698.title: "&6Kitchen Utilities"
+	quest.3E8E932520924D53.title: "Redstone Relay"
+	quest.3E9A62F3ED5AC6E2.title: "Mechanical Belt"
+	quest.3E9AC1D58A93D390.title: "&aGather Materials and craft a &3Conduit"
+	quest.3EF2B538E00DA73C.title: "&dTrain Observer"
+	quest.3F0A33730EB2BA1B.title: "Tilt Adapter"
+	quest.3F117DE0D8CD869B.quest_desc: ["Rotates blocks and mobs standing on it"]
+	quest.3F117DE0D8CD869B.title: "Turn Table"
+	quest.3F36C5E0D14513EA.quest_desc: ["Inspect the interface’s uses and connect a small group of inventories."]
+	quest.3F36C5E0D14513EA.title: "Connect the Store"
+	quest.3F49B9EFAA6B736B.quest_desc: ["Craft an &6Unidentified Artifact&r from Shards. Now the identifying begins!"]
+	quest.3F49B9EFAA6B736B.title: "Milestone"
+	quest.3F9A72B4DDD3F9BC.quest_desc: [
+		"Time to leave stone behind."
+		""
+		"With an &6Iron Pickaxe&r, you can finally mine &bDiamonds.&r"
+	]
+	quest.3F9A72B4DDD3F9BC.title: " A Sharp Upgrade"
+	quest.3FA3CC13659D491F.title: "&cFan Blasting Catalyst"
+	quest.3FA8BB65BB34118F.quest_desc: ["Use the installed trading system for player shops. Quest rewards remain ordinary items and XP."]
+	quest.3FA8BB65BB34118F.title: "&6Numismatics"
+	quest.3FCDA063769799D6.title: "&6Craft a Millstone"
+	quest.3FEAD3F2766B0AC1.title: "&6Brass Sheet"
+	quest.401EE830BE90D58F.quest_desc: ["Craft or obtain armory_rpgs:deathmantle_armor_feet. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.401EE830BE90D58F.title: "Obtain Deathmantle Armor Feet"
+	quest.407F3DF6572AB44C.title: "&2Train Controls"
+	quest.409D1B7C708E1EA2.quest_desc: ["Craft or obtain explorerscompass:explorerscompass. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.409D1B7C708E1EA2.title: "Obtain Explorerscompass"
+	quest.40B0B2D7F52941A0.quest_desc: ["Equip the ring in the appropriate slot and compare your character’s equipment before and after."]
+	quest.40B0B2D7F52941A0.title: "Equip a First Ring"
+	quest.40B311F740EDE3BB.title: "&6Inverted Clutch"
+	quest.40CC4B33EDDDF47D.title: "Speedometer"
+	quest.41153EBD5EDA4C33.quest_desc: ["Add the sink according to the kitchen’s connection rules and verify recipes still see the intended ingredients."]
+	quest.41153EBD5EDA4C33.title: "Finish the Work Area"
+	quest.41328C213CBF4186.quest_desc: ["Craft or obtain create:large_water_wheel. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.41328C213CBF4186.title: "Obtain Large Water Wheel"
+	quest.41C659706A9679BF.title: "Engine Assembly"
+	quest.42021CF43D746C84.title: "&2Road Kill"
+	quest.420327862BEB76E7.quest_desc: [
+		"Using EITHER the &6Magnet Upgrade&r or the &6Pickup Upgrade&r, you can make it so any item you pick up goes straight into your backpack!"
+		""
+		"Great for pairing with &6Stack Upgrades&r, &6Void Upgrades&r, and going strip mining!"
+	]
+	quest.420327862BEB76E7.title: "Magnet Upgrade"
+	quest.423D115CE5D87D68.quest_desc: ["Prepare for ocean exploration, fishing, diving, and pressure-safe submarine travel. Carry food, spare oxygen equipment, a recovery marker, and a return route. Test ballast and propulsion close to shore before entering deep water."]
+	quest.423D115CE5D87D68.title: "Begin Oceans and Submarines"
+	quest.424946890EF1AB60.quest_desc: ["Craft or obtain createoreexcavation:vein_finder. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.424946890EF1AB60.title: "Obtain Vein Finder"
+	quest.42660DE906AF86B0.quest_desc: ["&6Straw&r is an item which is made by either cutting plants with a &6knife&r on a Cutting Board, or harvesting plants with a &6knife&r."]
+	quest.42660DE906AF86B0.title: "Straw"
+	quest.426AE090D52DB359.title: "Thunderbrand"
+	quest.42C6335E4CE95C0B.quest_desc: ["Craft or obtain aeronautics_utility_objects:universal_joint_rod2. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.42C6335E4CE95C0B.title: "Obtain Universal Joint Rod2"
+	quest.42D1C4369552DF8A.title: "&dForecasting a Train's Arrival"
+	quest.42D44003D1D0BA56.quest_desc: ["Craft or obtain aeronautics:smart_propeller. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.42D44003D1D0BA56.title: "Obtain Smart Propeller"
+	quest.43402265FDE7614E.title: "Copper Backtank"
+	quest.4372151895E66E97.title: "Cart Assembler"
+	quest.43F01090BC46C56B.title: "&aObtain &rFlint"
+	quest.43F2E7913D8C8550.title: "&6Freewheel Clutch"
+	quest.43FA7F5302F72B4F.quest_desc: ["Craft or obtain farmersdelight:stove. Use EMI to inspect its recipe and uses before adding it to your build."]
+	quest.43FA7F5302F72B4F.title: "Obtain Stove"
+	quest.44BC710230A95A04.title: "Adjustable Chain Gearshift"
+	quest.44E8BA528D2299BC.title: "&eCraft a &6Slicer"
+	quest.44F129D70B859461.quest_desc: ["Prove your basic combat loadout against common enemies."]
+	quest.44F129D70B859461.title: "Defeat Ten Zombies"
+	quest.452A5581870B0573.quest_desc: ["Practice blocking and repositioning, then try fighting with a teammate."]
+	quest.452A5581870B0573.title: "Hold Your Ground"
+	quest.45302D6847413C5C.title: "Stormbringer"
+	quest.453DC602E5FD4DEF.quest_desc: ["Use the gyroscope’s instructions and adjust one setting at a time. Test close to the ground."]
+	quest.453DC602E5FD4DEF.title: "Tune the Craft"
+	quest.455357FC782D9375.quest_desc: ["Build a searchable store while keeping your original chests accessible."]
+	quest.455357FC782D9375.title: "&6Tom’s Storage"
 	quest.457EB60D601C67FD.quest_desc: ["Perhaps you can&b put these back together&r, or maybe make&o &6something else&r with it."]
 	quest.457EB60D601C67FD.title: "Milestone"
 	quest.45840D11383C3D7B.quest_desc: ["Craft or obtain oceansdelight:guardian_soup. Use EMI to inspect its recipe and uses before adding it to your build."]
