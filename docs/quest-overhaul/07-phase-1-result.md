@@ -80,7 +80,7 @@ Validation after the move:
 - Adventure & Exploration: `AD7E4E8A10A10001`
 - Combat & Equipment: existing `4863600DDEA1AF02` (formerly Collectibles)
 - RPG Series: existing `4A93CDBE321781DA` (formerly FPBCRAFT Additions)
-- Bosses: `B055E50000000001`
+- Bosses: `5055E50000000001`
 
 ## Deliberately deferred
 
