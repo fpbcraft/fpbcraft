@@ -28,6 +28,21 @@ LOCALE_KEY_RE = re.compile(
 )
 TASK_TYPE_RE = re.compile(r'^\s*type:\s*"([^"]+)"\s*$', re.MULTILINE)
 
+APPROVED_OPTIONAL_EDGES = {
+    # Sea discovery quests intentionally gate only their matching boss encounters.
+    ("5074000000000002", "5551333BF6400CD0"),
+    ("5074000000000003", "6AD3AF711015FA06"),
+    ("5074000000000004", "74DCAEFEE72B2873"),
+    # Optional overview nodes intentionally gate only their own related branches.
+    ("5B47C4A0292E74C5", "2C167EF3B2484CBE"),
+    ("4DAA0A4DF5A7A575", "2C167EF3B2484CBE"),
+    ("3E5AC888381F061B", "2C167EF3B2484CBE"),
+    ("7DB46C70468F2CFE", "2C167EF3B2484CBE"),
+    ("1A39F6601A18F853", "2C167EF3B2484CBE"),
+    ("5A20000000000001", "2C167EF3B2484CBE"),
+    ("077578BEE2304A7D", "42660DE906AF86B0"),
+}
+
 
 class Report:
     def __init__(self) -> None:
@@ -108,15 +123,11 @@ def has_inline_title(block: str) -> bool:
 
 
 def extract_task_types(block: str) -> list[str]:
-    marker = "tasks:"
-    start = block.find(marker)
-    if start < 0:
+    match = re.search(r'^\s*tasks:\s*\[', block, re.MULTILINE)
+    if not match:
         return []
 
-    bracket = block.find("[", start)
-    if bracket < 0:
-        return []
-
+    bracket = block.find("[", match.start())
     depth = 0
     in_string = False
     escaped = False
@@ -275,8 +286,8 @@ def validate(root: Path) -> Report:
                 if task_type == "checkmark":
                     checkmark_quests.append((qid, rel))
 
-            for match in DEPENDENCIES_RE.finditer(block):
-                for dep in QUOTED_ID_RE.findall(match.group(1)):
+            for dep_match in DEPENDENCIES_RE.finditer(block):
+                for dep in QUOTED_ID_RE.findall(dep_match.group(1)):
                     dependencies.append((qid, dep, rel))
                     graph[qid].add(dep)
 
@@ -310,7 +321,12 @@ def validate(root: Path) -> Report:
         for owner, dep, rel in dependencies
         if quest_optional.get(dep, False) and not quest_optional.get(owner, False)
     ]
-    for owner, dep, rel in optional_edges:
+    unexpected_optional_edges = [
+        edge
+        for edge in optional_edges
+        if (edge[0], edge[1]) not in APPROVED_OPTIONAL_EDGES
+    ]
+    for owner, dep, rel in unexpected_optional_edges:
         report.warn(
             f"{rel}: non-optional quest {owner} directly depends on optional "
             f"quest {dep}; verify this is an intentional related branch"
@@ -325,11 +341,11 @@ def validate(root: Path) -> Report:
 
     locale_ids: Counter[str] = Counter()
     locale_title_ids: set[str] = set()
-    for match in LOCALE_KEY_RE.finditer(lower):
-        locale_id = match.group(2) or match.group(3)
+    for locale_match in LOCALE_KEY_RE.finditer(lower):
+        locale_id = locale_match.group(2) or locale_match.group(3)
         if locale_id:
             locale_ids[locale_id] += 1
-            if ".title:" in match.group(0):
+            if ".title:" in locale_match.group(0):
                 locale_title_ids.add(locale_id)
 
     for chapter_id, rel in sorted(chapter_ids.items()):
@@ -343,8 +359,8 @@ def validate(root: Path) -> Report:
             report.warn(f"{rel}: quest {qid} has no localized or inline title")
 
     group_title_ids = {
-        match.group(1)
-        for match in re.finditer(
+        title_match.group(1)
+        for title_match in re.finditer(
             rf'^\tchapter_group\.({HEX_ID})\.title:', lower, re.MULTILINE
         )
     }
@@ -384,7 +400,10 @@ def validate(root: Path) -> Report:
         + ", ".join(f"{name}={count}" for name, count in sorted(task_types.items()))
     )
     report.note(f"Manual checkmark quests: {len(checkmark_quests)}")
-    report.note(f"Optional dependency edges reviewed: {len(optional_edges)}")
+    report.note(
+        f"Optional dependency edges: {len(optional_edges)} total, "
+        f"{len(unexpected_optional_edges)} unexpected"
+    )
     for qid, rel in checkmark_quests:
         report.note(f"CHECKMARK: {rel}: {qid}")
 
