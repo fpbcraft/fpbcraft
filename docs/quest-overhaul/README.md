@@ -10,7 +10,7 @@ This directory documents the planned overhaul of the FPBCraft quest book. The st
 2. Restore useful source quests that were removed when their mods were temporarily absent.
 3. Eliminate the isolated `FPBCRAFT Additions` group by integrating those chapters into the existing book structure.
 4. Add substantially deeper guidance for the mods called out in the overhaul request.
-5. Build a first-class RPG Series section with a tree for every class.
+5. Build a first-class RPG Series section with one shared radial class tree.
 6. Build boss progression that complements, rather than merely duplicates, Boss Checklist.
 7. Keep the book approachable: quests should explain mechanics and progression, not become an exhaustive item checklist unless collecting items is itself the point.
 
