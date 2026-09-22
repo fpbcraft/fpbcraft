@@ -1,0 +1,27 @@
+name: Validate FTB Quests
+
+on:
+  push:
+    paths:
+      - "ftbquests/quests/**"
+      - "scripts/validate_ftbquests.py"
+      - ".github/workflows/validate-ftbquests.yml"
+  pull_request:
+    paths:
+      - "ftbquests/quests/**"
+      - "scripts/validate_ftbquests.py"
+      - ".github/workflows/validate-ftbquests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate quest pack
+        run: python scripts/validate_ftbquests.py
