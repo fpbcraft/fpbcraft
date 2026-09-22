@@ -2169,4 +2169,30 @@
 	quest.5074000000000003.quest_desc: ["After discovering signs of the Kraken on the Myths of the Sea page, defeat one and recover its guaranteed Kraken Tentacle."]
 	quest.5074000000000004.title: "Leviathan"
 	quest.5074000000000004.quest_desc: ["Track a Leviathan through the Myths of the Sea discovery branch, defeat it, and recover its guaranteed Leviathan Heart."]
+
+	// Phase 8 — restored missing quest labels
+	quest.0DDA8D279FA3A0DE.title: "Train Stop"
+	quest.0DDA8D279FA3A0DE.quest_desc: ["Craft a Train Stop from Create: Things and Misc. It adds another compact way to manage rail-side infrastructure."]
+	quest.41DBE34083E1C3FD.title: "Train Buffer"
+	quest.41DBE34083E1C3FD.quest_desc: ["Craft a Train Buffer for a more finished and functional end to your rail lines."]
+	quest.45EF2EA3837EF0A6.title: "Portable Whistle"
+	quest.45EF2EA3837EF0A6.quest_desc: ["Craft a Portable Whistle for convenient train-related control away from fixed infrastructure."]
+	quest.5BB08263F2B5D7C3.title: "Brass Speaker"
+	quest.5BB08263F2B5D7C3.quest_desc: ["Craft a Brass Speaker from Create: Things and Misc for audible automation and station builds."]
+	quest.1807F725D1858AD9.title: "Clamp Meter"
+	quest.1807F725D1858AD9.quest_desc: ["Craft a Clamp Meter to inspect Electro Energetics systems without dismantling your wiring."]
+	quest.268B47C51C2B6498.title: "Lineman's Stick"
+	quest.268B47C51C2B6498.quest_desc: ["Craft a Lineman's Stick for safer hands-on work around Electro Energetics infrastructure."]
+	quest.7E989C151DD9DAE7.title: "SF₆ Breaker"
+	quest.7E989C151DD9DAE7.quest_desc: ["Craft a Sulfur Hexafluoride Breaker as part of the higher-tier Electro Energetics switching equipment."]
+	quest.1B347195A701040C.title: "Blanket"
+	quest.38B254719B73C3C0.title: "Embroidery Thread"
+	quest.39EF0966EB556EF0.title: "Bedding Package"
+	quest.4BCF0C28B6C31364.title: "Pillow"
+	quest.69590A923D5ED05A.title: "Ladder Tools"
+	quest.7D3E8B0BF58569BC.title: "Bed Sheet"
+	quest.1FF26858DB8E88F8.title: "Shattered History"
+	quest.1FF26858DB8E88F8.quest_desc: ["Break and loot an archaeology vase to advance Better Archeology's artifact progression."]
+	quest.3D93780758BA7194.title: "Artifact Shards"
+	quest.3570097E250F33B0.title: "Unidentified Artifact"
 }
