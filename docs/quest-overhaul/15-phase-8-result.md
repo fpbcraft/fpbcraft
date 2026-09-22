@@ -81,6 +81,12 @@ The repository does not contain a runtime Minecraft registry dump, so CI cannot 
 
 No book-wide reward rebalance was performed. Reward philosophy remains an explicit pack-owner decision in `06-open-questions.md`; Phase 8 preserves existing/source rewards rather than inventing a new economy during QA.
 
+## Test-pack artifact
+
+The quest validation workflow now packages `ftbquests/quests/` as `fpbcraft-quests.zip` after every successful validation run and publishes it as a GitHub Actions artifact for 30 days.
+
+This makes each future quest slice directly testable from the validation run without requiring a separate private-repository ZIP export.
+
 ## Runtime verification
 
 Static Phase 8 QA is complete. The remaining operational check is to load the updated quest pack in the actual Minecraft instance/server and verify:
