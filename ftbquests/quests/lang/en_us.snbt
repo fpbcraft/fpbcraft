@@ -2744,86 +2744,86 @@
 	quest.5A20000000000002.quest_desc: ["Combine pieces from Another Furniture, Handcrafted and Immersive Furniture into a finished room. The goal is to learn the available palettes, not to collect every chair."]
 
 	// Phase 5B — Adventure & Exploration
-\tquest.5B10000000000001.title: "Allurite"
-\tquest.5B10000000000001.quest_desc: ["Bring back an Allurite Shard from Galosphere's underground content. Crystal resources are the first concrete sign that you have entered its cave progression."]
-\tquest.5B10000000000002.title: "Pink Salt Caves"
-\tquest.5B10000000000002.quest_desc: ["Obtain a Pink Salt Shard. Pink Salt caves have their own materials, blocks and inhabitants, so this branch rewards actually exploring them."]
-\tquest.5B10000000000003.title: "Palladium"
-\tquest.5B10000000000003.quest_desc: ["Process or obtain a Palladium Ingot. Palladium is one of Galosphere's important progression materials and unlocks several crafted mechanics."]
-\tquest.5B10000000000004.title: "Opal"
-\tquest.5B10000000000004.quest_desc: ["Obtain an Opal while exploring Galosphere. Keep it alongside your other cave finds and inspect its recipes and uses in EMI."]
-\tquest.5B10000000000005.title: "Echo Altar"
-\tquest.5B10000000000005.quest_desc: ["Craft or obtain an Echo Altar. This is a concrete later-stage Galosphere milestone rather than another informational stop."]
-\tquest.5B10000000000006.title: "Sterling Equipment"
-\tquest.5B10000000000006.quest_desc: ["Craft a Sterling Chestplate to finish the page with usable Galosphere equipment built from your exploration progress."]
+	quest.5B10000000000001.title: "Allurite"
+	quest.5B10000000000001.quest_desc: ["Bring back an Allurite Shard from Galosphere's underground content. Crystal resources are the first concrete sign that you have entered its cave progression."]
+	quest.5B10000000000002.title: "Pink Salt Caves"
+	quest.5B10000000000002.quest_desc: ["Obtain a Pink Salt Shard. Pink Salt caves have their own materials, blocks and inhabitants, so this branch rewards actually exploring them."]
+	quest.5B10000000000003.title: "Palladium"
+	quest.5B10000000000003.quest_desc: ["Process or obtain a Palladium Ingot. Palladium is one of Galosphere's important progression materials and unlocks several crafted mechanics."]
+	quest.5B10000000000004.title: "Opal"
+	quest.5B10000000000004.quest_desc: ["Obtain an Opal while exploring Galosphere. Keep it alongside your other cave finds and inspect its recipes and uses in EMI."]
+	quest.5B10000000000005.title: "Echo Altar"
+	quest.5B10000000000005.quest_desc: ["Craft or obtain an Echo Altar. This is a concrete later-stage Galosphere milestone rather than another informational stop."]
+	quest.5B10000000000006.title: "Sterling Equipment"
+	quest.5B10000000000006.quest_desc: ["Craft a Sterling Chestplate to finish the page with usable Galosphere equipment built from your exploration progress."]
 
-\tquest.5B20000000000001.title: "A More Natural World"
-\tquest.5B20000000000001.quest_desc: ["Obtain any Naturalist item while exploring. This opens the compact progression without turning every animal species into a checklist."]
-\tquest.5B20000000000002.title: "Knapsack"
-\tquest.5B20000000000002.quest_desc: ["Craft or obtain a Naturalist Knapsack. It gives the page an actual utility milestone instead of asking you to merely acknowledge wildlife."]
-\tquest.5B20000000000003.title: "Shellstone"
-\tquest.5B20000000000003.quest_desc: ["Obtain Shellstone and inspect its uses in EMI. It is one of Naturalist's distinctive material rewards."]
-\tquest.5B20000000000004.title: "Naturalist Field Kit"
-\tquest.5B20000000000004.quest_desc: ["Collect at least two Naturalist items. The goal is to engage with the mod's useful drops and equipment while you encounter its wildlife naturally."]
-\tquest.5B20000000000005.title: "Field Naturalist"
-\tquest.5B20000000000005.quest_desc: ["Finish with both a Knapsack and Shellstone in hand. This verifies that you completed the useful-item branches without requiring every animal or drop."]
+	quest.5B20000000000001.title: "A More Natural World"
+	quest.5B20000000000001.quest_desc: ["Obtain any Naturalist item while exploring. This opens the compact progression without turning every animal species into a checklist."]
+	quest.5B20000000000002.title: "Knapsack"
+	quest.5B20000000000002.quest_desc: ["Craft or obtain a Naturalist Knapsack. It gives the page an actual utility milestone instead of asking you to merely acknowledge wildlife."]
+	quest.5B20000000000003.title: "Shellstone"
+	quest.5B20000000000003.quest_desc: ["Obtain Shellstone and inspect its uses in EMI. It is one of Naturalist's distinctive material rewards."]
+	quest.5B20000000000004.title: "Naturalist Field Kit"
+	quest.5B20000000000004.quest_desc: ["Collect at least two Naturalist items. The goal is to engage with the mod's useful drops and equipment while you encounter its wildlife naturally."]
+	quest.5B20000000000005.title: "Field Naturalist"
+	quest.5B20000000000005.quest_desc: ["Finish with both a Knapsack and Shellstone in hand. This verifies that you completed the useful-item branches without requiring every animal or drop."]
 
-\tquest.5B30000000000001.title: "Glider Wing"
-\tquest.5B30000000000001.quest_desc: ["Craft a Glider Wing, the main component used to build your first Hang Glider."]
-\tquest.5B30000000000002.title: "Hang Glider"
-\tquest.5B30000000000002.quest_desc: ["Craft a Hang Glider. Once you have it, launch from a safe hill or structure and learn how altitude converts into travel distance."]
-\tquest.5B30000000000003.title: "Reinforced Hang Glider"
-\tquest.5B30000000000003.quest_desc: ["Craft the Reinforced Hang Glider upgrade. It is the tangible equipment milestone for longer or more dependable aerial travel."]
-\tquest.5B30000000000004.title: "Cross-Country Glide"
-\tquest.5B30000000000004.quest_desc: ["Use your reinforced glider on a real journey—from a mountain, tower or airship—and land safely. This stays manual because the flight itself is the point."]
+	quest.5B30000000000001.title: "Glider Wing"
+	quest.5B30000000000001.quest_desc: ["Craft a Glider Wing, the main component used to build your first Hang Glider."]
+	quest.5B30000000000002.title: "Hang Glider"
+	quest.5B30000000000002.quest_desc: ["Craft a Hang Glider. Once you have it, launch from a safe hill or structure and learn how altitude converts into travel distance."]
+	quest.5B30000000000003.title: "Reinforced Hang Glider"
+	quest.5B30000000000003.quest_desc: ["Craft the Reinforced Hang Glider upgrade. It is the tangible equipment milestone for longer or more dependable aerial travel."]
+	quest.5B30000000000004.title: "Cross-Country Glide"
+	quest.5B30000000000004.quest_desc: ["Use your reinforced glider on a real journey—from a mountain, tower or airship—and land safely. This stays manual because the flight itself is the point."]
 
 	// Phase 5C — Combat & Equipment
-\tquest.5C10000000000001.title: "3×3×1 Iron Hammer"
-\tquest.5C10000000000001.quest_desc: ["Craft an Iron Hammer. The base hammer mines a 3×3 area one block deep, making it the safest place to learn how Just Hammers chooses its mining plane."]
-\tquest.5C10000000000002.title: "3×3×3 Impact Hammer"
-\tquest.5C10000000000002.quest_desc: ["Craft an Iron Impact Hammer. This expands the cut to 3×3×3, trading precision for much faster tunnel and room excavation."]
-\tquest.5C10000000000003.title: "5×5 Reinforced Hammer"
-\tquest.5C10000000000003.quest_desc: ["Craft an Iron Reinforced Hammer for a broad 5×5 cut one block deep. It is useful for clearing walls and flattening large surfaces."]
-\tquest.5C10000000000004.title: "5×5×3 Reinforced Impact Hammer"
-\tquest.5C10000000000004.quest_desc: ["Craft an Iron Reinforced Impact Hammer. Its 5×5×3 volume is large enough that positioning matters around machines, veins and decorated builds."]
-\tquest.5C10000000000005.title: "5×5×5 Destructor Hammer"
-\tquest.5C10000000000005.quest_desc: ["Craft an Iron Destructor Hammer to unlock the full 5×5×5 excavation pattern. Use it deliberately: one swing removes a substantial volume."]
-\tquest.5C10000000000006.title: "Diamond Destructor Hammer"
-\tquest.5C10000000000006.quest_desc: ["Upgrade the largest hammer to diamond. This is the practical high-durability bulk-excavation milestone before optional Netherite investment."]
+	quest.5C10000000000001.title: "3×3×1 Iron Hammer"
+	quest.5C10000000000001.quest_desc: ["Craft an Iron Hammer. The base hammer mines a 3×3 area one block deep, making it the safest place to learn how Just Hammers chooses its mining plane."]
+	quest.5C10000000000002.title: "3×3×3 Impact Hammer"
+	quest.5C10000000000002.quest_desc: ["Craft an Iron Impact Hammer. This expands the cut to 3×3×3, trading precision for much faster tunnel and room excavation."]
+	quest.5C10000000000003.title: "5×5 Reinforced Hammer"
+	quest.5C10000000000003.quest_desc: ["Craft an Iron Reinforced Hammer for a broad 5×5 cut one block deep. It is useful for clearing walls and flattening large surfaces."]
+	quest.5C10000000000004.title: "5×5×3 Reinforced Impact Hammer"
+	quest.5C10000000000004.quest_desc: ["Craft an Iron Reinforced Impact Hammer. Its 5×5×3 volume is large enough that positioning matters around machines, veins and decorated builds."]
+	quest.5C10000000000005.title: "5×5×5 Destructor Hammer"
+	quest.5C10000000000005.quest_desc: ["Craft an Iron Destructor Hammer to unlock the full 5×5×5 excavation pattern. Use it deliberately: one swing removes a substantial volume."]
+	quest.5C10000000000006.title: "Diamond Destructor Hammer"
+	quest.5C10000000000006.quest_desc: ["Upgrade the largest hammer to diamond. This is the practical high-durability bulk-excavation milestone before optional Netherite investment."]
 
-\tquest.5C20000000000001.title: "Wooden Armor"
-\tquest.5C20000000000001.quest_desc: ["Craft the full Wooden Armor set—helmet, chestplate, leggings and boots. It is an inexpensive introduction to Immersive Armors and makes the set-based progression explicit."]
-\tquest.5C20000000000002.title: "Heavy Armor"
-\tquest.5C20000000000002.quest_desc: ["Craft the full Heavy Armor set. Heavy Armor is the straightforward high-protection branch and a useful contrast with the more specialized sets."]
-\tquest.5C20000000000003.title: "Slime Armor"
-\tquest.5C20000000000003.quest_desc: ["Craft the full Slime Armor set. This branch represents Immersive Armors' more unusual effect-driven equipment rather than vanilla stat progression."]
-\tquest.5C20000000000004.title: "Divine Armor"
-\tquest.5C20000000000004.quest_desc: ["Craft the full Divine Armor set. Divine equipment sits deeper in the crafting progression and is a good milestone for the mod's stronger specialized gear."]
-\tquest.5C20000000000005.title: "Steampunk Armor"
-\tquest.5C20000000000005.quest_desc: ["Craft the full Steampunk Armor set. Use EMI to inspect its recipes and compare its effects with the other complete sets you have built."]
-\tquest.5C20000000000006.title: "Wither Armor"
-\tquest.5C20000000000006.quest_desc: ["Craft the full Wither Armor set after completing the earlier branches. This gives the page a tangible late-game equipment endpoint instead of a manual completion button."]
+	quest.5C20000000000001.title: "Wooden Armor"
+	quest.5C20000000000001.quest_desc: ["Craft the full Wooden Armor set—helmet, chestplate, leggings and boots. It is an inexpensive introduction to Immersive Armors and makes the set-based progression explicit."]
+	quest.5C20000000000002.title: "Heavy Armor"
+	quest.5C20000000000002.quest_desc: ["Craft the full Heavy Armor set. Heavy Armor is the straightforward high-protection branch and a useful contrast with the more specialized sets."]
+	quest.5C20000000000003.title: "Slime Armor"
+	quest.5C20000000000003.quest_desc: ["Craft the full Slime Armor set. This branch represents Immersive Armors' more unusual effect-driven equipment rather than vanilla stat progression."]
+	quest.5C20000000000004.title: "Divine Armor"
+	quest.5C20000000000004.quest_desc: ["Craft the full Divine Armor set. Divine equipment sits deeper in the crafting progression and is a good milestone for the mod's stronger specialized gear."]
+	quest.5C20000000000005.title: "Steampunk Armor"
+	quest.5C20000000000005.quest_desc: ["Craft the full Steampunk Armor set. Use EMI to inspect its recipes and compare its effects with the other complete sets you have built."]
+	quest.5C20000000000006.title: "Wither Armor"
+	quest.5C20000000000006.quest_desc: ["Craft the full Wither Armor set after completing the earlier branches. This gives the page a tangible late-game equipment endpoint instead of a manual completion button."]
 
-\tquest.5C30000000000001.title: "Skybound Grappling Hook"
-\tquest.5C30000000000001.quest_desc: ["Craft the basic Grappling Hook. Skybound turns terrain and moving structures into traversal tools, so the page starts with the actual equipment rather than a reading quest."]
-\tquest.5C30000000000002.title: "Swing, Reel, Release"
-\tquest.5C30000000000002.quest_desc: ["Use the hook enough to learn the core movement loop: attach, build a swing, reel or adjust distance, then release with momentum. This is intentionally a manual interaction milestone."]
-\tquest.5C30000000000003.title: "Motor Upgrade"
-\tquest.5C30000000000003.quest_desc: ["Obtain a Motor Upgrade and apply it through Skybound's Smithing Table upgrade system when you are ready to change how the hook moves."]
-\tquest.5C30000000000004.title: "Rocket Upgrade"
-\tquest.5C30000000000004.quest_desc: ["Obtain a Rocket Upgrade. Test high-acceleration upgrades somewhere open before relying on them around cliffs, machinery or valuable builds."]
-\tquest.5C30000000000005.title: "Dual Hook Upgrade"
-\tquest.5C30000000000005.quest_desc: ["Obtain a Double Hook Upgrade. This gives the upgrade branch another concrete item instead of simply asking you to read about advanced hooks."]
-\tquest.5C30000000000006.title: "Long Fall Boots"
-\tquest.5C30000000000006.quest_desc: ["Obtain Long Fall Boots. Grappling becomes much more forgiving when a failed release or missed attachment does not turn into lethal fall damage."]
-\tquest.5C30000000000007.title: "Advanced Upgrades"
-\tquest.5C30000000000007.quest_desc: ["Obtain both a Magnet Upgrade and a Forcefield Upgrade. These demonstrate that Skybound's progression extends beyond basic reel and propulsion changes."]
-\tquest.5C30000000000008.title: "Hook a Create Contraption"
-\tquest.5C30000000000008.quest_desc: ["Successfully attach your grappling hook to an assembled moving Create contraption. FTB Quests cannot reliably detect this attachment state, so this remains a manual milestone."]
-\tquest.5C30000000000009.title: "Board an Airship"
-\tquest.5C30000000000009.quest_desc: ["Use the grappling hook on a Sable / Create Aeronautics airship or sublevel and board it safely. This is deliberately manual because the moving-structure interaction is the achievement."]
-\tquest.5C3000000000000A.title: "Skybound Arsenal"
-\tquest.5C3000000000000A.quest_desc: ["Obtain an Ender Staff Upgrade and a Hook Thrower Upgrade after mastering moving structures. This gives the page a concrete advanced-equipment endpoint."]
+	quest.5C30000000000001.title: "Skybound Grappling Hook"
+	quest.5C30000000000001.quest_desc: ["Craft the basic Grappling Hook. Skybound turns terrain and moving structures into traversal tools, so the page starts with the actual equipment rather than a reading quest."]
+	quest.5C30000000000002.title: "Swing, Reel, Release"
+	quest.5C30000000000002.quest_desc: ["Use the hook enough to learn the core movement loop: attach, build a swing, reel or adjust distance, then release with momentum. This is intentionally a manual interaction milestone."]
+	quest.5C30000000000003.title: "Motor Upgrade"
+	quest.5C30000000000003.quest_desc: ["Obtain a Motor Upgrade and apply it through Skybound's Smithing Table upgrade system when you are ready to change how the hook moves."]
+	quest.5C30000000000004.title: "Rocket Upgrade"
+	quest.5C30000000000004.quest_desc: ["Obtain a Rocket Upgrade. Test high-acceleration upgrades somewhere open before relying on them around cliffs, machinery or valuable builds."]
+	quest.5C30000000000005.title: "Dual Hook Upgrade"
+	quest.5C30000000000005.quest_desc: ["Obtain a Double Hook Upgrade. This gives the upgrade branch another concrete item instead of simply asking you to read about advanced hooks."]
+	quest.5C30000000000006.title: "Long Fall Boots"
+	quest.5C30000000000006.quest_desc: ["Obtain Long Fall Boots. Grappling becomes much more forgiving when a failed release or missed attachment does not turn into lethal fall damage."]
+	quest.5C30000000000007.title: "Advanced Upgrades"
+	quest.5C30000000000007.quest_desc: ["Obtain both a Magnet Upgrade and a Forcefield Upgrade. These demonstrate that Skybound's progression extends beyond basic reel and propulsion changes."]
+	quest.5C30000000000008.title: "Hook a Create Contraption"
+	quest.5C30000000000008.quest_desc: ["Successfully attach your grappling hook to an assembled moving Create contraption. FTB Quests cannot reliably detect this attachment state, so this remains a manual milestone."]
+	quest.5C30000000000009.title: "Board an Airship"
+	quest.5C30000000000009.quest_desc: ["Use the grappling hook on a Sable / Create Aeronautics airship or sublevel and board it safely. This is deliberately manual because the moving-structure interaction is the achievement."]
+	quest.5C3000000000000A.title: "Skybound Arsenal"
+	quest.5C3000000000000A.quest_desc: ["Obtain an Ender Staff Upgrade and a Hook Thrower Upgrade after mastering moving structures. This gives the page a concrete advanced-equipment endpoint."]
 
 	chapter.5F7000000000C001.title: "RPG End Game"
 	quest.5E00000000000001.title: "Spell Binding"
