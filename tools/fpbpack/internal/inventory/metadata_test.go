@@ -31,6 +31,32 @@ displayName="Example Mod"
 	}
 }
 
+func TestReadNeoForgeMetadataIgnoresDependencyTables(t *testing.T) {
+	path := writeTestJar(t, map[string]string{
+		"META-INF/neoforge.mods.toml": `[[mods]]
+modId="abridged"
+version="2.0.2"
+displayName="Abridged"
+
+[[dependencies.abridged]]
+modId="lithostitched"
+type="required"
+versionRange="[1.0,)"
+`,
+	})
+
+	metadata, err := ReadMetadata(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(metadata) != 1 {
+		t.Fatalf("expected 1 metadata entry, got %d", len(metadata))
+	}
+	if metadata[0].ModID != "abridged" || metadata[0].Name != "Abridged" || metadata[0].Version != "2.0.2" {
+		t.Fatalf("dependency table overwrote mod metadata: %+v", metadata[0])
+	}
+}
+
 func TestReadMultipleMods(t *testing.T) {
 	path := writeTestJar(t, map[string]string{
 		"META-INF/mods.toml": `[[mods]]
