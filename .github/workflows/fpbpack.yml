@@ -1,0 +1,50 @@
+name: FPBPack
+
+on:
+  pull_request:
+    paths:
+      - "tools/fpbpack/**"
+      - ".github/workflows/fpbpack.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.27.x"
+          cache: false
+
+      - name: Test
+        working-directory: tools/fpbpack
+        run: go test ./...
+
+      - name: Vet
+        working-directory: tools/fpbpack
+        run: go vet ./...
+
+      - name: Build static Unraid binary
+        working-directory: tools/fpbpack
+        env:
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          mkdir -p dist
+          go build -trimpath -ldflags "-s -w -X main.version=${GITHUB_SHA::12}" -o dist/fpbpack-linux-amd64 ./cmd/fpbpack
+          sha256sum dist/fpbpack-linux-amd64 > dist/fpbpack-linux-amd64.sha256
+          file dist/fpbpack-linux-amd64
+
+      - name: Upload Unraid binary
+        uses: actions/upload-artifact@v7
+        with:
+          name: fpbpack-linux-amd64
+          path: |
+            tools/fpbpack/dist/fpbpack-linux-amd64
+            tools/fpbpack/dist/fpbpack-linux-amd64.sha256
+          if-no-files-found: error
+          retention-days: 30
