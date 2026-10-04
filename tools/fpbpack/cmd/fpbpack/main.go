@@ -29,6 +29,8 @@ func run(args []string) int {
 	switch args[0] {
 	case "inventory":
 		return runInventory(args[1:])
+	case "catalog":
+		return runCatalog(args[1:])
 	case "version", "--version", "-version":
 		fmt.Printf("fpbpack %s\n", version)
 		return 0
@@ -47,14 +49,19 @@ func printUsage() {
 
 Usage:
   fpbpack inventory --server-root PATH [options]
+  fpbpack catalog --inventory FILE [options]
   fpbpack version
 
 Inventory is read-only. It scans:
   mods/*.jar
   automodpack/host-modpack/main/mods/*.jar
 
+Catalog converts a verified inventory into a safe partial Packwiz catalog,
+deduplicating identical artifacts and withholding ambiguous project versions.
+
 Options are available with:
-  fpbpack inventory --help`)
+  fpbpack inventory --help
+  fpbpack catalog --help`)
 }
 
 func runInventory(args []string) int {
