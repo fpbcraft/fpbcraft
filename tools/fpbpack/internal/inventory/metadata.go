@@ -100,9 +100,14 @@ func parseModsTOML(content, loader, sourceEntry, manifestVersion string) []ModMe
 
 	for _, line := range strings.Split(content, "\n") {
 		trimmed := strings.TrimSpace(line)
-		if trimmed == "[[mods]]" {
-			flush()
-			current = &ModMetadata{Loader: loader, SourceEntry: sourceEntry}
+		if strings.HasPrefix(trimmed, "[") {
+			if trimmed == "[[mods]]" {
+				flush()
+				current = &ModMetadata{Loader: loader, SourceEntry: sourceEntry}
+			} else {
+				flush()
+				current = nil
+			}
 			continue
 		}
 		if current == nil {
