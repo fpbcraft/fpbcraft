@@ -147,7 +147,7 @@ func discoverGitHubCandidate(
 		repository = strings.TrimSpace(entry.ProjectID)
 	}
 	candidate := Candidate{
-		Key: "github:" + repository,
+		Key: catalog.EntryKey(entry),
 		Provider: "github",
 		ProjectID: repository,
 		Name: entry.Name,
