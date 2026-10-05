@@ -14,7 +14,7 @@ import (
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
 )
 
-const ReportSchemaVersion = 2
+const ReportSchemaVersion = 3
 
 type Options struct {
 	Name       string
@@ -65,6 +65,13 @@ type PlacementWarning struct {
 	Filename    string             `json:"filename"`
 }
 
+type PinnedArtifact struct {
+	SHA512   string   `json:"sha512"`
+	Filename string   `json:"filename"`
+	Reason   string   `json:"reason"`
+	Sources  []Source `json:"sources"`
+}
+
 type Summary struct {
 	InventoryJARs      int `json:"inventory_jars"`
 	UniqueArtifacts    int `json:"unique_artifacts"`
@@ -73,6 +80,7 @@ type Summary struct {
 	Unresolved         int `json:"unresolved"`
 	ConflictProjects   int `json:"conflict_projects"`
 	PlacementWarnings  int `json:"placement_warnings"`
+	PinnedArtifacts    int `json:"pinned_artifacts"`
 }
 
 type Report struct {
@@ -84,6 +92,7 @@ type Report struct {
 	Unresolved      []Unresolved       `json:"unresolved,omitempty"`
 	Conflicts       []Conflict         `json:"conflicts,omitempty"`
 	Placement       []PlacementWarning `json:"placement_warnings,omitempty"`
+	Pinned          []PinnedArtifact    `json:"pinned_artifacts,omitempty"`
 }
 
 type Entry struct {
@@ -99,6 +108,9 @@ type Entry struct {
 	Side        string             `json:"side"`
 	Deployment  inventory.Location `json:"deployment"`
 	Environment string             `json:"environment,omitempty"`
+	Repository  string             `json:"repository,omitempty"`
+	Tag         string             `json:"tag,omitempty"`
+	Asset       string             `json:"asset,omitempty"`
 	SourcePaths []Source           `json:"source_paths"`
 }
 
@@ -320,10 +332,7 @@ func Write(result Result, opts Options) error {
 	indexFiles := make([]indexFile, 0, len(result.Entries))
 	for _, entry := range result.Entries {
 		content := renderMetafile(entry)
-		metaName := entry.ProjectID + ".pw.toml"
-		if entry.Provider == "curseforge" {
-			metaName = "curseforge-" + entry.ProjectID + ".pw.toml"
-		}
+		metaName := metafileName(entry)
 		rel := filepath.ToSlash(filepath.Join("mods", metaName))
 		path := filepath.Join(tmp, filepath.FromSlash(rel))
 		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
@@ -391,9 +400,27 @@ func renderMetafile(entry Entry) string {
 	case "curseforge":
 		return fmt.Sprintf("name = %s\nfilename = %s\nside = %s\n\n[download]\nhash-format = \"sha1\"\nhash = %s\nmode = \"metadata:curseforge\"\n\n[update.curseforge]\nfile-id = %d\nproject-id = %s\n",
 			strconv.Quote(entry.Name), strconv.Quote(entry.Filename), strconv.Quote(entry.Side), strconv.Quote(entry.SHA1), entry.FileID, entry.ProjectID)
+	case "github":
+		return fmt.Sprintf("name = %s\nfilename = %s\nside = %s\n\n[download]\nhash-format = \"sha512\"\nhash = %s\nmode = \"url\"\nurl = %s\n",
+			strconv.Quote(entry.Name), strconv.Quote(entry.Filename), strconv.Quote(entry.Side), strconv.Quote(entry.SHA512), strconv.Quote(entry.URL))
 	default:
 		return fmt.Sprintf("name = %s\nfilename = %s\nside = %s\n\n[download]\nhash-format = \"sha512\"\nhash = %s\nmode = \"url\"\nurl = %s\n\n[update.modrinth]\nmod-id = %s\nversion = %s\n",
 			strconv.Quote(entry.Name), strconv.Quote(entry.Filename), strconv.Quote(entry.Side), strconv.Quote(entry.SHA512), strconv.Quote(entry.URL), strconv.Quote(entry.ProjectID), strconv.Quote(entry.VersionID))
+	}
+}
+
+func metafileName(entry Entry) string {
+	switch entry.Provider {
+	case "curseforge":
+		return "curseforge-" + entry.ProjectID + ".pw.toml"
+	case "github":
+		hash := entry.SHA512
+		if len(hash) > 16 {
+			hash = hash[:16]
+		}
+		return "github-" + hash + ".pw.toml"
+	default:
+		return entry.ProjectID + ".pw.toml"
 	}
 }
 
