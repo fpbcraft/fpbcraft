@@ -32,6 +32,12 @@ type ProviderCredentialSetter func(context.Context, string, string) (service.Pro
 type ProviderCredentialClearer func(string) (service.ProviderStatus, error)
 type ModManager func(context.Context, service.ModManagementRequest) (service.ModManagementResult, error)
 type ModRefresher func(context.Context, string) error
+type CraftyStatusLoader func(context.Context) service.CraftyStatus
+type CraftyConfigSetter func(context.Context, service.CraftyConfigRequest) (service.CraftyStatus, error)
+type CraftyCredentialClearer func() (service.CraftyStatus, error)
+type ServerControl func(context.Context) (service.CraftyStatus, error)
+type PlanApplier func(context.Context, string) (service.ApplyResult, error)
+type BackupRestorer func(context.Context, string) (service.RestoreResult, error)
 
 type ServerOptions struct {
 	Updates      UpdatesLoader
@@ -52,6 +58,13 @@ type ServerOptions struct {
 	ClearProviderCredential ProviderCredentialClearer
 	ManageMod     ModManager
 	RefreshMod    ModRefresher
+	CraftyStatus  CraftyStatusLoader
+	SetCraftyConfig CraftyConfigSetter
+	ClearCraftyCredential CraftyCredentialClearer
+	StartServer   ServerControl
+	StopServer    ServerControl
+	ApplyPlan     PlanApplier
+	RestoreBackup BackupRestorer
 	BackgroundContext context.Context
 	Web          http.Handler
 }
@@ -76,6 +89,13 @@ type Server struct {
 	clearProviderCredential ProviderCredentialClearer
 	manageMod      ModManager
 	refreshMod     ModRefresher
+	craftyStatus   CraftyStatusLoader
+	setCraftyConfig CraftyConfigSetter
+	clearCraftyCredential CraftyCredentialClearer
+	startServer    ServerControl
+	stopServer     ServerControl
+	applyPlan      PlanApplier
+	restoreBackup  BackupRestorer
 	backgroundCtx context.Context
 	backgroundMu sync.Mutex
 	backgroundRefresh bool
@@ -103,6 +123,13 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 		clearProviderCredential: opts.ClearProviderCredential,
 		manageMod: opts.ManageMod,
 		refreshMod: opts.RefreshMod,
+		craftyStatus: opts.CraftyStatus,
+		setCraftyConfig: opts.SetCraftyConfig,
+		clearCraftyCredential: opts.ClearCraftyCredential,
+		startServer: opts.StartServer,
+		stopServer: opts.StopServer,
+		applyPlan: opts.ApplyPlan,
+		restoreBackup: opts.RestoreBackup,
 		backgroundCtx: backgroundCtx,
 		version: version,
 	}
@@ -129,6 +156,13 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("DELETE /api/providers/{id}/credentials", server.clearProviderCredentials)
 	mux.HandleFunc("POST /api/mod-management", server.manageModHandler)
 	mux.HandleFunc("POST /api/mod-metadata/refresh", server.refreshModMetadata)
+	mux.HandleFunc("GET /api/crafty", server.crafty)
+	mux.HandleFunc("PUT /api/crafty", server.updateCrafty)
+	mux.HandleFunc("DELETE /api/crafty/credentials", server.clearCraftyCredentials)
+	mux.HandleFunc("POST /api/server/start", server.startMinecraftServer)
+	mux.HandleFunc("POST /api/server/stop", server.stopMinecraftServer)
+	mux.HandleFunc("POST /api/plans/{id}/apply", server.applyPlanHandler)
+	mux.HandleFunc("POST /api/backups/{id}/restore", server.restoreBackupHandler)
 	if opts.Web != nil {
 		mux.Handle("/", opts.Web)
 	}
@@ -139,7 +173,7 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-func (s *Server) status(w http.ResponseWriter, _ *http.Request) {
+func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 	snapshot, ok := s.load(w)
 	if !ok {
 		return
@@ -148,12 +182,21 @@ func (s *Server) status(w http.ResponseWriter, _ *http.Request) {
 		management.Status
 		Version string                `json:"version"`
 		Refresh service.RefreshStatus `json:"refresh"`
+		Crafty  service.CraftyStatus  `json:"crafty"`
 	}{
 		Status: snapshot.Status,
 		Version: s.version,
 	}
 	if s.refreshStatus != nil {
 		response.Refresh = s.refreshStatus()
+	}
+	if s.craftyStatus != nil {
+		response.Crafty = s.craftyStatus(r.Context())
+		response.ServerState = response.Crafty.State
+	}
+	if s.applyPlan != nil {
+		response.Mode = "managed"
+		response.ReadOnly = false
 	}
 	writeJSON(w, http.StatusOK, response)
 }
@@ -495,6 +538,114 @@ func (s *Server) refreshModMetadata(w http.ResponseWriter, r *http.Request) {
 		status = "already_refreshing"
 	}
 	writeJSON(w, http.StatusAccepted, map[string]string{"status": status})
+}
+
+func (s *Server) crafty(w http.ResponseWriter, r *http.Request) {
+	if s.craftyStatus == nil {
+		writeError(w, http.StatusServiceUnavailable, "Crafty integration is not configured")
+		return
+	}
+	writeJSON(w, http.StatusOK, s.craftyStatus(r.Context()))
+}
+
+func (s *Server) updateCrafty(w http.ResponseWriter, r *http.Request) {
+	if s.setCraftyConfig == nil {
+		writeError(w, http.StatusServiceUnavailable, "Crafty configuration is not available")
+		return
+	}
+	var request service.CraftyConfigRequest
+	r.Body = http.MaxBytesReader(w, r.Body, 32<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid Crafty configuration: "+err.Error())
+		return
+	}
+	status, err := s.setCraftyConfig(r.Context(), request)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, status)
+}
+
+func (s *Server) clearCraftyCredentials(w http.ResponseWriter, _ *http.Request) {
+	if s.clearCraftyCredential == nil {
+		writeError(w, http.StatusServiceUnavailable, "Crafty credential storage is not available")
+		return
+	}
+	status, err := s.clearCraftyCredential()
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, status)
+}
+
+func (s *Server) startMinecraftServer(w http.ResponseWriter, _ *http.Request) {
+	if s.startServer == nil {
+		writeError(w, http.StatusServiceUnavailable, "Crafty start control is not configured")
+		return
+	}
+	status, err := s.startServer(s.backgroundCtx)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusAccepted, status)
+}
+
+func (s *Server) stopMinecraftServer(w http.ResponseWriter, _ *http.Request) {
+	if s.stopServer == nil {
+		writeError(w, http.StatusServiceUnavailable, "Crafty stop control is not configured")
+		return
+	}
+	status, err := s.stopServer(s.backgroundCtx)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusAccepted, status)
+}
+
+func (s *Server) applyPlanHandler(w http.ResponseWriter, r *http.Request) {
+	if s.applyPlan == nil {
+		writeError(w, http.StatusServiceUnavailable, "Apply is not configured")
+		return
+	}
+	result, err := s.applyPlan(s.backgroundCtx, r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusConflict, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *Server) restoreBackupHandler(w http.ResponseWriter, r *http.Request) {
+	if s.restoreBackup == nil {
+		writeError(w, http.StatusServiceUnavailable, "Restore is not configured")
+		return
+	}
+	var request struct {
+		Confirm bool `json:"confirm"`
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 8<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid restore request: "+err.Error())
+		return
+	}
+	if !request.Confirm {
+		writeError(w, http.StatusBadRequest, "restore requires explicit confirmation")
+		return
+	}
+	result, err := s.restoreBackup(s.backgroundCtx, r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusConflict, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
 }
 
 func (s *Server) load(w http.ResponseWriter) (management.Snapshot, bool) {
