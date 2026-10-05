@@ -100,6 +100,7 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 	wait.Wait()
 	report.Candidates = append(report.Candidates, candidates...)
 
+	populateReverseDependencies(report.Candidates)
 	for index := range report.Candidates {
 		report.Candidates[index].BaseClassification = report.Candidates[index].Classification
 	}
@@ -112,6 +113,53 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 	})
 	report.RecalculateSummary()
 	return report
+}
+
+func populateReverseDependencies(candidates []Candidate) {
+	byKey := make(map[string]int, len(candidates))
+	for index, candidate := range candidates {
+		byKey[candidate.Provider+":"+candidate.ProjectID] = index
+	}
+	for _, candidate := range candidates {
+		appendRequiredBy(candidates, byKey, candidate.Name, candidate.Dependencies)
+	}
+	for index := range candidates {
+		candidates[index].RequiredBy = normalizeNames(candidates[index].RequiredBy)
+	}
+}
+
+func appendRequiredBy(candidates []Candidate, byKey map[string]int, owner string, dependencies []Dependency) {
+	for _, dependency := range dependencies {
+		if dependency.Type != "required" {
+			continue
+		}
+		if index, ok := byKey[dependency.Provider+":"+dependency.ProjectID]; ok && owner != "" {
+			candidates[index].RequiredBy = append(candidates[index].RequiredBy, owner)
+		}
+		nextOwner := dependency.Name
+		if nextOwner == "" {
+			nextOwner = dependency.ProjectID
+		}
+		appendRequiredBy(candidates, byKey, nextOwner, dependency.Dependencies)
+	}
+}
+
+func normalizeNames(values []string) []string {
+	seen := map[string]struct{}{}
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	sort.Strings(result)
+	return result
 }
 
 func blockedProviderCandidate(entry catalog.Entry, code, message string) Candidate {
