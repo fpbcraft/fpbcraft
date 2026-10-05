@@ -25,6 +25,7 @@ type RetentionUpdater func(service.RuntimeSettings) (service.RuntimeSettings, er
 type RulesLoader func() map[string]service.UpdateRule
 type RuleSetter func(string, service.UpdateRule) (service.UpdateRule, error)
 type RuleClearer func(string) error
+type ProvidersLoader func() []service.ProviderStatus
 
 type ServerOptions struct {
 	Updates      UpdatesLoader
@@ -39,6 +40,7 @@ type ServerOptions struct {
 	Rules        RulesLoader
 	SetRule      RuleSetter
 	ClearRule    RuleClearer
+	Providers    ProvidersLoader
 	Web          http.Handler
 }
 
@@ -56,6 +58,7 @@ type Server struct {
 	rulesLoader    RulesLoader
 	setRule        RuleSetter
 	clearRule      RuleClearer
+	providersLoader ProvidersLoader
 	version       string
 }
 
@@ -70,6 +73,7 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 		plansLoader: opts.Plans, planLoader: opts.Plan, historyLoader: opts.History,
 		retentionLoader: opts.Retention, updateRetention: opts.UpdateRetention,
 		rulesLoader: opts.Rules, setRule: opts.SetRule, clearRule: opts.ClearRule,
+		providersLoader: opts.Providers,
 		version: version,
 	}
 	mux := http.NewServeMux()
@@ -90,6 +94,7 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("GET /api/update-rules", server.updateRules)
 	mux.HandleFunc("PUT /api/update-rules", server.setUpdateRule)
 	mux.HandleFunc("DELETE /api/update-rules", server.clearUpdateRule)
+	mux.HandleFunc("GET /api/providers", server.providers)
 	if opts.Web != nil {
 		mux.Handle("/", opts.Web)
 	}
@@ -332,6 +337,14 @@ func (s *Server) clearUpdateRule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "cleared", "key": key})
+}
+
+func (s *Server) providers(w http.ResponseWriter, _ *http.Request) {
+	if s.providersLoader == nil {
+		writeError(w, http.StatusServiceUnavailable, "provider status is not configured")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"providers": s.providersLoader()})
 }
 
 func (s *Server) load(w http.ResponseWriter) (management.Snapshot, bool) {
