@@ -72,7 +72,8 @@ type Candidate struct {
 	Deployment     inventory.Location `json:"deployment"`
 	Installed      Release            `json:"installed"`
 	Target         *Release           `json:"target,omitempty"`
-	Classification Classification     `json:"classification"`
+	Classification     Classification     `json:"classification"`
+	BaseClassification Classification     `json:"base_classification,omitempty"`
 	Reasons        []Reason           `json:"reasons,omitempty"`
 	Dependencies   []Dependency       `json:"dependencies,omitempty"`
 	Changelogs     []ChangelogEntry   `json:"changelogs,omitempty"`
