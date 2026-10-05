@@ -632,3 +632,61 @@ func TestBuildCatalogRemoveCreatesRestorableRemoveOperation(t *testing.T) {
 		t.Fatalf("remove protections backup=%v stop=%v", plan.RequiresBackup, plan.RequiresServerStop)
 	}
 }
+
+
+func TestExplicitCatalogInstallDoesNotCoalesceOccupiedManagedTarget(t *testing.T) {
+	now := time.Date(2026, 10, 5, 18, 0, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: now,
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:new-provider-identity",
+			Provider: "modrinth",
+			ProjectID: "new-provider-identity",
+			Name: "Explicit Install",
+			Deployment: inventory.LocationServer,
+			Classification: updatecheck.ClassificationReview,
+			Intent: "install",
+			Target: &updatecheck.Release{
+				ID: "v1",
+				Number: "1.0.0",
+				Filename: "shared.jar",
+				URL: "https://cdn.example/shared.jar",
+				SHA512: "identical-bytes",
+			},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{GeneratedAt: now, ServerModsPath: "mods"},
+		Mods: []management.Mod{{
+			ID: "curseforge:existing",
+			Provider: "curseforge",
+			ProjectID: "existing",
+			Name: "Existing Owner",
+			Filename: "shared.jar",
+			Management: "managed",
+			Deployment: inventory.LocationServer,
+			Path: "mods/shared.jar",
+			SHA512: "identical-bytes",
+		}},
+	}
+
+	plan, err := Build([]string{"modrinth:new-provider-identity"}, report, snapshot, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Status != StatusBlocked {
+		t.Fatalf("explicit install onto occupied path must block: %+v", plan)
+	}
+	found := false
+	for _, blocker := range plan.Blockers {
+		if blocker.Code == "target_path_occupied" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("missing occupied-target blocker: %+v", plan.Blockers)
+	}
+	if len(plan.Changes) != 1 || len(plan.Changes[0].Operations) != 1 {
+		t.Fatalf("explicit install operation was incorrectly coalesced: %+v", plan.Changes)
+	}
+}
