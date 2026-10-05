@@ -52,6 +52,7 @@ The state directory is FPBPack-owned:
 ```text
 /data/
 ├── state.json                 durable accepted management state + settings
+├── secrets.json               GUI-managed provider credentials (0600)
 ├── inventory.json             generated cache/debug snapshot
 ├── updates.json               generated cache/debug snapshot
 ├── plans/
@@ -67,7 +68,7 @@ The state directory is FPBPack-owned:
         └── <verified-key>.jar  prefetched target artifacts keyed by a verified provider checksum
 ```
 
-`state.json` is authoritative for durable management identity such as provider/project ownership and unmanaged/pinned artifacts. The old `migration-report.json` is only a bootstrap/import format.
+`state.json` is authoritative for durable management identity such as provider/project ownership and unmanaged/pinned artifacts. `secrets.json` is separate so provider credentials are not mixed into ordinary exported/debug state; it is written with owner-only permissions and credential values are never returned by the API. The old `migration-report.json` is only a bootstrap/import format.
 
 A legacy migration report may be imported explicitly on the first run, or auto-discovered from supported legacy locations. Once imported, future starts use `state.json` and do not require the migration report.
 
