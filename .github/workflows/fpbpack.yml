@@ -61,5 +61,6 @@ jobs:
             tools/fpbpack/dist/fpbpack-linux-amd64.sha256
             tools/fpbpack/dist/packwiz-linux-amd64
             tools/fpbpack/dist/packwiz-linux-amd64.sha256
+            tools/fpbpack/fpbpack-sources.json
           if-no-files-found: error
           retention-days: 30
