@@ -23,6 +23,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 concurrency:
   group: release-${{ github.repository }}
@@ -89,9 +90,6 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "create_tag=$create_tag" >> "$GITHUB_OUTPUT"
 
-      - name: Validate quest pack
-        run: python scripts/validate_ftbquests.py
-
       - name: Install GUI dependencies
         working-directory: tools/fpbpack/web
         run: npm install --no-audit --no-fund
@@ -136,13 +134,6 @@ jobs:
 
           cp fpbpack-sources.json dist/fpbpack-sources.json
 
-      - name: Package quest release asset
-        env:
-          VERSION: ${{ steps.release.outputs.version }}
-        run: |
-          zip -r "tools/fpbpack/dist/fpbcraft-quests-$VERSION.zip" ftbquests/quests
-          sha256sum "tools/fpbpack/dist/fpbcraft-quests-$VERSION.zip" > "tools/fpbpack/dist/fpbcraft-quests-$VERSION.zip.sha256"
-
       - name: Upload verified release build
         uses: actions/upload-artifact@v7
         with:
@@ -169,8 +160,6 @@ jobs:
             tools/fpbpack/dist/packwiz-linux-amd64
             tools/fpbpack/dist/packwiz-linux-amd64.sha256
             tools/fpbpack/dist/fpbpack-sources.json
-            "tools/fpbpack/dist/fpbcraft-quests-$VERSION.zip"
-            "tools/fpbpack/dist/fpbcraft-quests-$VERSION.zip.sha256"
           )
 
           if [[ "$CREATE_TAG" == "true" ]]; then
@@ -187,9 +176,12 @@ jobs:
               "${prerelease[@]}"
           fi
 
-  docker-release-check:
+  docker-release:
     needs: release
     if: ${{ !contains(needs.release.outputs.version, '-') }}
     uses: ./.github/workflows/fpbpack-release.yml
     with:
       tag: ${{ needs.release.outputs.tag }}
+    permissions:
+      contents: read
+      packages: write
