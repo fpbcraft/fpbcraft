@@ -11,6 +11,7 @@ import {
   Play,
   ShieldCheck,
   Square,
+  Upload,
 } from 'lucide-react';
 import {PageHeader, Pill, formatDate} from '@/components/ui';
 import {api} from '@/lib/api';
@@ -25,6 +26,8 @@ export default function ReviewPage() {
   const [applying, setApplying] = useState(false);
   const [stopping, setStopping] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [manualFiles, setManualFiles] = useState<Record<string, File | undefined>>({});
+  const [uploadingManual, setUploadingManual] = useState<string | null>(null);
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get('id');
@@ -66,6 +69,34 @@ export default function ReviewPage() {
       setOperationError(value instanceof Error ? value.message : String(value));
     } finally {
       setStarting(false);
+    }
+  };
+
+  const verifyManualArtifact = async (candidateKey: string) => {
+    if (!plan) return;
+    const file = manualFiles[candidateKey];
+    if (!file) return;
+
+    setUploadingManual(candidateKey);
+    setOperationError(null);
+    try {
+      const updated = await api<UpdatePlan>(
+        '/api/plans/' +
+          encodeURIComponent(plan.id) +
+          '/manual-artifact?candidate_key=' +
+          encodeURIComponent(candidateKey),
+        {
+          method: 'POST',
+          headers: {'Content-Type': 'application/octet-stream'},
+          body: file,
+        },
+      );
+      setPlan(updated);
+      setManualFiles((current) => ({...current, [candidateKey]: undefined}));
+    } catch (value: unknown) {
+      setOperationError(value instanceof Error ? value.message : String(value));
+    } finally {
+      setUploadingManual(null);
     }
   };
 
@@ -238,7 +269,11 @@ export default function ReviewPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="text-sm font-medium">{change.name}</div>
                     {change.dependency_driven ? <Pill tone="blue">dependency</Pill> : null}
-                    {change.artifact.manual_download ? <Pill tone="warn">manual download</Pill> : null}
+                    {change.artifact.manual_download ? (
+                      <Pill tone={change.artifact.manual_provided ? 'good' : 'warn'}>
+                        {change.artifact.manual_provided ? 'manual JAR verified' : 'manual download'}
+                      </Pill>
+                    ) : null}
                   </div>
                   <div className="mt-0.5 text-xs text-base-content/45">
                     {change.installed.number || change.installed.name || 'installed'} → {change.target.number || change.target.name || change.target.id}
@@ -251,27 +286,74 @@ export default function ReviewPage() {
                   <dt className="text-base-content/40">Target file</dt>
                   <dd className="mono break-all">{change.artifact.filename}</dd>
                   <dt className="text-base-content/40">Target SHA-512</dt>
-                  <dd className="mono break-all">{change.artifact.sha512}</dd>
+                  <dd className="mono break-all">
+                    {change.artifact.sha512 || 'pending manual verification'}
+                  </dd>
                   <dt className="text-base-content/40">Reason</dt>
                   <dd>{change.dependency_driven ? 'Required dependency' : 'Selected update'}</dd>
                   <dt className="text-base-content/40">Provider</dt>
                   <dd>{change.artifact.provider} · {change.artifact.project_id} · {change.artifact.version_id}</dd>
                   {change.artifact.manual_download ? (
                     <>
-                      <dt className="text-base-content/40">Download</dt>
+                      <dt className="text-base-content/40">Manual artifact</dt>
                       <dd>
-                        {change.artifact.manual_url ? (
-                          <a
-                            className="btn btn-xs btn-warning btn-outline"
-                            href={change.artifact.manual_url}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Open manual download <ExternalLink size={11} />
-                          </a>
-                        ) : (
-                          <span className="text-warning">Manual provider download required</span>
-                        )}
+                        <div className="flex flex-col items-start gap-2">
+                          {change.artifact.manual_url ? (
+                            <a
+                              className="btn btn-xs btn-warning btn-outline"
+                              href={change.artifact.manual_url}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Open provider download <ExternalLink size={11} />
+                            </a>
+                          ) : null}
+                          {change.artifact.manual_provided ? (
+                            <div className="flex items-center gap-2">
+                              <Pill tone="good">Checksum verified</Pill>
+                              <span className="text-base-content/45">
+                                This JAR is cached and ready for Apply.
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+                              <input
+                                className="file-input file-input-bordered file-input-xs min-w-0 flex-1"
+                                type="file"
+                                accept=".jar,application/java-archive,application/octet-stream"
+                                onChange={(event) =>
+                                  setManualFiles((current) => ({
+                                    ...current,
+                                    [change.candidate_key]: event.target.files?.[0],
+                                  }))
+                                }
+                                aria-label={'Downloaded JAR for ' + change.name}
+                              />
+                              <button
+                                className="btn btn-xs btn-primary"
+                                type="button"
+                                disabled={
+                                  !manualFiles[change.candidate_key] ||
+                                  uploadingManual === change.candidate_key
+                                }
+                                onClick={() => void verifyManualArtifact(change.candidate_key)}
+                              >
+                                {uploadingManual === change.candidate_key ? (
+                                  <span className="loading loading-spinner loading-xs" />
+                                ) : (
+                                  <Upload size={11} />
+                                )}
+                                Verify downloaded JAR
+                              </button>
+                            </div>
+                          )}
+                          {!change.artifact.manual_provided ? (
+                            <span className="text-base-content/40">
+                              FPBPack verifies the provider checksum before adding the file to this
+                              plan. A mismatched JAR is rejected and never reaches the live server.
+                            </span>
+                          ) : null}
+                        </div>
                       </dd>
                     </>
                   ) : null}
