@@ -3,7 +3,7 @@
 import {useEffect, useMemo, useState} from 'react';
 import {
   ExternalLink,
-  Github,
+  GitBranch,
   RefreshCw,
   Search,
   ShieldOff,
@@ -644,7 +644,7 @@ export default function ModsPage() {
 
                 <div className="border-t border-base-300 pt-4">
                   <div className="mb-2 flex items-center gap-2">
-                    <Github size={14} />
+                    <GitBranch size={14} />
                     <span className="text-xs font-semibold">Assign verified GitHub release</span>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2">
@@ -697,7 +697,7 @@ export default function ModsPage() {
                         })
                       }
                     >
-                      <Github size={14} /> Verify &amp; assign
+                      <GitBranch size={14} /> Verify &amp; assign
                     </button>
                   </div>
                 </div>
