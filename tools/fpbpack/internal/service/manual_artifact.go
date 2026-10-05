@@ -24,6 +24,8 @@ func (s *Service) AcceptManualArtifact(
 ) (planning.Plan, error) {
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
+	s.catalogMu.Lock()
+	defer s.catalogMu.Unlock()
 
 	candidateKey = strings.TrimSpace(candidateKey)
 	if candidateKey == "" {
