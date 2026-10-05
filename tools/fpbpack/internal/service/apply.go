@@ -58,6 +58,12 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 	if err := s.requireServerStopped(ctx); err != nil {
 		return ApplyResult{}, err
 	}
+	if err := s.validateCurrentManagedState(); err != nil {
+		return ApplyResult{}, fmt.Errorf("live management state is not clean: %w", err)
+	}
+	if err := s.validatePlanCatalogState(plan); err != nil {
+		return ApplyResult{}, fmt.Errorf("plan no longer matches accepted management state: %w", err)
+	}
 
 	// Slice 2 may have persisted a ready plan without a restore manifest when
 	// only additions were involved. Slice 3 upgrades/creates it immediately
@@ -297,6 +303,80 @@ func (s *Service) loadBackupManifest(backupID string) (planning.BackupManifest, 
 		return planning.BackupManifest{}, err
 	}
 	return manifest, nil
+}
+
+func (s *Service) validateCurrentManagedState() error {
+	inv, err := inventory.Scan(inventory.ScanOptions{
+		ServerRoot:     s.options.ServerRoot,
+		ServerModsPath: s.options.ServerModsPath,
+		ClientModsPath: s.options.ClientModsPath,
+	})
+	if err != nil {
+		return err
+	}
+	snapshot := management.BuildSnapshot(inv, s.state.Catalog)
+	if snapshot.Diagnostics.Summary.Blocking == 0 {
+		return nil
+	}
+	messages := make([]string, 0, 3)
+	for _, finding := range snapshot.Diagnostics.Findings {
+		if finding.Level != "blocking" {
+			continue
+		}
+		message := finding.Message
+		if finding.Mod != "" {
+			message = finding.Mod + ": " + message
+		}
+		messages = append(messages, message)
+		if len(messages) == 3 {
+			break
+		}
+	}
+	return fmt.Errorf(
+		"%d blocking diagnostic(s): %s",
+		snapshot.Diagnostics.Summary.Blocking,
+		strings.Join(messages, "; "),
+	)
+}
+
+func (s *Service) validatePlanCatalogState(plan planning.Plan) error {
+	managed := make(map[string]catalog.Entry, len(s.state.Catalog.Managed))
+	for _, entry := range s.state.Catalog.Managed {
+		managed[catalog.EntryKey(entry)] = entry
+	}
+	for _, change := range plan.Changes {
+		for _, operation := range change.Operations {
+			entry, exists := managed[change.CandidateKey]
+			switch operation.Action {
+			case "replace":
+				if !exists {
+					return fmt.Errorf("%s is no longer a managed artifact", change.Name)
+				}
+				if operation.CurrentSHA512 != "" &&
+					!strings.EqualFold(entry.SHA512, operation.CurrentSHA512) {
+					return fmt.Errorf("%s accepted artifact hash changed after the plan was created", change.Name)
+				}
+				if operation.CurrentPath != "" && !sourcesContainPath(entry.SourcePaths, operation.CurrentPath) {
+					return fmt.Errorf("%s accepted source path changed after the plan was created", change.Name)
+				}
+				if expected := inventory.Location(change.Artifact.Deployment); expected != "" && entry.Deployment != expected {
+					return fmt.Errorf(
+						"%s preferred placement changed from %s to %s after the plan was created",
+						change.Name,
+						expected,
+						entry.Deployment,
+					)
+				}
+			case "add":
+				if exists {
+					return fmt.Errorf("%s is now already managed; regenerate the plan", change.Name)
+				}
+			default:
+				return fmt.Errorf("%s has unsupported operation %q", change.Name, operation.Action)
+			}
+		}
+	}
+	return nil
 }
 
 func (s *Service) validatePlanLiveState(plan planning.Plan) error {
