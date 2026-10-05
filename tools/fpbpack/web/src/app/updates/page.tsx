@@ -26,6 +26,7 @@ function CandidateRow({
   rule,
   onRule,
   onClearRule,
+  onOpenMod,
 }: {
   candidate: UpdateCandidate;
   selected: boolean;
@@ -33,6 +34,7 @@ function CandidateRow({
   rule?: UpdateRule;
   onRule: (rule: UpdateRule) => void;
   onClearRule: () => void;
+  onOpenMod: () => void;
 }) {
   const selectable = candidate.classification === 'safe' || candidate.classification === 'review';
   const changelogs = candidate.changelogs ?? [];
@@ -63,7 +65,14 @@ function CandidateRow({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="truncate text-sm font-medium">{candidate.name}</span>
+            <button
+              type="button"
+              className="link link-hover truncate text-left text-sm font-medium"
+              onClick={onOpenMod}
+              title="Open this mod in inventory"
+            >
+              {candidate.name}
+            </button>
             {candidate.target?.channel && candidate.target.channel !== 'release' ? (
               <Pill tone="warn">{candidate.target.channel}</Pill>
             ) : null}
@@ -437,6 +446,9 @@ export default function UpdatesPage() {
                       rule={rules[candidate.key]}
                       onRule={(rule) => void applyRule(candidate.key, rule)}
                       onClearRule={() => void clearRule(candidate.key)}
+                      onOpenMod={() =>
+                        router.push('/mods?mod=' + encodeURIComponent(candidate.key))
+                      }
                     />
                   ))}
                 </div>
