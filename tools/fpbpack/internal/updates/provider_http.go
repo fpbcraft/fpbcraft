@@ -162,11 +162,19 @@ func doJSONWithRetry(
 			}
 			decodeErr := decodeJSONAtomically(body, target)
 			if decodeErr != nil {
-				if retryableJSONDecodeError(decodeErr) && attempt < maxAttempts-1 {
-					if err := waitForRetry(ctx, retryDelay(nil, attempt)); err != nil {
-						return err
+				if retryableJSONDecodeError(decodeErr) {
+					if attempt < maxAttempts-1 {
+						if err := waitForRetry(ctx, retryDelay(nil, attempt)); err != nil {
+							return err
+						}
+						continue
 					}
-					continue
+					return fmt.Errorf(
+						"%s returned incomplete JSON after %d attempts: %w",
+						provider,
+						maxAttempts,
+						decodeErr,
+					)
 				}
 				return decodeErr
 			}
