@@ -816,6 +816,7 @@ func catalogAfterPlan(current catalog.Report, plan planning.Plan) (catalog.Repor
 			SHA512: change.Artifact.SHA512,
 			URL: change.Artifact.URL,
 			Deployment: inventory.Location(change.Artifact.Deployment),
+			Environment: change.Artifact.Environment,
 		}
 		if entry.Deployment == inventory.LocationClient {
 			entry.Side = "client"
