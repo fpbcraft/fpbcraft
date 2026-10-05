@@ -135,6 +135,7 @@ func runServe(args []string) int {
 		Handler: httpapi.NewHandlerWithOptions(app.Snapshot, version, httpapi.ServerOptions{
 			Updates:      app.Updates,
 			Catalog:      app.Catalog,
+			CatalogPreview: app.CatalogPreview,
 			Refresh:      app.Refresh,
 			RefreshInventory: app.RefreshInventory,
 			CheckUpdates: app.CheckUpdates,
