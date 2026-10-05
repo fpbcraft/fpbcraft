@@ -56,6 +56,9 @@ func (s *Service) CreatePlan(ctx context.Context, candidateKeys []string) (plann
 	if err := writeJSONAtomic(eventPath, event); err != nil {
 		return planning.Plan{}, fmt.Errorf("persist plan history: %w", err)
 	}
+	if err := s.pruneHistory(s.Settings().RetentionCount); err != nil {
+		return planning.Plan{}, fmt.Errorf("apply history retention: %w", err)
+	}
 	return plan, nil
 }
 
@@ -148,4 +151,63 @@ func (s *Service) persistedPlanReady(plan planning.Plan) bool {
 		return false
 	}
 	return manifest.PlanID == plan.ID && len(manifest.Files) > 0
+}
+
+func (s *Service) pruneHistory(retention int) error {
+	if retention < 1 {
+		retention = DefaultRetentionCount
+	}
+	dir := filepath.Join(s.options.StateDir, "history")
+	entries, err := os.ReadDir(dir)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	type storedEvent struct {
+		path  string
+		event planning.HistoryEvent
+	}
+	events := make([]storedEvent, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
+			continue
+		}
+		path := filepath.Join(dir, entry.Name())
+		var event planning.HistoryEvent
+		if err := readJSON(path, &event); err != nil {
+			return fmt.Errorf("read history event %s: %w", entry.Name(), err)
+		}
+		events = append(events, storedEvent{path: path, event: event})
+	}
+	sort.Slice(events, func(i, j int) bool {
+		return events[i].event.CreatedAt.After(events[j].event.CreatedAt)
+	})
+	if len(events) <= retention {
+		return nil
+	}
+
+	for _, old := range events[retention:] {
+		// Slice 2 only creates plan events. Future active/incomplete apply events
+		// must be excluded from pruning before Slice 3 adds them.
+		if old.event.Type != "plan" {
+			continue
+		}
+		if old.event.PlanID != "" {
+			if err := os.Remove(filepath.Join(s.options.StateDir, "plans", old.event.PlanID+".json")); err != nil && !os.IsNotExist(err) {
+				return fmt.Errorf("remove plan %s: %w", old.event.PlanID, err)
+			}
+		}
+		if old.event.BackupID != "" {
+			if err := os.RemoveAll(filepath.Join(s.options.StateDir, "backups", old.event.BackupID)); err != nil {
+				return fmt.Errorf("remove backup %s: %w", old.event.BackupID, err)
+			}
+		}
+		if err := os.Remove(old.path); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("remove history event: %w", err)
+		}
+	}
+	return nil
 }
