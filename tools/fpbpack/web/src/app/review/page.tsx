@@ -162,7 +162,10 @@ export default function ReviewPage() {
               <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 hover:bg-base-300/20">
                 <HardDriveDownload size={16} className="shrink-0 text-base-content/35" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium">{change.name}</div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="text-sm font-medium">{change.name}</div>
+                    {change.dependency_driven ? <Pill tone="blue">dependency</Pill> : null}
+                  </div>
                   <div className="mt-0.5 text-xs text-base-content/45">
                     {change.installed.number || change.installed.name || 'installed'} → {change.target.number || change.target.name || change.target.id}
                   </div>
@@ -175,6 +178,8 @@ export default function ReviewPage() {
                   <dd className="mono break-all">{change.artifact.filename}</dd>
                   <dt className="text-base-content/40">Target SHA-512</dt>
                   <dd className="mono break-all">{change.artifact.sha512}</dd>
+                  <dt className="text-base-content/40">Reason</dt>
+                  <dd>{change.dependency_driven ? 'Required dependency' : 'Selected update'}</dd>
                   <dt className="text-base-content/40">Provider</dt>
                   <dd>{change.artifact.provider} · {change.artifact.project_id} · {change.artifact.version_id}</dd>
                   {change.operations.map((operation, index) => (
