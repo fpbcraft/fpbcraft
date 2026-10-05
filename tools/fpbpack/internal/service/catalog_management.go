@@ -130,8 +130,6 @@ func (s *Service) CreateCatalogPlan(ctx context.Context, request CatalogPlanRequ
 	s.mu.RLock()
 	snapshot := s.snapshot
 	cat := s.state.Catalog
-	report := s.updates
-	hasUpdate := s.hasUpdate
 	s.mu.RUnlock()
 
 	var candidate updatecheck.Candidate
@@ -182,37 +180,30 @@ func (s *Service) CreateCatalogPlan(ctx context.Context, request CatalogPlanRequ
 		if !ok {
 			return planning.Plan{}, fmt.Errorf("managed artifact %q was not found", request.Path)
 		}
-		if !hasUpdate {
-			return planning.Plan{}, fmt.Errorf("run Check updates before removal so reverse dependencies can be verified")
+		if entry.Provider != "modrinth" && entry.Provider != "curseforge" {
+			return planning.Plan{}, fmt.Errorf(
+				"safe removal currently requires Modrinth or CurseForge dependency metadata",
+			)
 		}
-		key := catalog.EntryKey(entry)
-		var current *updatecheck.Candidate
-		for index := range report.Candidates {
-			if report.Candidates[index].Key == key {
-				copy := report.Candidates[index]
-				current = &copy
-				break
-			}
-		}
-		if current == nil {
-			return planning.Plan{}, fmt.Errorf("current dependency metadata for %s is unavailable; run Check updates and retry", entry.Name)
+		requiredBy, err := s.currentRequiredBy(ctx, entry, cat)
+		if err != nil {
+			return planning.Plan{}, err
 		}
 		versionID := entry.VersionID
 		if entry.Provider == "curseforge" && entry.FileID != 0 {
 			versionID = strconv.FormatUint(uint64(entry.FileID), 10)
 		}
 		candidate = updatecheck.Candidate{
-			Key:            key,
+			Key:            catalog.EntryKey(entry),
 			Provider:       entry.Provider,
 			ProjectID:      entry.ProjectID,
 			Name:           entry.Name,
-			ProjectURL:     current.ProjectURL,
-			IconURL:        current.IconURL,
 			Side:           entry.Side,
 			Deployment:     entry.Deployment,
+			Environment:    entry.Environment,
 			Installed: updatecheck.Release{
 				ID:       versionID,
-				Number:   current.Installed.Number,
+				Number:   versionID,
 				Name:     entry.Name,
 				Filename: entry.Filename,
 				URL:      entry.URL,
@@ -221,7 +212,7 @@ func (s *Service) CreateCatalogPlan(ctx context.Context, request CatalogPlanRequ
 			},
 			Classification: updatecheck.ClassificationReview,
 			Intent:         "remove",
-			RequiredBy:     append([]string(nil), current.RequiredBy...),
+			RequiredBy:     requiredBy,
 			Reasons: []updatecheck.Reason{{
 				Code:    "catalog_remove",
 				Message: "This managed mod was explicitly selected for removal.",
