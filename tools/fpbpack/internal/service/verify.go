@@ -34,6 +34,16 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 
 	for index := range plan.Changes {
 		change := &plan.Changes[index]
+		needsTargetArtifact := false
+		for _, operation := range change.Operations {
+			if operation.Action != "remove" {
+				needsTargetArtifact = true
+				break
+			}
+		}
+		if !needsTargetArtifact {
+			continue
+		}
 		if change.Artifact.ManualDownload {
 			message := "This artifact must be downloaded manually from the provider before Apply."
 			if change.Artifact.ManualURL != "" {
