@@ -341,3 +341,66 @@ func TestProvidersEndpoint(t *testing.T) {
 		t.Fatalf("providers = %d: %s", recorder.Code, recorder.Body.String())
 	}
 }
+
+func TestProviderCredentialEndpointsNeverReturnSecret(t *testing.T) {
+	status := service.ProviderStatus{
+		ID: "curseforge",
+		Label: "CurseForge",
+		Status: "ready",
+		CredentialConfigurable: true,
+		CredentialSource: "saved",
+	}
+	var received string
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			SetProviderCredential: func(_ context.Context, provider, key string) (service.ProviderStatus, error) {
+				if provider != "curseforge" {
+					t.Fatalf("provider = %q", provider)
+				}
+				received = key
+				return status, nil
+			},
+			ClearProviderCredential: func(provider string) (service.ProviderStatus, error) {
+				if provider != "curseforge" {
+					t.Fatalf("provider = %q", provider)
+				}
+				return service.ProviderStatus{
+					ID: "curseforge",
+					Label: "CurseForge",
+					Status: "needs_configuration",
+					CredentialConfigurable: true,
+				}, nil
+			},
+		},
+	)
+
+	put := httptest.NewRecorder()
+	handler.ServeHTTP(
+		put,
+		httptest.NewRequest(
+			http.MethodPut,
+			"/api/providers/curseforge/credentials",
+			strings.NewReader(`{"api_key":"super-secret"}`),
+		),
+	)
+	if put.Code != http.StatusOK {
+		t.Fatalf("PUT credential = %d: %s", put.Code, put.Body.String())
+	}
+	if received != "super-secret" {
+		t.Fatalf("received key = %q", received)
+	}
+	if strings.Contains(put.Body.String(), "super-secret") {
+		t.Fatal("provider credential leaked in API response")
+	}
+
+	del := httptest.NewRecorder()
+	handler.ServeHTTP(
+		del,
+		httptest.NewRequest(http.MethodDelete, "/api/providers/curseforge/credentials", nil),
+	)
+	if del.Code != http.StatusOK {
+		t.Fatalf("DELETE credential = %d: %s", del.Code, del.Body.String())
+	}
+}
