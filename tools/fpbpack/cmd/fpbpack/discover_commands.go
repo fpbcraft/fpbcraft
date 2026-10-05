@@ -112,6 +112,7 @@ func runServe(args []string) int {
 		Minecraft:       *minecraft,
 		Loader:          *loader,
 		ModrinthBaseURL: *modrinthAPI,
+		CurseForgeAPIKey: strings.TrimSpace(os.Getenv("FPBPACK_CURSEFORGE_API_KEY")),
 		BootstrapReport: *bootstrapReport,
 	})
 	if err != nil {
