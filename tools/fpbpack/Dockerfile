@@ -20,5 +20,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
 FROM alpine:3.22
 RUN apk add --no-cache ca-certificates
 COPY --from=build /out/fpbpack /usr/local/bin/fpbpack
+VOLUME ["/data"]
 EXPOSE 8787
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -q --spider http://127.0.0.1:8787/healthz || exit 1
 ENTRYPOINT ["/usr/local/bin/fpbpack"]
+CMD ["serve"]
