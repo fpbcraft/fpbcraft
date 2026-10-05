@@ -200,8 +200,17 @@ func discoverModrinthCandidate(
 		})
 	}
 
+	resolver := dependencyResolver{
+		ctx:       ctx,
+		client:    client,
+		installed: installed,
+		opts:      opts,
+	}
 	for _, dependency := range target.Dependencies {
-		candidate.Dependencies = append(candidate.Dependencies, classifyDependency(dependency, installed, &candidate))
+		candidate.Dependencies = append(
+			candidate.Dependencies,
+			resolver.resolve(dependency, entry.Deployment, &candidate, map[string]bool{}),
+		)
 	}
 	return candidate
 }
@@ -220,7 +229,19 @@ func rejectionReasons(version modrinthVersion, minecraft, loader string) []Reaso
 	return reasons
 }
 
-func classifyDependency(dep modrinthDependency, installed map[string]catalog.Entry, candidate *Candidate) Dependency {
+type dependencyResolver struct {
+	ctx       context.Context
+	client    *ModrinthClient
+	installed map[string]catalog.Entry
+	opts      Options
+}
+
+func (r dependencyResolver) resolve(
+	dep modrinthDependency,
+	parentDeployment inventory.Location,
+	candidate *Candidate,
+	visiting map[string]bool,
+) Dependency {
 	result := Dependency{
 		Provider:  "modrinth",
 		ProjectID: dep.ProjectID,
@@ -228,7 +249,24 @@ func classifyDependency(dep modrinthDependency, installed map[string]catalog.Ent
 		Type:      dep.DependencyType,
 		Action:    "none",
 	}
-	if dep.ProjectID == "" {
+
+	var exact *modrinthVersion
+	if result.ProjectID == "" && dep.VersionID != "" {
+		version, err := r.client.GetVersion(r.ctx, dep.VersionID)
+		if err != nil {
+			if dep.DependencyType == "required" {
+				result.Action = "unresolved"
+				promote(candidate, ClassificationBlocked, Reason{
+					Code: "required_dependency_lookup_failed",
+					Message: "A required dependency version could not be resolved: " + err.Error(),
+				})
+			}
+			return result
+		}
+		exact = &version
+		result.ProjectID = version.ProjectID
+	}
+	if result.ProjectID == "" {
 		if dep.DependencyType == "required" {
 			result.Action = "unresolved"
 			promote(candidate, ClassificationBlocked, Reason{
@@ -239,30 +277,94 @@ func classifyDependency(dep modrinthDependency, installed map[string]catalog.Ent
 		return result
 	}
 
-	installedEntry, exists := installed[dep.ProjectID]
+	installedEntry, exists := r.installed[result.ProjectID]
 	if exists {
 		result.InstalledVersion = installedEntry.VersionID
+		result.Name = installedEntry.Name
+		result.Deployment = installedEntry.Deployment
+	}
+	if result.Name == "" {
+		result.Name = result.ProjectID
 	}
 
 	switch dep.DependencyType {
 	case "required":
-		if !exists {
+		if dep.VersionID == "" && exists {
+			result.Action = "satisfied"
+			return result
+		}
+
+		target, err := r.resolveTarget(dep, result.ProjectID, exact)
+		if err != nil {
+			result.Action = "unresolved"
+			promote(candidate, ClassificationBlocked, Reason{
+				Code: "required_dependency_unresolved",
+				Message: err.Error(),
+			})
+			return result
+		}
+		if target.ProjectID != result.ProjectID {
+			result.Action = "unresolved"
+			promote(candidate, ClassificationBlocked, Reason{
+				Code: "required_dependency_project_mismatch",
+				Message: "A required dependency version belongs to a different Modrinth project.",
+			})
+			return result
+		}
+		if rejected := rejectionReasons(target, r.opts.Minecraft, r.opts.Loader); len(rejected) > 0 {
+			result.Action = "unresolved"
+			promote(candidate, ClassificationBlocked, Reason{
+				Code: "required_dependency_incompatible",
+				Message: "A required dependency target is not compatible with the configured Minecraft version and loader.",
+			})
+			return result
+		}
+
+		release := releaseFromModrinth(target)
+		result.Target = &release
+		result.TargetVersion = target.ID
+		if result.Deployment == "" {
+			result.Deployment = dependencyDeployment(target.Environment, parentDeployment)
+		}
+
+		if exists && installedEntry.VersionID == target.ID {
+			result.Action = "satisfied"
+			return result
+		}
+		if exists {
+			result.Action = "update"
+			promote(candidate, ClassificationReview, Reason{
+				Code: "required_dependency_update",
+				Message: "The target release requires an update to an installed dependency.",
+			})
+		} else {
 			result.Action = "add"
-			result.TargetVersion = dep.VersionID
 			promote(candidate, ClassificationReview, Reason{
 				Code: "required_dependency_addition",
 				Message: "The target release requires an additional Modrinth project.",
 			})
-		} else if dep.VersionID != "" && installedEntry.VersionID != dep.VersionID {
-			result.Action = "update"
-			result.TargetVersion = dep.VersionID
-			promote(candidate, ClassificationReview, Reason{
-				Code: "required_dependency_update",
-				Message: "The target release requires a different version of an installed dependency.",
-			})
-		} else {
-			result.Action = "satisfied"
 		}
+
+		if target.VersionType != "" && target.VersionType != "release" {
+			promote(candidate, ClassificationReview, Reason{
+				Code: "required_dependency_prerelease",
+				Message: "A required dependency resolves to a " + target.VersionType + " release.",
+			})
+		}
+
+		visitKey := result.ProjectID + ":" + target.ID
+		if visiting[visitKey] {
+			return result
+		}
+		visiting[visitKey] = true
+		for _, nested := range target.Dependencies {
+			result.Dependencies = append(
+				result.Dependencies,
+				r.resolve(nested, result.Deployment, candidate, visiting),
+			)
+		}
+		delete(visiting, visitKey)
+
 	case "incompatible":
 		if exists {
 			result.Action = "conflict"
@@ -277,6 +379,62 @@ func classifyDependency(dep modrinthDependency, installed map[string]catalog.Ent
 		result.Action = "embedded"
 	}
 	return result
+}
+
+func (r dependencyResolver) resolveTarget(
+	dep modrinthDependency,
+	projectID string,
+	exact *modrinthVersion,
+) (modrinthVersion, error) {
+	if exact != nil {
+		return *exact, nil
+	}
+	if dep.VersionID != "" {
+		version, err := r.client.GetVersion(r.ctx, dep.VersionID)
+		if err != nil {
+			return modrinthVersion{}, fmt.Errorf("required dependency %s version %s could not be loaded: %w", projectID, dep.VersionID, err)
+		}
+		return version, nil
+	}
+
+	versions, err := r.client.ListVersions(r.ctx, projectID)
+	if err != nil {
+		return modrinthVersion{}, fmt.Errorf("required dependency %s versions could not be loaded: %w", projectID, err)
+	}
+	compatible := make([]modrinthVersion, 0, len(versions))
+	for _, version := range versions {
+		if len(rejectionReasons(version, r.opts.Minecraft, r.opts.Loader)) == 0 {
+			compatible = append(compatible, version)
+		}
+	}
+	if len(compatible) == 0 {
+		return modrinthVersion{}, fmt.Errorf(
+			"required dependency %s has no listed version compatible with Minecraft %s and %s",
+			projectID,
+			r.opts.Minecraft,
+			r.opts.Loader,
+		)
+	}
+	sort.Slice(compatible, func(i, j int) bool {
+		return compatible[i].DatePublished.After(compatible[j].DatePublished)
+	})
+	for _, version := range compatible {
+		if version.VersionType == "" || version.VersionType == "release" {
+			return version, nil
+		}
+	}
+	return compatible[0], nil
+}
+
+func dependencyDeployment(environment string, fallback inventory.Location) inventory.Location {
+	switch environment {
+	case "client_only", "singleplayer_only":
+		return inventory.LocationClient
+	case "server_only", "dedicated_server_only":
+		return inventory.LocationServer
+	default:
+		return fallback
+	}
 }
 
 func releaseFromModrinth(version modrinthVersion) Release {
