@@ -77,6 +77,7 @@ type Candidate struct {
 	Reasons        []Reason           `json:"reasons,omitempty"`
 	Dependencies   []Dependency       `json:"dependencies,omitempty"`
 	Changelogs     []ChangelogEntry   `json:"changelogs,omitempty"`
+	RequiredBy     []string           `json:"required_by,omitempty"`
 	Rejected       []RejectedVersion  `json:"rejected,omitempty"`
 }
 
