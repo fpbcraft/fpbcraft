@@ -33,9 +33,10 @@ jobs:
           CGO_ENABLED: "0"
           GOOS: linux
           GOARCH: amd64
+          FPBPACK_VERSION: ${{ github.event.pull_request.head.sha }}
         run: |
           mkdir -p dist
-          go build -trimpath -ldflags "-s -w -X main.version=${GITHUB_SHA::12}" -o dist/fpbpack-linux-amd64 ./cmd/fpbpack
+          go build -trimpath -ldflags "-s -w -X main.version=${FPBPACK_VERSION::12}" -o dist/fpbpack-linux-amd64 ./cmd/fpbpack
           sha256sum dist/fpbpack-linux-amd64 > dist/fpbpack-linux-amd64.sha256
           file dist/fpbpack-linux-amd64
 
