@@ -27,6 +27,8 @@ type RuleSetter func(string, service.UpdateRule) (service.UpdateRule, error)
 type RuleClearer func(string) error
 type RefreshStatusLoader func() service.RefreshStatus
 type ProvidersLoader func() []service.ProviderStatus
+type ProviderCredentialSetter func(context.Context, string, string) (service.ProviderStatus, error)
+type ProviderCredentialClearer func(string) (service.ProviderStatus, error)
 
 type ServerOptions struct {
 	Updates      UpdatesLoader
@@ -43,6 +45,8 @@ type ServerOptions struct {
 	ClearRule    RuleClearer
 	RefreshStatus RefreshStatusLoader
 	Providers    ProvidersLoader
+	SetProviderCredential   ProviderCredentialSetter
+	ClearProviderCredential ProviderCredentialClearer
 	Web          http.Handler
 }
 
@@ -62,6 +66,8 @@ type Server struct {
 	clearRule      RuleClearer
 	refreshStatus  RefreshStatusLoader
 	providersLoader ProvidersLoader
+	setProviderCredential ProviderCredentialSetter
+	clearProviderCredential ProviderCredentialClearer
 	version       string
 }
 
@@ -78,6 +84,8 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 		rulesLoader: opts.Rules, setRule: opts.SetRule, clearRule: opts.ClearRule,
 		refreshStatus: opts.RefreshStatus,
 		providersLoader: opts.Providers,
+		setProviderCredential: opts.SetProviderCredential,
+		clearProviderCredential: opts.ClearProviderCredential,
 		version: version,
 	}
 	mux := http.NewServeMux()
@@ -99,6 +107,8 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("PUT /api/update-rules", server.setUpdateRule)
 	mux.HandleFunc("DELETE /api/update-rules", server.clearUpdateRule)
 	mux.HandleFunc("GET /api/providers", server.providers)
+	mux.HandleFunc("PUT /api/providers/{id}/credentials", server.setProviderCredentials)
+	mux.HandleFunc("DELETE /api/providers/{id}/credentials", server.clearProviderCredentials)
 	if opts.Web != nil {
 		mux.Handle("/", opts.Web)
 	}
@@ -357,6 +367,42 @@ func (s *Server) providers(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"providers": s.providersLoader()})
+}
+
+func (s *Server) setProviderCredentials(w http.ResponseWriter, r *http.Request) {
+	if s.setProviderCredential == nil {
+		writeError(w, http.StatusServiceUnavailable, "provider credential storage is not configured")
+		return
+	}
+	var request struct {
+		APIKey string `json:"api_key"`
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 16<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid provider credential: "+err.Error())
+		return
+	}
+	status, err := s.setProviderCredential(r.Context(), r.PathValue("id"), request.APIKey)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, status)
+}
+
+func (s *Server) clearProviderCredentials(w http.ResponseWriter, r *http.Request) {
+	if s.clearProviderCredential == nil {
+		writeError(w, http.StatusServiceUnavailable, "provider credential storage is not configured")
+		return
+	}
+	status, err := s.clearProviderCredential(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, status)
 }
 
 func (s *Server) load(w http.ResponseWriter) (management.Snapshot, bool) {
