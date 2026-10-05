@@ -24,8 +24,16 @@ export default function OverviewPage() {
         title="Overview"
         description="Server inventory, update readiness, and anything that needs attention."
         action={
-          <Pill tone={connectionStatus === 'connected' ? 'good' : 'warn'}>
-            {connectionStatus === 'connected' ? 'Connected' : connectionStatus === 'loading' ? 'Loading…' : 'Unavailable'}
+          <Pill tone={connectionStatus === 'connected' ? (status.refresh?.last_error ? 'warn' : 'good') : 'warn'}>
+            {connectionStatus === 'connected'
+              ? status.refresh?.refreshing
+                ? 'Refreshing…'
+                : status.refresh?.last_error
+                  ? 'Refresh failed'
+                  : 'Connected'
+              : connectionStatus === 'loading'
+                ? 'Loading…'
+                : 'Unavailable'}
           </Pill>
         }
       />
