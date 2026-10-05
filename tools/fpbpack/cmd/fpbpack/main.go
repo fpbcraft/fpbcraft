@@ -31,6 +31,10 @@ func run(args []string) int {
 		return runInventory(args[1:])
 	case "catalog":
 		return runCatalog(args[1:])
+	case "doctor":
+		return runDoctor(args[1:])
+	case "serve":
+		return runServe(args[1:])
 	case "version", "--version", "-version":
 		fmt.Printf("fpbpack %s\n", version)
 		return 0
@@ -50,6 +54,8 @@ func printUsage() {
 Usage:
   fpbpack inventory --server-root PATH [options]
   fpbpack catalog --inventory FILE [options]
+  fpbpack doctor --inventory FILE --report FILE [options]
+  fpbpack serve --inventory FILE --report FILE [options]
   fpbpack version
 
 Inventory is read-only. It scans:
@@ -59,9 +65,15 @@ Inventory is read-only. It scans:
 Catalog converts a verified inventory into a safe partial Packwiz catalog,
 deduplicating identical artifacts and withholding ambiguous project versions.
 
+Doctor compares current inventory with the accepted catalog state and reports
+management drift without mutating files. Serve exposes the same read-only
+state and diagnostics over a local HTTP API.
+
 Options are available with:
   fpbpack inventory --help
-  fpbpack catalog --help`)
+  fpbpack catalog --help
+  fpbpack doctor --help
+  fpbpack serve --help`)
 }
 
 func runInventory(args []string) int {
