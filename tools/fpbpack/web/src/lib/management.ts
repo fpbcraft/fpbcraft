@@ -23,6 +23,12 @@ export interface DiagnosticReport {
   findings: DiagnosticFinding[];
 }
 
+export interface RefreshStatus {
+  refreshing: boolean;
+  last_success?: string;
+  last_error?: string;
+}
+
 export interface ManagementStatus {
   mode: string;
   read_only: boolean;
@@ -33,6 +39,7 @@ export interface ManagementStatus {
   unmanaged: number;
   diagnostics: DiagnosticSummary;
   version?: string;
+  refresh?: RefreshStatus;
 }
 
 export interface ManagementMod {
@@ -170,6 +177,7 @@ export function emptyManagementState(): ManagementState {
       managed: 0,
       unmanaged: 0,
       diagnostics: diagnostics.summary,
+      refresh: {refreshing: false},
     },
     diagnostics,
     mods: [],
