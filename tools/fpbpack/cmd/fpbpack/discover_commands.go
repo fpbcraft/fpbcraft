@@ -159,6 +159,7 @@ func runServe(args []string) int {
 			StopServer:     app.StopServer,
 			ApplyPlan:      app.ApplyPlan,
 			RestoreBackup:  app.RestoreBackup,
+			AcceptManualArtifact: app.AcceptManualArtifact,
 			BackgroundContext: ctx,
 			Web:          webHandler,
 		}),
