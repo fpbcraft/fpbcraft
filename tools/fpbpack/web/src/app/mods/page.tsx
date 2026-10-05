@@ -68,6 +68,11 @@ export default function ModsPage() {
   const [managementError, setManagementError] = useState<string | null>(null);
   const [managementMessage, setManagementMessage] = useState<string | null>(null);
   const [managementBusy, setManagementBusy] = useState(false);
+  const [sourceProvider, setSourceProvider] = useState<'modrinth' | 'curseforge' | 'github'>('github');
+  const [modrinthProjectID, setModrinthProjectID] = useState('');
+  const [modrinthVersionID, setModrinthVersionID] = useState('');
+  const [curseForgeProjectID, setCurseForgeProjectID] = useState('');
+  const [curseForgeFileID, setCurseForgeFileID] = useState('');
   const [githubRepository, setGithubRepository] = useState('');
   const [githubTag, setGithubTag] = useState('');
   const [githubAsset, setGithubAsset] = useState('');
@@ -163,12 +168,32 @@ export default function ModsPage() {
 
   const selectedCandidate = selectedMod ? candidatesByKey.get(selectedMod.id) : undefined;
   const selectedRule = selectedCandidate ? rules[selectedCandidate.key] : undefined;
+  const selectedBlockers = useMemo(
+    () =>
+      selectedMod
+        ? blockers.filter(
+            (finding) =>
+              normalizePath(finding.path) === normalizePath(selectedMod.path) ||
+              (!finding.path && finding.mod === selectedMod.name),
+          )
+        : [],
+    [selectedMod, blockers],
+  );
 
   const openMod = (mod: ManagementMod) => {
     const candidate = candidatesByKey.get(mod.id);
     setSelectedMod(mod);
     setManagementError(null);
     setManagementMessage(null);
+    setSourceProvider(
+      mod.provider === 'modrinth' || mod.provider === 'curseforge' || mod.provider === 'github'
+        ? mod.provider
+        : 'github',
+    );
+    setModrinthProjectID(mod.provider === 'modrinth' ? mod.project_id ?? '' : '');
+    setModrinthVersionID(mod.provider === 'modrinth' ? candidate?.installed.id ?? '' : '');
+    setCurseForgeProjectID(mod.provider === 'curseforge' ? mod.project_id ?? '' : '');
+    setCurseForgeFileID(mod.provider === 'curseforge' ? candidate?.installed.id ?? '' : '');
     setGithubRepository(mod.provider === 'github' ? mod.project_id ?? '' : '');
     setGithubTag(mod.provider === 'github' ? candidate?.installed.id ?? '' : '');
     setGithubAsset(mod.filename);
@@ -206,9 +231,21 @@ export default function ModsPage() {
   };
 
   const manageMod = async (
-    action: 'mark_unmanaged' | 'assign_github' | 'forget_missing',
+    action:
+      | 'mark_unmanaged'
+      | 'assign_modrinth'
+      | 'assign_curseforge'
+      | 'assign_github'
+      | 'forget_missing',
     path: string,
-    extra?: {repository?: string; tag?: string; asset?: string},
+    extra?: {
+      project_id?: string;
+      version_id?: string;
+      file_id?: number;
+      repository?: string;
+      tag?: string;
+      asset?: string;
+    },
   ) => {
     setManagementBusy(true);
     setManagementError(null);
@@ -603,6 +640,22 @@ export default function ModsPage() {
               <div className="alert alert-info mt-4 py-2 text-xs">{managementMessage}</div>
             ) : null}
 
+            {selectedBlockers.length ? (
+              <div className="alert alert-error mt-4 items-start py-3 text-xs">
+                <Wrench size={15} className="mt-0.5 shrink-0" />
+                <div>
+                  <div className="font-semibold">
+                    {selectedBlockers.length} blocking issue{selectedBlockers.length === 1 ? '' : 's'}
+                  </div>
+                  <ul className="mt-1 space-y-1 text-error-content/80">
+                    {selectedBlockers.map((finding, index) => (
+                      <li key={finding.code + ':' + index}>{finding.message}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ) : null}
+
             <section className="panel mt-4">
               <div className="panel-header">
                 <div>
@@ -624,82 +677,204 @@ export default function ModsPage() {
                         state.status.refresh?.refreshing ? 'animate-spin' : ''
                       }
                     />
-                    Refresh this mod
+                    {selectedMod.management === 'managed'
+                      ? 'Refresh metadata'
+                      : 'Try auto-detect source'}
                   </button>
-                  <button
-                    className="btn btn-sm btn-ghost"
-                    type="button"
-                    disabled={managementBusy}
-                    onClick={() =>
-                      void manageMod('mark_unmanaged', selectedMod.path)
-                    }
-                  >
-                    <ShieldOff size={14} /> Mark unmanaged
-                  </button>
-                </div>
-                <p className="text-xs text-base-content/45">
-                  Refresh retries exact provider metadata for this mod only. Mark unmanaged
-                  keeps the installed JAR untouched and excludes it from update planning.
-                </p>
-
-                <div className="border-t border-base-300 pt-4">
-                  <div className="mb-2 flex items-center gap-2">
-                    <GitBranch size={14} />
-                    <span className="text-xs font-semibold">Assign verified GitHub release</span>
-                  </div>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <label className="form-control">
-                      <span className="mb-1 text-xs text-base-content/45">Repository</span>
-                      <input
-                        className="input input-sm input-bordered"
-                        value={githubRepository}
-                        onChange={(event) => setGithubRepository(event.target.value)}
-                        placeholder="owner/repository"
-                      />
-                    </label>
-                    <label className="form-control">
-                      <span className="mb-1 text-xs text-base-content/45">Installed release tag</span>
-                      <input
-                        className="input input-sm input-bordered"
-                        value={githubTag}
-                        onChange={(event) => setGithubTag(event.target.value)}
-                        placeholder="v1.2.3"
-                      />
-                    </label>
-                    <label className="form-control sm:col-span-2">
-                      <span className="mb-1 text-xs text-base-content/45">Release asset</span>
-                      <input
-                        className="input input-sm input-bordered"
-                        value={githubAsset}
-                        onChange={(event) => setGithubAsset(event.target.value)}
-                        placeholder={selectedMod.filename}
-                      />
-                    </label>
-                  </div>
-                  <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-xs text-base-content/40">
-                      FPBPack hashes the live JAR and accepts this source only if its SHA-256
-                      matches the selected GitHub release asset.
-                    </p>
+                  {selectedMod.management !== 'unmanaged' ? (
                     <button
                       className="btn btn-sm btn-ghost"
                       type="button"
-                      disabled={
-                        managementBusy ||
-                        !githubRepository.trim() ||
-                        !githubTag.trim()
-                      }
+                      disabled={managementBusy}
                       onClick={() =>
-                        void manageMod('assign_github', selectedMod.path, {
-                          repository: githubRepository,
-                          tag: githubTag,
-                          asset: githubAsset,
-                        })
+                        void manageMod('mark_unmanaged', selectedMod.path)
                       }
                     >
-                      <GitBranch size={14} /> Verify &amp; assign
+                      <ShieldOff size={14} /> Keep unmanaged
                     </button>
+                  ) : null}
+                </div>
+                <p className="text-xs text-base-content/45">
+                  Auto-detect retries exact provider identification/metadata for this mod only.
+                  Keeping it unmanaged accepts the current JAR as intentional, clears source
+                  blockers, and excludes it from update planning without touching the file.
+                </p>
+
+                <div className="border-t border-base-300 pt-4">
+                  <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-2">
+                      <GitBranch size={14} />
+                      <span className="text-xs font-semibold">Assign verified source</span>
+                    </div>
+                    <select
+                      className="select select-sm select-bordered"
+                      value={sourceProvider}
+                      onChange={(event) =>
+                        setSourceProvider(
+                          event.target.value as 'modrinth' | 'curseforge' | 'github',
+                        )
+                      }
+                    >
+                      <option value="modrinth">Modrinth</option>
+                      <option value="curseforge">CurseForge</option>
+                      <option value="github">GitHub release</option>
+                    </select>
                   </div>
+
+                  {sourceProvider === 'modrinth' ? (
+                    <div>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <label className="form-control">
+                          <span className="mb-1 text-xs text-base-content/45">Project ID</span>
+                          <input
+                            className="input input-sm input-bordered"
+                            value={modrinthProjectID}
+                            onChange={(event) => setModrinthProjectID(event.target.value)}
+                            placeholder="Modrinth project ID"
+                          />
+                        </label>
+                        <label className="form-control">
+                          <span className="mb-1 text-xs text-base-content/45">Installed version ID</span>
+                          <input
+                            className="input input-sm input-bordered"
+                            value={modrinthVersionID}
+                            onChange={(event) => setModrinthVersionID(event.target.value)}
+                            placeholder="Version ID"
+                          />
+                        </label>
+                      </div>
+                      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs text-base-content/40">
+                          Accepted only when the selected Modrinth version contains this exact
+                          installed JAR SHA-512.
+                        </p>
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          type="button"
+                          disabled={
+                            managementBusy ||
+                            !modrinthProjectID.trim() ||
+                            !modrinthVersionID.trim()
+                          }
+                          onClick={() =>
+                            void manageMod('assign_modrinth', selectedMod.path, {
+                              project_id: modrinthProjectID,
+                              version_id: modrinthVersionID,
+                            })
+                          }
+                        >
+                          Verify &amp; assign
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {sourceProvider === 'curseforge' ? (
+                    <div>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <label className="form-control">
+                          <span className="mb-1 text-xs text-base-content/45">Project ID</span>
+                          <input
+                            className="input input-sm input-bordered"
+                            value={curseForgeProjectID}
+                            onChange={(event) => setCurseForgeProjectID(event.target.value)}
+                            placeholder="CurseForge project ID"
+                          />
+                        </label>
+                        <label className="form-control">
+                          <span className="mb-1 text-xs text-base-content/45">Installed file ID</span>
+                          <input
+                            className="input input-sm input-bordered"
+                            inputMode="numeric"
+                            value={curseForgeFileID}
+                            onChange={(event) => setCurseForgeFileID(event.target.value)}
+                            placeholder="File ID"
+                          />
+                        </label>
+                      </div>
+                      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs text-base-content/40">
+                          Requires the CurseForge key from Settings. Accepted only when the
+                          provider SHA-1 matches this installed JAR.
+                        </p>
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          type="button"
+                          disabled={
+                            managementBusy ||
+                            !curseForgeProjectID.trim() ||
+                            !/^\d+$/.test(curseForgeFileID.trim())
+                          }
+                          onClick={() =>
+                            void manageMod('assign_curseforge', selectedMod.path, {
+                              project_id: curseForgeProjectID,
+                              file_id: Number(curseForgeFileID),
+                            })
+                          }
+                        >
+                          Verify &amp; assign
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {sourceProvider === 'github' ? (
+                    <div>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <label className="form-control">
+                          <span className="mb-1 text-xs text-base-content/45">Repository</span>
+                          <input
+                            className="input input-sm input-bordered"
+                            value={githubRepository}
+                            onChange={(event) => setGithubRepository(event.target.value)}
+                            placeholder="owner/repository"
+                          />
+                        </label>
+                        <label className="form-control">
+                          <span className="mb-1 text-xs text-base-content/45">Installed release tag</span>
+                          <input
+                            className="input input-sm input-bordered"
+                            value={githubTag}
+                            onChange={(event) => setGithubTag(event.target.value)}
+                            placeholder="v1.2.3"
+                          />
+                        </label>
+                        <label className="form-control sm:col-span-2">
+                          <span className="mb-1 text-xs text-base-content/45">Release asset</span>
+                          <input
+                            className="input input-sm input-bordered"
+                            value={githubAsset}
+                            onChange={(event) => setGithubAsset(event.target.value)}
+                            placeholder={selectedMod.filename}
+                          />
+                        </label>
+                      </div>
+                      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs text-base-content/40">
+                          Accepted only if the live JAR SHA-256 matches the selected GitHub
+                          release asset digest.
+                        </p>
+                        <button
+                          className="btn btn-sm btn-ghost"
+                          type="button"
+                          disabled={
+                            managementBusy ||
+                            !githubRepository.trim() ||
+                            !githubTag.trim()
+                          }
+                          onClick={() =>
+                            void manageMod('assign_github', selectedMod.path, {
+                              repository: githubRepository,
+                              tag: githubTag,
+                              asset: githubAsset,
+                            })
+                          }
+                        >
+                          <GitBranch size={14} /> Verify &amp; assign
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </section>
