@@ -30,6 +30,7 @@ type Release struct {
 	Filename    string    `json:"filename,omitempty"`
 	URL         string    `json:"url,omitempty"`
 	SHA1        string    `json:"sha1,omitempty"`
+	SHA256      string    `json:"sha256,omitempty"`
 	SHA512      string    `json:"sha512,omitempty"`
 }
 
