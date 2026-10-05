@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
@@ -47,6 +48,7 @@ type ServerOptions struct {
 	Providers    ProvidersLoader
 	SetProviderCredential   ProviderCredentialSetter
 	ClearProviderCredential ProviderCredentialClearer
+	BackgroundContext context.Context
 	Web          http.Handler
 }
 
@@ -68,6 +70,9 @@ type Server struct {
 	providersLoader ProvidersLoader
 	setProviderCredential ProviderCredentialSetter
 	clearProviderCredential ProviderCredentialClearer
+	backgroundCtx context.Context
+	backgroundMu sync.Mutex
+	backgroundRefresh bool
 	version       string
 }
 
@@ -76,6 +81,10 @@ func NewHandler(loader Loader, version string) http.Handler {
 }
 
 func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) http.Handler {
+	backgroundCtx := opts.BackgroundContext
+	if backgroundCtx == nil {
+		backgroundCtx = context.Background()
+	}
 	server := &Server{
 		loader: loader, updatesLoader: opts.Updates, refresh: opts.Refresh,
 		checkUpdates: opts.CheckUpdates, createPlan: opts.CreatePlan,
@@ -86,6 +95,7 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 		providersLoader: opts.Providers,
 		setProviderCredential: opts.SetProviderCredential,
 		clearProviderCredential: opts.ClearProviderCredential,
+		backgroundCtx: backgroundCtx,
 		version: version,
 	}
 	mux := http.NewServeMux()
@@ -195,28 +205,50 @@ func (s *Server) updates(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, report)
 }
 
-func (s *Server) refreshAll(w http.ResponseWriter, r *http.Request) {
+func (s *Server) refreshAll(w http.ResponseWriter, _ *http.Request) {
 	if s.refresh == nil {
 		writeError(w, http.StatusServiceUnavailable, "refresh is not configured")
 		return
 	}
-	if err := s.refresh(r.Context()); err != nil {
-		writeError(w, http.StatusServiceUnavailable, err.Error())
-		return
+	started := s.startBackgroundRefresh(s.refresh)
+	status := "refreshing"
+	if !started {
+		status = "already_refreshing"
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"status": "refreshed"})
+	writeJSON(w, http.StatusAccepted, map[string]string{"status": status})
 }
 
-func (s *Server) checkForUpdates(w http.ResponseWriter, r *http.Request) {
+func (s *Server) checkForUpdates(w http.ResponseWriter, _ *http.Request) {
 	if s.checkUpdates == nil {
 		writeError(w, http.StatusServiceUnavailable, "update refresh is not configured")
 		return
 	}
-	if err := s.checkUpdates(r.Context()); err != nil {
-		writeError(w, http.StatusServiceUnavailable, err.Error())
-		return
+	started := s.startBackgroundRefresh(s.checkUpdates)
+	status := "refreshing"
+	if !started {
+		status = "already_refreshing"
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"status": "refreshed"})
+	writeJSON(w, http.StatusAccepted, map[string]string{"status": status})
+}
+
+func (s *Server) startBackgroundRefresh(refresh RefreshFunc) bool {
+	s.backgroundMu.Lock()
+	if s.backgroundRefresh {
+		s.backgroundMu.Unlock()
+		return false
+	}
+	s.backgroundRefresh = true
+	s.backgroundMu.Unlock()
+
+	go func() {
+		defer func() {
+			s.backgroundMu.Lock()
+			s.backgroundRefresh = false
+			s.backgroundMu.Unlock()
+		}()
+		_ = refresh(s.backgroundCtx)
+	}()
+	return true
 }
 
 func (s *Server) plans(w http.ResponseWriter, _ *http.Request) {
