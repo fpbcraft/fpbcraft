@@ -33,6 +33,10 @@ type Options struct {
 	CurseForgeAPIKey string
 	GitHubBaseURL     string
 	GitHubToken       string
+	CraftyURL         string
+	CraftyServerID    string
+	CraftyToken       string
+	CraftyAllowInsecure bool
 	BootstrapReport  string
 }
 
@@ -47,12 +51,19 @@ type UpdateRule struct {
 	ReviewAfter     *time.Time `json:"review_after,omitempty"`
 }
 
+type CraftySettings struct {
+	URL           string `json:"url,omitempty"`
+	ServerID      string `json:"server_id,omitempty"`
+	AllowInsecure bool   `json:"allow_insecure,omitempty"`
+}
+
 type State struct {
 	SchemaVersion int             `json:"schema_version"`
 	CreatedAt     time.Time       `json:"created_at"`
 	UpdatedAt     time.Time       `json:"updated_at"`
 	ImportedFrom  string          `json:"imported_from,omitempty"`
 	Settings      RuntimeSettings       `json:"settings"`
+	Crafty        CraftySettings        `json:"crafty,omitempty"`
 	UpdateRules   map[string]UpdateRule `json:"update_rules,omitempty"`
 	Catalog       catalog.Report        `json:"catalog"`
 }
