@@ -133,10 +133,21 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 	for _, candidate := range report.Candidates {
 		candidates[candidate.Key] = candidate
 	}
-	mods := make(map[string]management.Mod, len(snapshot.Mods))
+	mods := make(map[string]management.Mod, len(snapshot.Mods)*2)
+	projectCounts := map[string]int{}
 	for _, mod := range snapshot.Mods {
 		if mod.Provider != "" && mod.ProjectID != "" {
-			mods[mod.Provider+":"+mod.ProjectID] = mod
+			projectCounts[mod.Provider+":"+mod.ProjectID]++
+		}
+	}
+	for _, mod := range snapshot.Mods {
+		if mod.Provider == "" || mod.ProjectID == "" {
+			continue
+		}
+		mods[mod.ID] = mod
+		base := mod.Provider + ":" + mod.ProjectID
+		if projectCounts[base] == 1 {
+			mods[base] = mod
 		}
 	}
 
@@ -162,7 +173,7 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 		target := *candidate.Target
 		validateTargetArtifact(&plan, key, candidate.Name, target)
 
-		mod, installed := mods[candidate.Provider+":"+candidate.ProjectID]
+		mod, installed := mods[candidate.Key]
 		if !installed {
 			addBlocker(&plan, "installed_artifact_missing", key, "The currently managed artifact could not be matched to the live inventory.")
 		}
@@ -342,7 +353,7 @@ func appendDependencyClosure(
 }
 
 func appendChange(plan *Plan, change Change, changeIndex map[string]int) {
-	key := change.Artifact.Provider + ":" + change.Artifact.ProjectID
+	key := change.CandidateKey
 	if index, exists := changeIndex[key]; exists {
 		current := &plan.Changes[index]
 		if current.Target.ID != change.Target.ID {
