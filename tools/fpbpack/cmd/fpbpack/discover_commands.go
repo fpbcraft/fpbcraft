@@ -113,6 +113,7 @@ func runServe(args []string) int {
 		Loader:          *loader,
 		ModrinthBaseURL: *modrinthAPI,
 		CurseForgeAPIKey: strings.TrimSpace(os.Getenv("FPBPACK_CURSEFORGE_API_KEY")),
+		GitHubToken: strings.TrimSpace(os.Getenv("FPBPACK_GITHUB_TOKEN")),
 		BootstrapReport: *bootstrapReport,
 	})
 	if err != nil {
