@@ -46,6 +46,9 @@ func (s *Service) ManageMod(ctx context.Context, request ModManagementRequest) (
 		return ModManagementResult{}, fmt.Errorf("mod path is required")
 	}
 
+	s.catalogMu.Lock()
+	defer s.catalogMu.Unlock()
+
 	switch request.Action {
 	case "mark_unmanaged":
 		s.mu.Lock()
@@ -103,6 +106,8 @@ func (s *Service) RefreshModMetadata(ctx context.Context, path string) (err erro
 		return fmt.Errorf("another refresh is already in progress")
 	}
 	defer s.refreshMu.Unlock()
+	s.catalogMu.Lock()
+	defer s.catalogMu.Unlock()
 	s.beginRefresh("mod", "Refreshing metadata for "+path)
 	defer func() { s.finishRefresh(err) }()
 	s.setRefreshProgress("providers", "Refreshing metadata for "+path, 0, 1, 10)
@@ -298,6 +303,7 @@ func (s *Service) adoptCurrentArtifact(ctx context.Context, path string) (ModMan
 		)
 	}
 
+	s.mu.Lock()
 	previousKey := catalog.EntryKey(previous)
 	s.removeCatalogArtifact(mod)
 	managed := make([]catalog.Entry, 0, len(s.state.Catalog.Managed))
@@ -317,8 +323,10 @@ func (s *Service) adoptCurrentArtifact(ctx context.Context, path string) (ModMan
 			strings.ToLower(s.state.Catalog.Managed[j].Name)
 	})
 	if err := s.persistCatalogMutation(); err != nil {
+		s.mu.Unlock()
 		return ModManagementResult{}, err
 	}
+	s.mu.Unlock()
 
 	message := fmt.Sprintf(
 		"Current JAR verified as %s project %s and adopted into accepted state.",
@@ -414,10 +422,13 @@ func (s *Service) assignModrinthSource(
 		Environment: verified.Environment,
 		SourcePaths: s.sourcesForSHA(mod.SHA512),
 	}
+	s.mu.Lock()
 	s.replaceCatalogArtifact(mod, entry)
 	if err := s.persistCatalogMutation(); err != nil {
+		s.mu.Unlock()
 		return ModManagementResult{}, err
 	}
+	s.mu.Unlock()
 	message := "Modrinth source verified and accepted."
 	if err := s.refreshSingleManagedEntry(ctx, entry); err != nil {
 		message = "Modrinth source was verified and saved, but its update metadata refresh failed: " + err.Error()
@@ -482,10 +493,13 @@ func (s *Service) assignCurseForgeSource(
 		Deployment: mod.Location,
 		SourcePaths: s.sourcesForSHA(mod.SHA512),
 	}
+	s.mu.Lock()
 	s.replaceCatalogArtifact(mod, entry)
 	if err := s.persistCatalogMutation(); err != nil {
+		s.mu.Unlock()
 		return ModManagementResult{}, err
 	}
+	s.mu.Unlock()
 	message := "CurseForge source verified and accepted."
 	if err := s.refreshSingleManagedEntry(ctx, entry); err != nil {
 		message = "CurseForge source was verified and saved, but its update metadata refresh failed: " + err.Error()
@@ -558,10 +572,13 @@ func (s *Service) assignGitHubSource(
 		Asset: verified.Asset,
 		SourcePaths: s.sourcesForSHA(mod.SHA512),
 	}
+	s.mu.Lock()
 	s.replaceCatalogArtifact(mod, entry)
 	if err := s.persistCatalogMutation(); err != nil {
+		s.mu.Unlock()
 		return ModManagementResult{}, err
 	}
+	s.mu.Unlock()
 	if err := s.refreshSingleManagedEntry(ctx, entry); err != nil {
 		return ModManagementResult{
 			Action: "assign_github",
