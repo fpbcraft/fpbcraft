@@ -11,12 +11,11 @@ import {
 } from 'lucide-react';
 import {useManagement} from '@/components/management-provider';
 import {PageHeader, Pill, formatDate} from '@/components/ui';
-import {api} from '@/lib/api';
 
 type ToolAction = 'inventory' | 'doctor' | 'updates' | 'full';
 
 export default function ToolsPage() {
-  const {state, reload} = useManagement();
+  const {state, refresh, checkUpdates, refreshInventory} = useManagement();
   const [running, setRunning] = useState<ToolAction | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,20 +26,19 @@ export default function ToolsPage() {
     setError(null);
     try {
       if (action === 'updates') {
-        await api('/api/updates/check', {method: 'POST'});
-        setMessage('Update discovery started.');
+        await checkUpdates();
+        setMessage('Update discovery requested.');
       } else if (action === 'full') {
-        await api('/api/refresh', {method: 'POST'});
-        setMessage('Full inventory + provider refresh started.');
+        await refresh();
+        setMessage('Full inventory + provider refresh requested.');
       } else {
-        await api('/api/inventory/refresh', {method: 'POST'});
+        await refreshInventory();
         setMessage(
           action === 'doctor'
-            ? 'Fresh inventory scan started. Diagnostics will update from the resulting inventory.'
-            : 'Inventory scan started.',
+            ? 'Fresh inventory scan requested. Diagnostics will update from the resulting inventory.'
+            : 'Inventory scan requested.',
         );
       }
-      await reload({silent: true});
     } catch (value: unknown) {
       setError(value instanceof Error ? value.message : String(value));
     } finally {
