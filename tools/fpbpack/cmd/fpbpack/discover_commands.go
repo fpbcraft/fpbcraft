@@ -146,6 +146,12 @@ func runServe(args []string) int {
 		errCh <- server.ListenAndServe()
 	}()
 
+	go func() {
+		if err := app.Refresh(ctx); err != nil && ctx.Err() == nil {
+			fmt.Fprintf(os.Stderr, "initial background refresh failed: %v\n", err)
+		}
+	}()
+
 	if *refreshInterval > 0 {
 		go func() {
 			ticker := time.NewTicker(*refreshInterval)
@@ -164,6 +170,7 @@ func runServe(args []string) int {
 	}
 
 	fmt.Printf("FPBPack listening on http://%s (GUI + read-only API)\n", *listen)
+	fmt.Println("Initial inventory/update refresh is running in the background.")
 	fmt.Printf("Server root: %s\n", *serverRoot)
 	fmt.Printf("State dir:   %s\n", *stateDir)
 
