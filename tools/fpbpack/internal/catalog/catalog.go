@@ -171,17 +171,30 @@ func EnsureManagedArtifactIDs(entries []Entry) bool {
 func (r *Report) RecalculateSummary() {
 	EnsureManagedArtifactIDs(r.Managed)
 
-	// Placement warnings are derived state. Drop stale warnings that no longer
-	// represent an invalid deployment. In particular,
-	// client_only_server_optional is valid on the server and
-	// server_only_client_optional is valid on the client.
-	validPlacement := r.Placement[:0]
-	for _, warning := range r.Placement {
-		if placementMismatch(warning.Deployment, warning.Environment) {
-			validPlacement = append(validPlacement, warning)
+	// Placement warnings are derived state. Rebuild them from the accepted
+	// managed entries so source reassignment and preferred-placement changes
+	// cannot leave stale warnings behind. Optional-side environments remain
+	// valid in their optional deployment.
+	placement := make([]PlacementWarning, 0)
+	for _, entry := range r.Managed {
+		if strings.TrimSpace(entry.Environment) == "" ||
+			!placementMismatch(entry.Deployment, entry.Environment) {
+			continue
 		}
+		placement = append(placement, PlacementWarning{
+			ProjectID: entry.ProjectID,
+			Environment: entry.Environment,
+			Deployment: entry.Deployment,
+			Filename: entry.Filename,
+		})
 	}
-	r.Placement = validPlacement
+	sort.Slice(placement, func(i, j int) bool {
+		if placement[i].Filename != placement[j].Filename {
+			return placement[i].Filename < placement[j].Filename
+		}
+		return placement[i].ProjectID < placement[j].ProjectID
+	})
+	r.Placement = placement
 
 	summary := r.Summary
 	summary.GeneratedProjects = len(r.Managed)
