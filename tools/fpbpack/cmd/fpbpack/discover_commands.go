@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -16,6 +17,21 @@ import (
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
 	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
+
+type originListFlag []string
+
+func (values *originListFlag) String() string {
+	return strings.Join(*values, ",")
+}
+
+func (values *originListFlag) Set(value string) error {
+	origin := strings.TrimSuffix(strings.TrimSpace(value), "/")
+	if origin == "" {
+		return errors.New("origin cannot be empty")
+	}
+	*values = append(*values, origin)
+	return nil
+}
 
 func runDoctor(args []string) int {
 	flags := flag.NewFlagSet("doctor", flag.ContinueOnError)
@@ -87,6 +103,12 @@ func runServe(args []string) int {
 	reportPath := flags.String("report", "", "accepted migration report JSON")
 	updatesPath := flags.String("updates", "", "cached update report JSON (optional)")
 	listen := flags.String("listen", "127.0.0.1:8787", "HTTP listen address")
+	var corsOrigins originListFlag
+	flags.Var(
+		&corsOrigins,
+		"cors-origin",
+		"browser origin allowed to call the API (for example https://fpbcraft-gui.vercel.app); may be repeated",
+	)
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
@@ -120,7 +142,8 @@ func runServe(args []string) int {
 	server := &http.Server{
 		Addr: *listen,
 		Handler: httpapi.NewHandlerWithOptions(source.Load, version, httpapi.ServerOptions{
-			Updates: updatesLoader,
+			Updates:        updatesLoader,
+			AllowedOrigins: []string(corsOrigins),
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
@@ -130,6 +153,9 @@ func runServe(args []string) int {
 		errCh <- server.ListenAndServe()
 	}()
 	fmt.Printf("FPBPack API listening on http://%s (read-only)\n", *listen)
+	if len(corsOrigins) > 0 {
+		fmt.Printf("Browser API access allowed for: %s\n", strings.Join(corsOrigins, ", "))
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
