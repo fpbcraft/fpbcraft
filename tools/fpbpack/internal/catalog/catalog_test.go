@@ -178,3 +178,39 @@ func TestManagedArtifactKeysAllowMultipleJarsFromSameProject(t *testing.T) {
 		t.Fatalf("artifact IDs changed: %+v", entries)
 	}
 }
+
+
+func TestRecalculateSummaryDropsOptionalPlacementWarnings(t *testing.T) {
+	report := Report{
+		Placement: []PlacementWarning{
+			{
+				ProjectID: "client-optional",
+				Environment: "client_only_server_optional",
+				Deployment: inventory.LocationServer,
+				Filename: "client-optional.jar",
+			},
+			{
+				ProjectID: "server-optional",
+				Environment: "server_only_client_optional",
+				Deployment: inventory.LocationClient,
+				Filename: "server-optional.jar",
+			},
+			{
+				ProjectID: "strict-client",
+				Environment: "client_only",
+				Deployment: inventory.LocationServer,
+				Filename: "strict-client.jar",
+			},
+		},
+	}
+	report.RecalculateSummary()
+	if len(report.Placement) != 1 {
+		t.Fatalf("placement warnings = %+v, want only strict mismatch", report.Placement)
+	}
+	if report.Placement[0].ProjectID != "strict-client" {
+		t.Fatalf("unexpected retained placement warning: %+v", report.Placement[0])
+	}
+	if report.Summary.PlacementWarnings != 1 {
+		t.Fatalf("summary placement warnings = %d", report.Summary.PlacementWarnings)
+	}
+}
