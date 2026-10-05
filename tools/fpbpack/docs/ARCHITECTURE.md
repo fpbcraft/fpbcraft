@@ -109,7 +109,7 @@ The target container mounts:
 - `/server` — Minecraft/Crafty server root;
 - `/data` — FPBPack durable state/cache/history/backups.
 
-The container exposes port 8787 and runs one process. Normal container startup should only need `fpbpack serve`; no pre-start inventory/update job is required.
+The container exposes port 8787 and runs one process. The image defaults to `fpbpack serve`, so normal container startup needs no command override and no pre-start inventory/update job.
 
 ## Development
 

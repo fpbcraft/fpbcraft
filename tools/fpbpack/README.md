@@ -182,10 +182,10 @@ docker run --rm \
   -p 8787:8787 \
   -v /path/to/crafty/server:/server \
   -v /mnt/user/appdata/fpbpack:/data \
-  fpbpack serve
+  fpbpack
 ```
 
-The container defaults to `/server` and `/data`. No separate inventory/update generation job is required.
+The image defaults to `fpbpack serve`, with `/server` and `/data` as the standard mounts. No command override or separate inventory/update generation job is required.
 
 The same image is suitable for an eventual Unraid template. Future write-capable slices will mount only the server/state paths FPBPack actually needs.
 

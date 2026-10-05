@@ -6,7 +6,7 @@ Last updated: **2026-10-05**
 
 **Slice 1 — Discover & Decide: in progress**
 
-Working branch: `fpbcraft/fpbcraft:feat/discover-decide` → draft PR #8.
+Working branch: `fpbcraft/fpbcraft:feat/self-contained-serve` → draft PR #9.
 
 The user merges PRs manually. Do not merge this branch automatically.
 
