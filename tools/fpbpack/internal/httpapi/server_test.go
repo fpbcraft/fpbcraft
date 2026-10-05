@@ -106,3 +106,79 @@ func TestUpdatesEndpointIsUnavailableWithoutCache(t *testing.T) {
 		t.Fatalf("code = %d, want 503", recorder.Code)
 	}
 }
+
+func TestCORSAllowsConfiguredBrowserOrigin(t *testing.T) {
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{AllowedOrigins: []string{"https://fpbcraft.example"}},
+	)
+
+	request := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	request.Header.Set("Origin", "https://fpbcraft.example")
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("code = %d, want 200", recorder.Code)
+	}
+	if got := recorder.Header().Get("Access-Control-Allow-Origin"); got != "https://fpbcraft.example" {
+		t.Fatalf("Access-Control-Allow-Origin = %q", got)
+	}
+}
+
+func TestCORSDoesNotExposeResponseToUnknownOrigin(t *testing.T) {
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{AllowedOrigins: []string{"https://fpbcraft.example"}},
+	)
+
+	request := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	request.Header.Set("Origin", "https://not-allowed.example")
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, request)
+
+	if got := recorder.Header().Get("Access-Control-Allow-Origin"); got != "" {
+		t.Fatalf("unexpected Access-Control-Allow-Origin = %q", got)
+	}
+}
+
+func TestCORSPreflightSupportsLegacyPrivateNetworkAccess(t *testing.T) {
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{AllowedOrigins: []string{"https://fpbcraft.example"}},
+	)
+
+	request := httptest.NewRequest(http.MethodOptions, "/api/status", nil)
+	request.Header.Set("Origin", "https://fpbcraft.example")
+	request.Header.Set("Access-Control-Request-Method", "GET")
+	request.Header.Set("Access-Control-Request-Private-Network", "true")
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusNoContent {
+		t.Fatalf("code = %d, want 204", recorder.Code)
+	}
+	if got := recorder.Header().Get("Access-Control-Allow-Private-Network"); got != "true" {
+		t.Fatalf("Access-Control-Allow-Private-Network = %q, want true", got)
+	}
+}
+
+func TestCORSRejectsUnknownOriginPreflight(t *testing.T) {
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{AllowedOrigins: []string{"https://fpbcraft.example"}},
+	)
+
+	request := httptest.NewRequest(http.MethodOptions, "/api/status", nil)
+	request.Header.Set("Origin", "https://not-allowed.example")
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf("code = %d, want 403", recorder.Code)
+	}
+}
