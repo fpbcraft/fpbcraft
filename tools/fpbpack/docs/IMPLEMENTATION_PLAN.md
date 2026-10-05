@@ -626,6 +626,138 @@ And:
 
 ---
 
+# Slice 4 — Catalog Management
+
+## Goal
+
+Turn FPBPack from an updater/reconciler into a complete day-to-day modpack manager.
+
+At the end of this slice, the GUI must support adding, removing, upgrading, downgrading, and reinstalling provider-managed mods without requiring opaque Modrinth version IDs or CurseForge file IDs.
+
+## Provider catalog browsing
+
+### Add mod
+
+From Mods, provide **Add mod**:
+
+- search Modrinth or CurseForge by human-readable project name;
+- limit results to Minecraft mods compatible with the configured Minecraft version and loader;
+- show provider, project name, description, project link, icon when available, and installed state;
+- prevent a second catalog identity for the same provider project;
+- select preferred server/common or AutoModpack client-only placement.
+
+### Exact version browser
+
+For both new and existing mods:
+
+- list exact compatible provider versions/files;
+- display human-readable version number/name rather than requiring provider IDs;
+- show release/beta/alpha channel;
+- show publication date and target filename;
+- show changelog when the provider exposes it;
+- allow filtering release/beta/alpha/all;
+- permit upgrade, downgrade, and explicit reinstall of the installed version.
+
+The provider version/file ID is persisted internally as the exact immutable target, but is not the normal user input.
+
+## Catalog mutation planning
+
+All catalog membership/version changes must use the existing protected plan model.
+
+### Install
+
+An install plan must:
+
+- use an exact provider version;
+- resolve required dependencies recursively where provider metadata supports it;
+- add dependency changes to the same plan;
+- verify target provider checksums;
+- reject occupied target paths;
+- preserve the selected deployment location;
+- create a restorable accepted-catalog snapshot before Apply.
+
+### Change version
+
+Changing version must use a normal exact `replace` operation and support:
+
+- upgrade;
+- downgrade;
+- reinstall;
+- filename changes;
+- placement changes when explicitly selected.
+
+### Remove
+
+Removal must be a real filesystem/catalog operation, not the state-only **Forget** action.
+
+Before a remove plan is ready:
+
+- query the dependency metadata for currently installed provider versions/files;
+- block when another installed managed mod requires the target;
+- fail closed when dependency metadata cannot be verified;
+- back up the exact JAR before deletion;
+- remove the accepted catalog entry only after successful Apply;
+- make Restore recreate the exact JAR and accepted catalog entry.
+
+Unused dependencies are left installed unless the user explicitly removes them. Do not guess that a dependency is orphaned.
+
+## GUI work
+
+### Mods
+
+Add:
+
+- **Add mod** in the Mods header;
+- **Change version** for managed Modrinth/CurseForge artifacts;
+- **Review removal** for safely removable managed artifacts;
+- reusable provider search/version picker;
+- clear “already managed” search state;
+- readable errors for provider configuration, incompatible versions, occupied targets, and dependency blockers.
+
+### Review
+
+Review must distinguish:
+
+- selected installation;
+- selected version change;
+- dependency-driven addition/update;
+- selected removal.
+
+Exact file operations and provider identities remain visible.
+
+## Slice 4 exit condition
+
+Slice 4 is complete when the GUI can perform this workflow end to end:
+
+```text
+Mods → Add mod / Change version / Review removal
+    ↓
+Search provider / choose exact human-readable version
+    ↓
+Dependencies resolved
+    ↓
+Review exact plan
+    ↓
+Stop server
+    ↓
+Apply
+    ↓
+Inventory/catalog verification
+    ↓
+Restore available from History
+```
+
+And:
+
+- no opaque provider ID is required in the normal add/version flow;
+- explicit installs never silently reuse an unrelated catalog identity;
+- required dependencies cannot be removed accidentally;
+- provider/download failures do not mutate live files;
+- removal is fully restorable;
+- upgrades, downgrades, reinstalls, and new installs preserve the same checksum/backup safety model as updates.
+
+---
+
 # What we intentionally do NOT split into separate slices
 
 Unless implementation reveals a real blocker, do not create independent slices for:
@@ -646,7 +778,7 @@ Unless implementation reveals a real blocker, do not create independent slices f
 - error/loading states;
 - Docker tweaks.
 
-They belong inside the three feature slices above.
+They belong inside the feature slice that owns their workflow rather than becoming standalone polish slices.
 
 Similarly, avoid building speculative infrastructure before its slice needs it.
 
@@ -684,7 +816,9 @@ Slice 2: Plan & Protect
         ↓
 Slice 3: Apply & Restore
         ↓
-Usable FPBCraft mod manager
+Slice 4: Catalog Management
+        ↓
+Complete FPBCraft mod manager
 ```
 
 That is the intended plan. Additional slices should only be introduced for genuinely independent work or an unforeseen architectural blocker.
