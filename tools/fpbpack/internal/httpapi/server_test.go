@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/doctor"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/planning"
 	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
 
@@ -164,5 +166,50 @@ func TestRefreshEndpointsInvokeServiceCallbacks(t *testing.T) {
 	}
 	if refreshCalls != 1 || updateCalls != 1 {
 		t.Fatalf("refresh calls = %d, update calls = %d", refreshCalls, updateCalls)
+	}
+}
+
+func TestPlanEndpointsCreateAndReadPlans(t *testing.T) {
+	created := planning.Plan{ID: "plan-0123456789abcdef", Status: planning.StatusReady}
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			CreatePlan: func(_ context.Context, keys []string) (planning.Plan, error) {
+				if len(keys) != 1 || keys[0] != "modrinth:create" {
+					t.Fatalf("unexpected candidate keys: %+v", keys)
+				}
+				return created, nil
+			},
+			Plan: func(id string) (planning.Plan, error) {
+				if id != created.ID {
+					return planning.Plan{}, planning.ErrNotFound
+				}
+				return created, nil
+			},
+			Plans: func() ([]planning.Summary, error) {
+				return []planning.Summary{created.Summary()}, nil
+			},
+			History: func() ([]planning.HistoryEvent, error) {
+				return []planning.HistoryEvent{created.HistoryEvent()}, nil
+			},
+		},
+	)
+
+	createRecorder := httptest.NewRecorder()
+	handler.ServeHTTP(
+		createRecorder,
+		httptest.NewRequest(http.MethodPost, "/api/plans", strings.NewReader(`{"candidate_keys":["modrinth:create"]}`)),
+	)
+	if createRecorder.Code != http.StatusCreated {
+		t.Fatalf("create code = %d, want 201: %s", createRecorder.Code, createRecorder.Body.String())
+	}
+
+	for _, route := range []string{"/api/plans", "/api/plans/" + created.ID, "/api/history"} {
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, route, nil))
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("%s code = %d, want 200", route, recorder.Code)
+		}
 	}
 }
