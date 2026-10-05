@@ -32,6 +32,8 @@ type Release struct {
 	SHA1        string    `json:"sha1,omitempty"`
 	SHA256      string    `json:"sha256,omitempty"`
 	SHA512      string    `json:"sha512,omitempty"`
+	ManualDownload bool   `json:"manual_download,omitempty"`
+	ManualURL     string   `json:"manual_url,omitempty"`
 }
 
 type Dependency struct {
