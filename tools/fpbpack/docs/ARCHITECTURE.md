@@ -64,7 +64,7 @@ The state directory is FPBPack-owned:
 │       └── files/...           verified copies of affected current JARs
 └── cache/
     └── artifacts/
-        └── <sha512>.jar        prefetched + hash-verified target artifacts
+        └── <verified-key>.jar  prefetched target artifacts keyed by a verified provider checksum
 ```
 
 `state.json` is authoritative for durable management identity such as provider/project ownership and unmanaged/pinned artifacts. The old `migration-report.json` is only a bootstrap/import format.
