@@ -22,6 +22,7 @@ import type {
 } from '@/lib/management';
 
 const PAGE_SIZE = 50;
+const FILTER_STORAGE_KEY = 'fpbpack:mods-filters:v1';
 
 interface ModManagementResult {
   action: string;
@@ -62,6 +63,7 @@ export default function ModsPage() {
   const [updateStatus, setUpdateStatus] = useState('all');
   const [attentionOnly, setAttentionOnly] = useState(false);
   const [page, setPage] = useState(1);
+  const [filtersReady, setFiltersReady] = useState(false);
   const [selectedMod, setSelectedMod] = useState<ManagementMod | null>(null);
   const [rules, setRules] = useState<Record<string, UpdateRule>>({});
   const [ruleError, setRuleError] = useState<string | null>(null);
@@ -76,6 +78,7 @@ export default function ModsPage() {
   const [githubRepository, setGithubRepository] = useState('');
   const [githubTag, setGithubTag] = useState('');
   const [githubAsset, setGithubAsset] = useState('');
+  const [preferredPlacement, setPreferredPlacement] = useState<'server' | 'client'>('server');
 
   const candidatesByKey = useMemo(
     () => new Map(state.updates.candidates.map((candidate) => [candidate.key, candidate])),
@@ -91,16 +94,90 @@ export default function ModsPage() {
     () => new Set(blockers.map((finding) => normalizePath(finding.path)).filter(Boolean)),
     [blockers],
   );
+  const blockerRank = useMemo(() => {
+    const rank = new Map<string, number>();
+    blockers.forEach((finding, index) => {
+      const path = normalizePath(finding.path);
+      if (path && !rank.has(path)) rank.set(path, index);
+    });
+    return rank;
+  }, [blockers]);
 
   useEffect(() => {
     api<{rules: Record<string, UpdateRule>}>('/api/update-rules')
       .then((response) => setRules(response.rules))
       .catch(() => undefined);
 
-    if (new URLSearchParams(window.location.search).get('attention') === '1') {
-      setAttentionOnly(true);
+    const params = new URLSearchParams(window.location.search);
+    let persisted: Record<string, unknown> = {};
+    try {
+      persisted = JSON.parse(window.localStorage.getItem(FILTER_STORAGE_KEY) ?? '{}') as Record<
+        string,
+        unknown
+      >;
+    } catch {
+      persisted = {};
     }
+
+    const stringValue = (key: string, fallback: string) => {
+      const fromURL = params.get(key);
+      if (fromURL !== null) return fromURL;
+      return typeof persisted[key] === 'string' ? String(persisted[key]) : fallback;
+    };
+    setQ(stringValue('q', ''));
+    setDeployment(stringValue('deployment', 'all'));
+    setManagement(stringValue('management', 'all'));
+    setProvider(stringValue('provider', 'all'));
+    setUpdateStatus(stringValue('update', 'all'));
+    setAttentionOnly(
+      params.has('attention')
+        ? params.get('attention') === '1'
+        : persisted.attentionOnly === true,
+    );
+    const restoredPage = Number(params.get('page') ?? persisted.page ?? 1);
+    setPage(Number.isFinite(restoredPage) && restoredPage > 0 ? Math.floor(restoredPage) : 1);
+    setFiltersReady(true);
   }, []);
+
+  useEffect(() => {
+    if (!filtersReady) return;
+    const value = {
+      q,
+      deployment,
+      management,
+      provider,
+      update: updateStatus,
+      attentionOnly,
+      page,
+    };
+    window.localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(value));
+
+    const params = new URLSearchParams(window.location.search);
+    const sync = (key: string, value: string, defaultValue: string) => {
+      if (value === defaultValue) params.delete(key);
+      else params.set(key, value);
+    };
+    sync('q', q, '');
+    sync('deployment', deployment, 'all');
+    sync('management', management, 'all');
+    sync('provider', provider, 'all');
+    sync('update', updateStatus, 'all');
+    if (attentionOnly) params.set('attention', '1');
+    else params.delete('attention');
+    if (page > 1) params.set('page', String(page));
+    else params.delete('page');
+    const query = params.toString();
+    window.history.replaceState(null, '', window.location.pathname + (query ? '?' + query : ''));
+  }, [
+    filtersReady,
+    q,
+    deployment,
+    management,
+    provider,
+    updateStatus,
+    attentionOnly,
+    page,
+  ]);
 
   const providers = useMemo(
     () =>
@@ -144,11 +221,19 @@ export default function ModsPage() {
         statusMatches &&
         (!attentionOnly || needsAttention)
       );
+    }).sort((a, b) => {
+      if (attentionOnly) {
+        const aRank = blockerRank.get(normalizePath(a.path)) ?? Number.MAX_SAFE_INTEGER;
+        const bRank = blockerRank.get(normalizePath(b.path)) ?? Number.MAX_SAFE_INTEGER;
+        if (aRank !== bRank) return aRank - bRank;
+      }
+      return a.name.localeCompare(b.name);
     });
   }, [
     state.mods,
     candidatesByKey,
     blockerPaths,
+    blockerRank,
     q,
     deployment,
     management,
@@ -197,7 +282,30 @@ export default function ModsPage() {
     setGithubRepository(mod.provider === 'github' ? mod.project_id ?? '' : '');
     setGithubTag(mod.provider === 'github' ? candidate?.installed.id ?? '' : '');
     setGithubAsset(mod.filename);
+    setPreferredPlacement(mod.preferred_deployment ?? mod.deployment);
+    const params = new URLSearchParams(window.location.search);
+    params.set('mod', mod.id);
+    const query = params.toString();
+    window.history.replaceState(null, '', window.location.pathname + (query ? '?' + query : ''));
   };
+
+  const closeMod = () => {
+    setSelectedMod(null);
+    const params = new URLSearchParams(window.location.search);
+    params.delete('mod');
+    const query = params.toString();
+    window.history.replaceState(null, '', window.location.pathname + (query ? '?' + query : ''));
+  };
+
+  useEffect(() => {
+    if (!filtersReady || selectedMod || state.mods.length === 0) return;
+    const requested = new URLSearchParams(window.location.search).get('mod');
+    if (!requested) return;
+    const mod = state.mods.find(
+      (item) => item.id === requested || normalizePath(item.path) === normalizePath(requested),
+    );
+    if (mod) openMod(mod);
+  }, [filtersReady, state.mods, selectedMod]);
 
   const applyRule = async (candidate: UpdateCandidate, rule: UpdateRule) => {
     setRuleError(null);
@@ -236,7 +344,8 @@ export default function ModsPage() {
       | 'assign_modrinth'
       | 'assign_curseforge'
       | 'assign_github'
-      | 'forget_missing',
+      | 'forget_missing'
+      | 'set_placement',
     path: string,
     extra?: {
       project_id?: string;
@@ -245,6 +354,7 @@ export default function ModsPage() {
       repository?: string;
       tag?: string;
       asset?: string;
+      placement?: 'server' | 'client';
     },
   ) => {
     setManagementBusy(true);
@@ -256,7 +366,7 @@ export default function ModsPage() {
         body: JSON.stringify({action, path, ...extra}),
       });
       setManagementMessage(result.message);
-      setSelectedMod(null);
+      closeMod();
       await reload({silent: true});
     } catch (error: unknown) {
       setManagementError(error instanceof Error ? error.message : String(error));
@@ -485,7 +595,7 @@ export default function ModsPage() {
                 <th>Installed</th>
                 <th>Latest</th>
                 <th>Status</th>
-                <th>Side</th>
+                <th>Placement</th>
                 <th>Source</th>
               </tr>
             </thead>
@@ -538,8 +648,22 @@ export default function ModsPage() {
                         <Pill tone={managementTone(mod.management)}>{mod.management}</Pill>
                       )}
                     </td>
-                    <td>
-                      <Pill tone={mod.side === 'client' ? 'blue' : 'neutral'}>{mod.side}</Pill>
+                    <td className="whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <Pill tone={mod.deployment === 'client' ? 'blue' : 'neutral'}>
+                          {mod.deployment === 'client' ? 'client-only' : 'server/common'}
+                        </Pill>
+                        {mod.preferred_deployment !== mod.deployment ? (
+                          <>
+                            <span className="text-base-content/30">→</span>
+                            <Pill tone="warn">
+                              {mod.preferred_deployment === 'client'
+                                ? 'client-only'
+                                : 'server/common'}
+                            </Pill>
+                          </>
+                        ) : null}
+                      </div>
                     </td>
                     <td>
                       {candidate?.project_url || mod.project_url ? (
@@ -623,7 +747,7 @@ export default function ModsPage() {
               <button
                 className="btn btn-sm btn-ghost btn-square"
                 type="button"
-                onClick={() => setSelectedMod(null)}
+                onClick={closeMod}
                 aria-label="Close"
               >
                 <X size={16} />
@@ -701,6 +825,47 @@ export default function ModsPage() {
                 </p>
 
                 <div className="border-t border-base-300 pt-4">
+                  <div className="mb-2 text-xs font-semibold">Placement</div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                    <label className="form-control flex-1">
+                      <span className="mb-1 text-xs text-base-content/45">Preferred placement</span>
+                      <select
+                        className="select select-sm select-bordered"
+                        value={preferredPlacement}
+                        disabled={selectedMod.management !== 'managed' || managementBusy}
+                        onChange={(event) =>
+                          setPreferredPlacement(event.target.value as 'server' | 'client')
+                        }
+                      >
+                        <option value="server">Server/common</option>
+                        <option value="client">Client-only (AutoModpack)</option>
+                      </select>
+                    </label>
+                    <button
+                      className="btn btn-sm btn-primary"
+                      type="button"
+                      disabled={
+                        managementBusy ||
+                        selectedMod.management !== 'managed' ||
+                        preferredPlacement === selectedMod.preferred_deployment
+                      }
+                      onClick={() =>
+                        void manageMod('set_placement', selectedMod.path, {
+                          placement: preferredPlacement,
+                        })
+                      }
+                    >
+                      Save placement
+                    </button>
+                  </div>
+                  <p className="mt-2 text-xs text-base-content/40">
+                    Current: {selectedMod.deployment === 'client' ? 'client-only' : 'server/common'}.
+                    Changing the preference does not move the live JAR immediately; the move is
+                    performed by the protected Apply flow.
+                  </p>
+                </div>
+
+                <div className="border-t border-base-300 pt-4">
                   <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-2">
                       <GitBranch size={14} />
@@ -749,7 +914,7 @@ export default function ModsPage() {
                           installed JAR SHA-512.
                         </p>
                         <button
-                          className="btn btn-sm btn-ghost"
+                          className="btn btn-sm btn-primary"
                           type="button"
                           disabled={
                             managementBusy ||
@@ -798,7 +963,7 @@ export default function ModsPage() {
                           provider SHA-1 matches this installed JAR.
                         </p>
                         <button
-                          className="btn btn-sm btn-ghost"
+                          className="btn btn-sm btn-primary"
                           type="button"
                           disabled={
                             managementBusy ||
@@ -827,7 +992,7 @@ export default function ModsPage() {
                             className="input input-sm input-bordered"
                             value={githubRepository}
                             onChange={(event) => setGithubRepository(event.target.value)}
-                            placeholder="owner/repository"
+                            placeholder="owner/repository or GitHub URL"
                           />
                         </label>
                         <label className="form-control">
@@ -851,11 +1016,11 @@ export default function ModsPage() {
                       </div>
                       <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <p className="text-xs text-base-content/40">
-                          Accepted only if the live JAR SHA-256 matches the selected GitHub
-                          release asset digest.
+                          Repository may be owner/repository or a GitHub repository URL. Accepted
+                          only if the live JAR SHA-256 matches the selected release asset digest.
                         </p>
                         <button
-                          className="btn btn-sm btn-ghost"
+                          className="btn btn-sm btn-primary"
                           type="button"
                           disabled={
                             managementBusy ||
@@ -904,6 +1069,18 @@ export default function ModsPage() {
                   <div className="flex justify-between gap-4 px-4 py-3">
                     <dt className="muted">Side</dt>
                     <dd>{selectedMod.side}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4 px-4 py-3">
+                    <dt className="muted">Current placement</dt>
+                    <dd>{selectedMod.deployment === 'client' ? 'client-only' : 'server/common'}</dd>
+                  </div>
+                  <div className="flex justify-between gap-4 px-4 py-3">
+                    <dt className="muted">Preferred placement</dt>
+                    <dd>
+                      {selectedMod.preferred_deployment === 'client'
+                        ? 'client-only'
+                        : 'server/common'}
+                    </dd>
                   </div>
                 </dl>
               </div>
