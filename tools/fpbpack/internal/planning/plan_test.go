@@ -327,3 +327,150 @@ func TestBuildPlansSiblingArtifactsFromSameProviderProject(t *testing.T) {
 		t.Fatalf("sibling artifacts were coalesced: %+v", plan.Changes)
 	}
 }
+
+
+func TestBuildTreatsExactManagedDependencyAtTargetAsAlreadySatisfied(t *testing.T) {
+	now := time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: now.Add(time.Minute),
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:main",
+			Provider: "modrinth",
+			ProjectID: "main",
+			Name: "Main",
+			Deployment: inventory.LocationServer,
+			Classification: updatecheck.ClassificationReview,
+			Installed: updatecheck.Release{ID: "main-old"},
+			Target: &updatecheck.Release{
+				ID: "main-new",
+				Filename: "main-new.jar",
+				URL: "https://cdn.example/main.jar",
+				SHA512: "main-target",
+			},
+			Dependencies: []updatecheck.Dependency{{
+				Provider: "modrinth",
+				ProjectID: "architectury-modrinth",
+				Name: "Architectury API",
+				Type: "required",
+				Action: "add",
+				Deployment: inventory.LocationServer,
+				Target: &updatecheck.Release{
+					ID: "architectury-v13",
+					Filename: "architectury-13.0.11-neoforge.jar",
+					URL: "https://cdn.example/architectury.jar",
+					SHA512: "architectury-exact",
+				},
+			}},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{GeneratedAt: now, ServerModsPath: "mods"},
+		Mods: []management.Mod{
+			{
+				ID: "modrinth:main",
+				Provider: "modrinth",
+				ProjectID: "main",
+				Name: "Main",
+				Management: "managed",
+				Deployment: inventory.LocationServer,
+				Path: "mods/main-old.jar",
+				SHA512: "main-old-hash",
+			},
+			{
+				ID: "curseforge:architectury",
+				Provider: "curseforge",
+				ProjectID: "architectury",
+				Name: "[NeoForge 1.21] v13.0.11",
+				Filename: "architectury-13.0.11-neoforge.jar",
+				Management: "managed",
+				Deployment: inventory.LocationServer,
+				Path: "mods/architectury-13.0.11-neoforge.jar",
+				SHA512: "architectury-exact",
+			},
+		},
+	}
+
+	plan, err := Build([]string{"modrinth:main"}, report, snapshot, now.Add(2*time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Status != StatusReady {
+		t.Fatalf("exact existing managed dependency should not block: %+v", plan.Blockers)
+	}
+	if len(plan.Changes) != 1 || plan.Changes[0].CandidateKey != "modrinth:main" {
+		t.Fatalf("satisfied dependency should not create a filesystem change: %+v", plan.Changes)
+	}
+	for _, blocker := range plan.Blockers {
+		if blocker.Code == "target_path_occupied" {
+			t.Fatalf("exact managed dependency was incorrectly treated as occupied: %+v", blocker)
+		}
+	}
+	foundWarning := false
+	for _, warning := range plan.Warnings {
+		if warning.Code == "dependency_already_satisfied" {
+			foundWarning = true
+		}
+	}
+	if !foundWarning {
+		t.Fatalf("expected dependency satisfaction note: %+v", plan.Warnings)
+	}
+}
+
+func TestBuildStillBlocksDifferentManagedArtifactAtDependencyTarget(t *testing.T) {
+	now := time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: now.Add(time.Minute),
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:main",
+			Provider: "modrinth",
+			ProjectID: "main",
+			Name: "Main",
+			Deployment: inventory.LocationServer,
+			Classification: updatecheck.ClassificationReview,
+			Target: &updatecheck.Release{
+				ID: "main-new", Filename: "main-new.jar",
+				URL: "https://cdn.example/main.jar", SHA512: "main-target",
+			},
+			Dependencies: []updatecheck.Dependency{{
+				Provider: "modrinth", ProjectID: "dep", Name: "Dependency",
+				Type: "required", Action: "add", Deployment: inventory.LocationServer,
+				Target: &updatecheck.Release{
+					ID: "dep-v1", Filename: "dep.jar",
+					URL: "https://cdn.example/dep.jar", SHA512: "required-hash",
+				},
+			}},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{GeneratedAt: now, ServerModsPath: "mods"},
+		Mods: []management.Mod{
+			{
+				ID: "modrinth:main", Provider: "modrinth", ProjectID: "main",
+				Name: "Main", Management: "managed", Deployment: inventory.LocationServer,
+				Path: "mods/main-old.jar", SHA512: "main-old",
+			},
+			{
+				ID: "curseforge:other", Provider: "curseforge", ProjectID: "other",
+				Name: "Different bytes", Filename: "dep.jar", Management: "managed",
+				Deployment: inventory.LocationServer, Path: "mods/dep.jar", SHA512: "different-hash",
+			},
+		},
+	}
+
+	plan, err := Build([]string{"modrinth:main"}, report, snapshot, now.Add(2*time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Status != StatusBlocked {
+		t.Fatalf("different occupied bytes must still block: %+v", plan)
+	}
+	found := false
+	for _, blocker := range plan.Blockers {
+		if blocker.Code == "target_path_occupied" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("missing occupied-target blocker: %+v", plan.Blockers)
+	}
+}
