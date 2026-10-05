@@ -649,6 +649,12 @@ func TestToolsEndpointsExposeCatalogAndStartInventoryRefresh(t *testing.T) {
 					Managed: []catalog.Entry{{Provider: "modrinth", ProjectID: "test"}},
 				}, nil
 			},
+			CatalogPreview: func() (catalog.Report, error) {
+				return catalog.Report{
+					SchemaVersion: catalog.ReportSchemaVersion,
+					Summary: catalog.Summary{GeneratedProjects: 3, Unresolved: 1},
+				}, nil
+			},
 			RefreshInventory: func(context.Context) error {
 				refreshCalled <- struct{}{}
 				return nil
@@ -667,6 +673,22 @@ func TestToolsEndpointsExposeCatalogAndStartInventoryRefresh(t *testing.T) {
 	}
 	if len(report.Managed) != 1 || report.Managed[0].ProjectID != "test" {
 		t.Fatalf("unexpected catalog payload: %+v", report)
+	}
+
+	previewRecorder := httptest.NewRecorder()
+	handler.ServeHTTP(
+		previewRecorder,
+		httptest.NewRequest(http.MethodPost, "/api/catalog/preview", nil),
+	)
+	if previewRecorder.Code != http.StatusOK {
+		t.Fatalf("catalog preview = %d: %s", previewRecorder.Code, previewRecorder.Body.String())
+	}
+	var preview catalog.Report
+	if err := json.Unmarshal(previewRecorder.Body.Bytes(), &preview); err != nil {
+		t.Fatal(err)
+	}
+	if preview.Summary.GeneratedProjects != 3 || preview.Summary.Unresolved != 1 {
+		t.Fatalf("unexpected catalog preview: %+v", preview.Summary)
 	}
 
 	refreshRecorder := httptest.NewRecorder()
@@ -721,5 +743,42 @@ func TestLogsEndpointReturnsStructuredRuntimeEvents(t *testing.T) {
 	entry, ok := entries[0].(map[string]any)
 	if !ok || entry["message"] != "provider failed" || entry["area"] != "refresh" {
 		t.Fatalf("unexpected log entry: %+v", entries[0])
+	}
+}
+
+
+func TestLogsEndpointReturnsBoundedRuntimeEntries(t *testing.T) {
+	now := time.Date(2026, 10, 5, 17, 0, 0, 0, time.UTC)
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			Logs: func(limit int) []service.RuntimeLogEntry {
+				if limit != 25 {
+					t.Fatalf("limit = %d, want 25", limit)
+				}
+				return []service.RuntimeLogEntry{{
+					ID: 7,
+					Time: now,
+					Level: "warn",
+					Area: "refresh",
+					Message: "provider retry",
+				}}
+			},
+		},
+	)
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/logs?limit=25", nil))
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("logs = %d: %s", recorder.Code, recorder.Body.String())
+	}
+	var payload struct {
+		Entries []service.RuntimeLogEntry `json:"entries"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if len(payload.Entries) != 1 || payload.Entries[0].Message != "provider retry" {
+		t.Fatalf("unexpected log payload: %+v", payload.Entries)
 	}
 }
