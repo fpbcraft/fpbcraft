@@ -114,6 +114,49 @@ func (client *CurseForgeClient) VerifyInstalledFile(
 	}, nil
 }
 
+func (client *CurseForgeClient) ResolveInstalledFile(
+	ctx context.Context,
+	projectID string,
+	minecraft string,
+	loader string,
+	expectedSHA1 string,
+) (VerifiedCurseForgeSource, error) {
+	expectedSHA1 = strings.ToLower(strings.TrimSpace(expectedSHA1))
+	if strings.TrimSpace(projectID) == "" || expectedSHA1 == "" {
+		return VerifiedCurseForgeSource{}, fmt.Errorf("project ID and current SHA-1 are required")
+	}
+	files, err := client.ListFiles(ctx, projectID, minecraft, loader)
+	if err != nil {
+		return VerifiedCurseForgeSource{}, err
+	}
+	var matched *curseForgeFile
+	for index := range files {
+		if !strings.EqualFold(curseForgeSHA1(files[index]), expectedSHA1) {
+			continue
+		}
+		if matched != nil {
+			return VerifiedCurseForgeSource{}, fmt.Errorf(
+				"multiple CurseForge files for project %s match the installed JAR SHA-1",
+				projectID,
+			)
+		}
+		copy := files[index]
+		matched = &copy
+	}
+	if matched == nil {
+		return VerifiedCurseForgeSource{}, fmt.Errorf(
+			"no compatible CurseForge file in project %s matches the installed JAR SHA-1",
+			projectID,
+		)
+	}
+	return VerifiedCurseForgeSource{
+		ProjectID: projectID,
+		FileID: uint32(matched.ID),
+		DisplayName: matched.DisplayName,
+		Filename: matched.FileName,
+	}, nil
+}
+
 func (client *CurseForgeClient) Validate(ctx context.Context) error {
 	var response struct {
 		Data struct {

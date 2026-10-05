@@ -42,8 +42,17 @@ type stagedPlanOperation struct {
 }
 
 func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyResult, err error) {
+	defer func() {
+		if err != nil {
+			s.logEvent("error", "apply", fmt.Sprintf("Apply %s failed: %v", planID, err))
+		} else if result.Status != "" {
+			s.logEvent("info", "apply", result.Summary)
+		}
+	}()
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
+	s.catalogMu.Lock()
+	defer s.catalogMu.Unlock()
 
 	plan, err := s.Plan(planID)
 	if err != nil {
@@ -171,6 +180,7 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 		GeneratedAt: now,
 		Minecraft: s.options.Minecraft,
 		Loader: s.options.Loader,
+		Candidates: []updatecheck.Candidate{},
 	}
 	_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), nextUpdates)
 	s.mu.Lock()
@@ -192,8 +202,17 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 }
 
 func (s *Service) RestoreBackup(ctx context.Context, backupID string) (result RestoreResult, err error) {
+	defer func() {
+		if err != nil {
+			s.logEvent("error", "restore", fmt.Sprintf("Restore %s failed: %v", backupID, err))
+		} else if result.Status != "" {
+			s.logEvent("info", "restore", result.Summary)
+		}
+	}()
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
+	s.catalogMu.Lock()
+	defer s.catalogMu.Unlock()
 
 	if err := s.requireServerStopped(ctx); err != nil {
 		return RestoreResult{}, err
@@ -285,6 +304,7 @@ func (s *Service) RestoreBackup(ctx context.Context, backupID string) (result Re
 		GeneratedAt: now,
 		Minecraft: s.options.Minecraft,
 		Loader: s.options.Loader,
+		Candidates: []updatecheck.Candidate{},
 	}
 	_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), nextUpdates)
 	s.mu.Lock()

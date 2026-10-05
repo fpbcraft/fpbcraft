@@ -3,6 +3,7 @@
 import {useEffect, useMemo, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {
+  Check,
   ExternalLink,
   GitBranch,
   RefreshCw,
@@ -91,6 +92,7 @@ export default function ModsPage() {
   const [githubTag, setGithubTag] = useState('');
   const [githubAsset, setGithubAsset] = useState('');
   const [preferredPlacement, setPreferredPlacement] = useState<'server' | 'client'>('server');
+  const [replacementPath, setReplacementPath] = useState('');
 
   const candidatesByKey = useMemo(
     () => new Map(state.updates.candidates.map((candidate) => [candidate.key, candidate])),
@@ -104,6 +106,23 @@ export default function ModsPage() {
 
   const blockerPaths = useMemo(
     () => new Set(blockers.map((finding) => normalizePath(finding.path)).filter(Boolean)),
+    [blockers],
+  );
+
+  const missingManagedChoices = useMemo(
+    () =>
+      blockers
+        .filter(
+          (finding) =>
+            finding.code === 'managed_artifact_missing' && !!normalizePath(finding.path),
+        )
+        .map((finding) => ({
+          path: normalizePath(finding.path),
+          label:
+            finding.mod ||
+            normalizePath(finding.path).split('/').at(-1) ||
+            normalizePath(finding.path),
+        })),
     [blockers],
   );
   const blockerRank = useMemo(() => {
@@ -375,6 +394,7 @@ export default function ModsPage() {
     setGithubTag(mod.provider === 'github' ? candidate?.installed.id ?? '' : '');
     setGithubAsset(mod.filename);
     setPreferredPlacement(mod.preferred_deployment ?? mod.deployment);
+    setReplacementPath('');
     const params = new URLSearchParams(window.location.search);
     params.set('mod', mod.id);
     const query = params.toString();
@@ -437,7 +457,8 @@ export default function ModsPage() {
       | 'assign_curseforge'
       | 'assign_github'
       | 'forget_missing'
-      | 'set_placement',
+      | 'set_placement'
+      | 'adopt_current',
     path: string,
     extra?: {
       project_id?: string;
@@ -447,6 +468,7 @@ export default function ModsPage() {
       tag?: string;
       asset?: string;
       placement?: 'server' | 'client';
+      replaces_path?: string;
     },
   ) => {
     setManagementBusy(true);
@@ -974,6 +996,29 @@ export default function ModsPage() {
                 </div>
               </div>
               <div className="space-y-4 p-4">
+                {selectedMod.management === 'external' && missingManagedChoices.length ? (
+                  <div className="rounded-box border border-base-300 bg-base-200/35 p-3">
+                    <div className="text-xs font-semibold">Manual replacement</div>
+                    <p className="mt-1 text-xs text-base-content/45">
+                      If this JAR is a renamed manual update of a missing managed artifact,
+                      select the old artifact. FPBPack will verify the new JAR against that
+                      artifact's provider before adopting it.
+                    </p>
+                    <select
+                      className="select select-sm select-bordered mt-2 w-full"
+                      value={replacementPath}
+                      onChange={(event) => setReplacementPath(event.target.value)}
+                    >
+                      <option value="">Auto-detect / new external mod</option>
+                      {missingManagedChoices.map((choice) => (
+                        <option value={choice.path} key={choice.path}>
+                          {choice.label} · {choice.path}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+
                 <div className="flex flex-wrap gap-2">
                   <button
                     className="btn btn-sm btn-primary"
@@ -1003,11 +1048,27 @@ export default function ModsPage() {
                       <ShieldOff size={14} /> Keep unmanaged
                     </button>
                   ) : null}
+                  {(selectedBlockers.some((finding) => finding.code === 'managed_artifact_replaced') ||
+                    selectedMod.management === 'external') ? (
+                    <button
+                      className="btn btn-sm btn-outline"
+                      type="button"
+                      disabled={managementBusy}
+                      onClick={() =>
+                        void manageMod('adopt_current', selectedMod.path, {
+                          replaces_path: replacementPath || undefined,
+                        })
+                      }
+                    >
+                      <Check size={14} /> Adopt current JAR
+                    </button>
+                  ) : null}
                 </div>
                 <p className="text-xs text-base-content/45">
                   Auto-detect retries exact provider identification/metadata for this mod only.
-                  Keeping it unmanaged accepts the current JAR as intentional, clears source
-                  blockers, and excludes it from update planning without touching the file.
+                  Adopt current JAR is for an intentional manual replacement: FPBPack accepts it
+                  only after proving it belongs to the same provider project/repository. Keeping
+                  it unmanaged excludes it from update planning without touching the file.
                 </p>
 
                 <div className="border-t border-base-300 pt-4">

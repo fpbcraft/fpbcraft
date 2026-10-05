@@ -46,14 +46,14 @@ The user merges PRs manually. Do not merge these branches automatically.
 - [x] `serve` is self-contained; inventory/update JSON are generated caches, not required inputs.
 - [x] Durable `state.json` under `--state-dir`.
 - [x] Legacy migration report is a one-time bootstrap/import source.
-- [x] Serve starts immediately from durable state/caches; inventory/provider refresh runs in the background.
+- [x] Serve starts immediately from durable state/caches with **no startup refresh**; the first automatic refresh waits for the configured interval and manual refresh remains available.
 - [x] Cached GUI/API state remains available while a background refresh is running.
 - [x] Manual refresh/check jobs are server-owned, survive browser disconnects/page reloads, deduplicate active refreshes, and never persist cancelled partial reports.
 - [x] Provider discovery uses bounded concurrency instead of serial per-project requests.
 - [x] Provider HTTP calls are paced per provider/refresh mode and retry 429/408/5xx responses with Retry-After / rate-limit reset handling and bounded exponential fallback.
 - [x] Truncated HTTP-200 JSON bodies are retried atomically instead of publishing partially decoded provider metadata; exhausted retries report an incomplete provider response clearly.
 - [x] Broad Modrinth version history omits changelog payloads; changelogs are hydrated only for the configured Minecraft/loader versions to reduce response size without losing rejected-version visibility.
-- [x] Automatic/startup provider refresh uses a deliberately slower background policy; user-triggered checks use a faster interactive policy.
+- [x] Scheduled automatic provider refresh uses a deliberately slower background policy; user-triggered checks use a faster interactive policy. Startup itself performs no provider refresh.
 - [x] Provider clients pace requests globally and honor Retry-After / rate-limit reset headers with bounded exponential backoff.
 - [x] Failed provider metadata refreshes preserve the last-good target/changelog/dependency/project metadata and mark it stale instead of flushing it.
 - [x] Multi-stage production Dockerfile with no Node runtime.
@@ -168,7 +168,13 @@ The remaining decision/review hardening is being completed in PR #13 instead of 
 
 - [x] Merged PR #10 passed GUI build, Go test/vet, static binary build, and artifact upload.
 - [ ] PR #13 must pass the same validation for remediation/rate-limit/manual-download hardening.
-- [ ] Exercise the revised fast-start/background-refresh behavior on the real FPBCraft server.
+- [x] Refresh progress exposes phase/current/total/percentage and is shown globally in the GUI.
+- [x] Safe catalog remediation can run during provider refresh; conflicting provider/source operations fail fast instead of hanging.
+- [x] Tools page exposes inventory, doctor-style diagnostics, updates, full refresh, catalog/state JSON, and version/status through the same service layer.
+- [x] Logs page is available from the left navigation with a bounded structured runtime event buffer.
+- [x] Intentional manual JAR replacements can be adopted only after same-source provider verification.
+- [x] Post-Apply empty update reports serialize stable empty arrays and the GUI defensively normalizes legacy/null collections.
+- [ ] Exercise the revised scheduled/manual refresh behavior and Adopt current JAR against the real FPBCraft server.
 - [ ] Exercise Modrinth changelog/rule/detail flows against the real inventory.
 - [ ] Configure/test CurseForge discovery on the real pack if a CurseForge API key is available.
 - [ ] Resolve any real-pack dependency/provider edge cases exposed by those tests.

@@ -8,8 +8,10 @@ import {
   History,
   Home,
   PackageSearch,
+  ScrollText,
   Settings,
   ShieldCheck,
+  Terminal,
 } from 'lucide-react';
 import {useManagement} from '@/components/management-provider';
 
@@ -18,6 +20,8 @@ const nav = [
   {href: '/updates', label: 'Updates', icon: PackageSearch},
   {href: '/mods', label: 'Mods', icon: Boxes},
   {href: '/history', label: 'History', icon: History},
+  {href: '/tools', label: 'Tools', icon: Terminal},
+  {href: '/logs', label: 'Logs', icon: ScrollText},
   {href: '/settings', label: 'Settings', icon: Settings},
 ];
 
@@ -73,16 +77,29 @@ export function Shell({children}: {children: ReactNode}) {
               <span>
                 {connectionStatus === 'connected'
                   ? state.status.refresh?.refreshing
-                    ? 'Refreshing in background…'
+                    ? state.status.refresh.message || 'Refreshing…'
                     : 'FPBPack connected'
                   : connectionStatus === 'loading'
                     ? 'Connecting…'
                     : 'Service unavailable'}
               </span>
             </div>
+            {state.status.refresh?.refreshing ? (
+              <div className="mt-2">
+                <progress
+                  className="progress progress-primary h-1.5 w-full"
+                  max={100}
+                  value={state.status.refresh.percent ?? 0}
+                />
+                <div className="mt-1 flex justify-between text-[0.65rem] text-base-content/35">
+                  <span>{state.status.refresh.phase ?? 'refresh'}</span>
+                  <span className="tabular-nums">{state.status.refresh.percent ?? 0}%</span>
+                </div>
+              </div>
+            ) : null}
             <div className="mt-2 flex items-center gap-2 text-[0.7rem] text-base-content/35">
               <ShieldCheck size={13} aria-hidden="true" />
-              <span>Plan &amp; Protect · no live mutation</span>
+              <span>Verified plans · protected Apply</span>
             </div>
           </div>
         </div>
@@ -90,6 +107,33 @@ export function Shell({children}: {children: ReactNode}) {
 
       <main className="min-w-0">
         <div className="mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          {state.status.refresh?.refreshing ? (
+            <div className="surface mb-4 rounded-box px-4 py-3">
+              <div className="flex items-center justify-between gap-4 text-xs">
+                <div className="min-w-0">
+                  <div className="font-medium">
+                    {state.status.refresh.message || 'Refreshing FPBPack data'}
+                  </div>
+                  <div className="mt-0.5 truncate text-base-content/40">
+                    {state.status.refresh.total
+                      ? (state.status.refresh.current ?? 0) +
+                        ' / ' +
+                        state.status.refresh.total +
+                        ' provider artifacts'
+                      : state.status.refresh.phase || 'refresh'}
+                  </div>
+                </div>
+                <span className="tabular-nums text-base-content/55">
+                  {state.status.refresh.percent ?? 0}%
+                </span>
+              </div>
+              <progress
+                className="progress progress-primary mt-2 h-1.5 w-full"
+                max={100}
+                value={state.status.refresh.percent ?? 0}
+              />
+            </div>
+          ) : null}
           {children}
         </div>
       </main>

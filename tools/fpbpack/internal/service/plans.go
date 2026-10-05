@@ -19,6 +19,8 @@ func (s *Service) CreatePlan(ctx context.Context, candidateKeys []string) (plann
 	// halfway through plan creation.
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
+	s.catalogMu.Lock()
+	defer s.catalogMu.Unlock()
 
 	s.mu.RLock()
 	snapshot := s.snapshot

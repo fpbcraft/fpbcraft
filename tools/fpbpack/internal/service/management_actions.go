@@ -28,6 +28,7 @@ type ModManagementRequest struct {
 	Tag        string `json:"tag,omitempty"`
 	Asset      string `json:"asset,omitempty"`
 	Placement  string `json:"placement,omitempty"`
+	ReplacesPath string `json:"replaces_path,omitempty"`
 }
 
 type ModManagementResult struct {
@@ -42,28 +43,58 @@ type ModManagementResult struct {
 func (s *Service) ManageMod(ctx context.Context, request ModManagementRequest) (ModManagementResult, error) {
 	request.Action = strings.TrimSpace(request.Action)
 	request.Path = normalizeCatalogPath(request.Path)
+	request.ReplacesPath = normalizeCatalogPath(request.ReplacesPath)
 	if request.Path == "" {
 		return ModManagementResult{}, fmt.Errorf("mod path is required")
 	}
 
-	s.refreshMu.Lock()
-	defer s.refreshMu.Unlock()
+	s.catalogMu.Lock()
+	defer s.catalogMu.Unlock()
 
 	switch request.Action {
 	case "mark_unmanaged":
-		return s.markModUnmanaged(request.Path)
-	case "assign_modrinth":
-		return s.assignModrinthSource(ctx, request)
-	case "assign_curseforge":
-		return s.assignCurseForgeSource(ctx, request)
-	case "assign_github":
-		return s.assignGitHubSource(ctx, request)
+		s.mu.Lock()
+		result, err := s.markModUnmanaged(request.Path)
+		s.mu.Unlock()
+		s.logModManagement(request.Action, result, err)
+		return result, err
 	case "forget_missing":
-		return s.forgetMissingAcceptedEntry(request.Path)
+		s.mu.Lock()
+		result, err := s.forgetMissingAcceptedEntry(request.Path)
+		s.mu.Unlock()
+		s.logModManagement(request.Action, result, err)
+		return result, err
 	case "set_placement":
-		return s.setPreferredPlacement(request.Path, request.Placement)
+		s.mu.Lock()
+		result, err := s.setPreferredPlacement(request.Path, request.Placement)
+		s.mu.Unlock()
+		s.logModManagement(request.Action, result, err)
+		return result, err
+	case "assign_modrinth", "assign_curseforge", "assign_github", "adopt_current":
+		if !s.refreshMu.TryLock() {
+			return ModManagementResult{}, fmt.Errorf(
+				"provider refresh is in progress; source assignment would race with provider metadata reconciliation, so retry after it finishes",
+			)
+		}
+		defer s.refreshMu.Unlock()
+		var result ModManagementResult
+		var err error
+		switch request.Action {
+		case "assign_modrinth":
+			result, err = s.assignModrinthSource(ctx, request)
+		case "assign_curseforge":
+			result, err = s.assignCurseForgeSource(ctx, request)
+		case "assign_github":
+			result, err = s.assignGitHubSource(ctx, request)
+		default:
+			result, err = s.adoptCurrentArtifact(ctx, request)
+		}
+		s.logModManagement(request.Action, result, err)
+		return result, err
 	default:
-		return ModManagementResult{}, fmt.Errorf("unsupported mod management action %q", request.Action)
+		err := fmt.Errorf("unsupported mod management action %q", request.Action)
+		s.logModManagement(request.Action, ModManagementResult{}, err)
+		return ModManagementResult{}, err
 	}
 }
 
@@ -73,10 +104,15 @@ func (s *Service) RefreshModMetadata(ctx context.Context, path string) (err erro
 		return fmt.Errorf("mod path is required")
 	}
 
-	s.refreshMu.Lock()
+	if !s.refreshMu.TryLock() {
+		return fmt.Errorf("another refresh is already in progress")
+	}
 	defer s.refreshMu.Unlock()
-	s.beginRefresh()
+	s.catalogMu.Lock()
+	defer s.catalogMu.Unlock()
+	s.beginRefresh("mod", "Refreshing metadata for "+path)
 	defer func() { s.finishRefresh(err) }()
+	s.setRefreshProgress("providers", "Refreshing metadata for "+path, 0, 1, 10)
 
 	mod, ok := s.liveModByPath(path)
 	if !ok {
@@ -121,11 +157,219 @@ func (s *Service) RefreshModMetadata(ctx context.Context, path string) (err erro
 	}
 	entry := result.Report.Managed[0]
 	entry.SourcePaths = s.sourcesForSHA(mod.SHA512)
+	s.mu.Lock()
 	s.replaceCatalogArtifact(mod, entry)
 	if err := s.persistCatalogMutation(); err != nil {
+		s.mu.Unlock()
 		return err
 	}
+	s.mu.Unlock()
 	return s.refreshSingleManagedEntry(ctx, entry)
+}
+
+func (s *Service) adoptCurrentArtifact(ctx context.Context, request ModManagementRequest) (ModManagementResult, error) {
+	path := request.Path
+	mod, ok := s.liveModByPath(path)
+	if !ok {
+		return ModManagementResult{}, fmt.Errorf(
+			"live mod %q is not in the cached inventory; run an inventory refresh first",
+			path,
+		)
+	}
+
+	previous, ok := s.managedEntryByPath(path)
+	if !ok && request.ReplacesPath != "" {
+		candidate, found := s.managedEntryByPath(request.ReplacesPath)
+		if !found {
+			return ModManagementResult{}, fmt.Errorf(
+				"accepted managed artifact %q was not found",
+				request.ReplacesPath,
+			)
+		}
+		for _, source := range candidate.SourcePaths {
+			if _, exists := s.liveModByPath(source.Path); exists {
+				return ModManagementResult{}, fmt.Errorf(
+					"cannot replace %q because its accepted live artifact still exists at %s",
+					request.ReplacesPath,
+					source.Path,
+				)
+			}
+		}
+		previous = candidate
+		ok = true
+	}
+	if !ok && mod.Modrinth != nil {
+		for _, entry := range s.state.Catalog.Managed {
+			if entry.Provider != "modrinth" || entry.ProjectID != mod.Modrinth.ProjectID {
+				continue
+			}
+			liveSource := false
+			for _, source := range entry.SourcePaths {
+				if _, exists := s.liveModByPath(source.Path); exists {
+					liveSource = true
+					break
+				}
+			}
+			if !liveSource {
+				if ok {
+					return ModManagementResult{}, fmt.Errorf(
+						"multiple missing accepted Modrinth entries match project %s; choose the source explicitly",
+						mod.Modrinth.ProjectID,
+					)
+				}
+				previous = entry
+				ok = true
+			}
+		}
+	}
+	if !ok {
+		return ModManagementResult{}, fmt.Errorf(
+			"FPBPack cannot identify which accepted managed artifact this JAR replaces; refresh inventory and use explicit source assignment if necessary",
+		)
+	}
+
+	entry := previous
+	entry.Filename = mod.Filename
+	entry.SHA1 = mod.SHA1
+	entry.SHA512 = mod.SHA512
+	entry.SourcePaths = s.sourcesForSHA(mod.SHA512)
+	if len(entry.SourcePaths) == 0 {
+		entry.SourcePaths = []catalog.Source{{Location: mod.Location, Path: mod.Path}}
+	}
+
+	verifyCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+
+	switch previous.Provider {
+	case "modrinth":
+		match := mod.Modrinth
+		if match == nil {
+			matches, err := (inventory.ModrinthClient{BaseURL: s.options.ModrinthBaseURL}).Match(
+				verifyCtx,
+				[]inventory.ModFile{mod},
+			)
+			if err != nil {
+				return ModManagementResult{}, fmt.Errorf("verify current Modrinth artifact: %w", err)
+			}
+			value, found := matches[mod.SHA512]
+			if !found {
+				return ModManagementResult{}, fmt.Errorf("current JAR has no exact Modrinth hash match")
+			}
+			match = &value
+		}
+		if match.ProjectID != previous.ProjectID {
+			return ModManagementResult{}, fmt.Errorf(
+				"current JAR belongs to Modrinth project %s, but the accepted artifact belongs to %s",
+				match.ProjectID,
+				previous.ProjectID,
+			)
+		}
+		entry.VersionID = match.VersionID
+		entry.URL = match.URL
+		entry.Environment = match.Environment
+		if strings.TrimSpace(match.VersionName) != "" {
+			entry.Name = match.VersionName
+		}
+	case "curseforge":
+		apiKey, _ := s.effectiveCurseForgeAPIKey()
+		if apiKey == "" {
+			return ModManagementResult{}, fmt.Errorf(
+				"configure a CurseForge API key before adopting this manually replaced JAR",
+			)
+		}
+		verified, err := (&updatecheck.CurseForgeClient{
+			BaseURL: s.options.CurseForgeBaseURL,
+			APIKey: apiKey,
+			Mode: updatecheck.RefreshModeInteractive,
+		}).ResolveInstalledFile(
+			verifyCtx,
+			previous.ProjectID,
+			s.options.Minecraft,
+			s.options.Loader,
+			mod.SHA1,
+		)
+		if err != nil {
+			return ModManagementResult{}, fmt.Errorf("verify current CurseForge artifact: %w", err)
+		}
+		entry.FileID = verified.FileID
+		if strings.TrimSpace(verified.DisplayName) != "" {
+			entry.Name = verified.DisplayName
+		}
+	case "github":
+		livePath := filepath.Join(s.options.ServerRoot, filepath.FromSlash(mod.Path))
+		sha256Value, err := sha256File(livePath)
+		if err != nil {
+			return ModManagementResult{}, fmt.Errorf("hash current JAR: %w", err)
+		}
+		repository := previous.Repository
+		if strings.TrimSpace(repository) == "" {
+			repository = previous.ProjectID
+		}
+		verified, err := (&updatecheck.GitHubClient{
+			BaseURL: s.options.GitHubBaseURL,
+			Token: s.options.GitHubToken,
+			Mode: updatecheck.RefreshModeInteractive,
+		}).ResolveInstalledAsset(verifyCtx, repository, sha256Value)
+		if err != nil {
+			return ModManagementResult{}, fmt.Errorf("verify current GitHub artifact: %w", err)
+		}
+		entry.ProjectID = repository
+		entry.Repository = repository
+		entry.VersionID = verified.Tag
+		entry.Tag = verified.Tag
+		entry.Asset = verified.Asset
+		entry.URL = verified.DownloadURL
+		if strings.TrimSpace(verified.Name) != "" {
+			entry.Name = verified.Name
+		}
+	default:
+		return ModManagementResult{}, fmt.Errorf(
+			"adopting manually replaced %s artifacts is not supported",
+			previous.Provider,
+		)
+	}
+
+	s.mu.Lock()
+	previousKey := catalog.EntryKey(previous)
+	s.removeCatalogArtifact(mod)
+	managed := make([]catalog.Entry, 0, len(s.state.Catalog.Managed))
+	for _, candidate := range s.state.Catalog.Managed {
+		if catalog.EntryKey(candidate) == previousKey {
+			continue
+		}
+		managed = append(managed, candidate)
+	}
+	s.state.Catalog.Managed = managed
+	entry.ArtifactID = previous.ArtifactID
+	entry.Deployment = previous.Deployment
+	s.state.Catalog.Managed = append(s.state.Catalog.Managed, entry)
+	catalog.EnsureManagedArtifactIDs(s.state.Catalog.Managed)
+	sort.Slice(s.state.Catalog.Managed, func(i, j int) bool {
+		return strings.ToLower(s.state.Catalog.Managed[i].Name) <
+			strings.ToLower(s.state.Catalog.Managed[j].Name)
+	})
+	if err := s.persistCatalogMutation(); err != nil {
+		s.mu.Unlock()
+		return ModManagementResult{}, err
+	}
+	s.mu.Unlock()
+
+	message := fmt.Sprintf(
+		"Current JAR verified as %s project %s and adopted into accepted state.",
+		entry.Provider,
+		entry.ProjectID,
+	)
+	if err := s.refreshSingleManagedEntry(ctx, entry); err != nil {
+		message += " Update metadata refresh failed: " + err.Error()
+	}
+	return ModManagementResult{
+		Action: "adopt_current",
+		Path: mod.Path,
+		Management: "managed",
+		Provider: entry.Provider,
+		ProjectID: entry.ProjectID,
+		Message: message,
+	}, nil
 }
 
 func (s *Service) markModUnmanaged(path string) (ModManagementResult, error) {
@@ -204,10 +448,13 @@ func (s *Service) assignModrinthSource(
 		Environment: verified.Environment,
 		SourcePaths: s.sourcesForSHA(mod.SHA512),
 	}
+	s.mu.Lock()
 	s.replaceCatalogArtifact(mod, entry)
 	if err := s.persistCatalogMutation(); err != nil {
+		s.mu.Unlock()
 		return ModManagementResult{}, err
 	}
+	s.mu.Unlock()
 	message := "Modrinth source verified and accepted."
 	if err := s.refreshSingleManagedEntry(ctx, entry); err != nil {
 		message = "Modrinth source was verified and saved, but its update metadata refresh failed: " + err.Error()
@@ -272,10 +519,13 @@ func (s *Service) assignCurseForgeSource(
 		Deployment: mod.Location,
 		SourcePaths: s.sourcesForSHA(mod.SHA512),
 	}
+	s.mu.Lock()
 	s.replaceCatalogArtifact(mod, entry)
 	if err := s.persistCatalogMutation(); err != nil {
+		s.mu.Unlock()
 		return ModManagementResult{}, err
 	}
+	s.mu.Unlock()
 	message := "CurseForge source verified and accepted."
 	if err := s.refreshSingleManagedEntry(ctx, entry); err != nil {
 		message = "CurseForge source was verified and saved, but its update metadata refresh failed: " + err.Error()
@@ -348,10 +598,13 @@ func (s *Service) assignGitHubSource(
 		Asset: verified.Asset,
 		SourcePaths: s.sourcesForSHA(mod.SHA512),
 	}
+	s.mu.Lock()
 	s.replaceCatalogArtifact(mod, entry)
 	if err := s.persistCatalogMutation(); err != nil {
+		s.mu.Unlock()
 		return ModManagementResult{}, err
 	}
+	s.mu.Unlock()
 	if err := s.refreshSingleManagedEntry(ctx, entry); err != nil {
 		return ModManagementResult{
 			Action: "assign_github",

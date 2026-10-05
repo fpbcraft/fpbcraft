@@ -78,8 +78,9 @@ Implement the reusable application/service layer needed by both CLI and GUI.
 - require only the server root and FPBPack state directory for normal GUI operation;
 - load/persist durable FPBPack state under the state directory;
 - import the legacy migration report only as a one-time bootstrap when needed;
-- automatically scan the live server at startup and on GUI refresh;
-- automatically refresh/update internal inventory and update caches;
+- load cached inventory/update state at startup without triggering provider work;
+- scan the live server on the regular refresh cadence and on explicit GUI refresh;
+- refresh/update internal inventory and update caches on the regular cadence or explicit user action;
 - keep standalone CLI commands optional rather than prerequisites;
 - add `doctor`-style diagnostics;
 - detect managed files changed outside FPBPack;
@@ -282,7 +283,7 @@ The current Slice 2 PR deliberately completes the unfinished decision/review wor
 
 Implemented/current scope includes:
 
-- fast serve-first startup from durable caches with background inventory/provider refresh;
+- fast serve-first startup from durable caches with no startup refresh; scheduled/manual inventory/provider refresh afterward;
 - bounded-concurrency provider discovery;
 - Modrinth update/dependency/changelog discovery;
 - CurseForge update/changelog/dependency discovery through the official API when configured;
@@ -463,7 +464,7 @@ Avoid turning Settings into a dump of implementation metadata.
 
 Slice 2 is complete when:
 
-- the app starts promptly from cached state and refreshes provider data without blocking HTTP startup;
+- the app starts promptly from cached state without an implicit provider refresh; scheduled/manual refreshes do not block HTTP serving;
 - Modrinth/CurseForge/verified-GitHub sources expose useful project/update metadata where safely available;
 - changelogs and provider links can be reviewed in-app;
 - persistent pin/ignore/review-later rules work;

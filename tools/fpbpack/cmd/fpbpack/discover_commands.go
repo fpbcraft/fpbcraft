@@ -134,7 +134,10 @@ func runServe(args []string) int {
 		Addr: *listen,
 		Handler: httpapi.NewHandlerWithOptions(app.Snapshot, version, httpapi.ServerOptions{
 			Updates:      app.Updates,
+			Catalog:      app.Catalog,
+			CatalogPreview: app.CatalogPreview,
 			Refresh:      app.Refresh,
+			RefreshInventory: app.RefreshInventory,
 			CheckUpdates: app.CheckUpdates,
 			CreatePlan:   app.CreatePlan,
 			CreatePlacementPlan: app.CreatePlacementPlan,
@@ -147,6 +150,7 @@ func runServe(args []string) int {
 			SetRule:      app.SetRule,
 			ClearRule:    app.ClearRule,
 			RefreshStatus: app.RefreshStatus,
+			Logs:          app.Logs,
 			Providers:     app.ProviderStatuses,
 			SetProviderCredential: app.SetProviderCredential,
 			ClearProviderCredential: app.ClearProviderCredential,
@@ -171,31 +175,25 @@ func runServe(args []string) int {
 		errCh <- server.ListenAndServe()
 	}()
 
-	go func() {
-		if err := app.Refresh(ctx); err != nil && ctx.Err() == nil {
-			fmt.Fprintf(os.Stderr, "initial background refresh failed: %v\n", err)
-		}
-	}()
-
 	if *refreshInterval > 0 {
-		go func() {
-			ticker := time.NewTicker(*refreshInterval)
-			defer ticker.Stop()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case <-ticker.C:
-					if err := app.Refresh(ctx); err != nil && ctx.Err() == nil {
-						fmt.Fprintf(os.Stderr, "automatic refresh failed: %v\n", err)
-					}
+		go runPeriodicRefresh(
+			ctx,
+			*refreshInterval,
+			app.Refresh,
+			func(err error) {
+				if ctx.Err() == nil {
+					fmt.Fprintf(os.Stderr, "automatic refresh failed: %v\n", err)
 				}
-			}
-		}()
+			},
+		)
 	}
 
 	fmt.Printf("FPBPack listening on http://%s (GUI + management API)\n", *listen)
-	fmt.Println("Initial inventory/update refresh is running in the background.")
+	if *refreshInterval > 0 {
+		fmt.Printf("Automatic refresh interval: %s (first run after the interval; no startup refresh)\n", refreshInterval.String())
+	} else {
+		fmt.Println("Automatic refresh disabled; use the GUI/API to refresh manually.")
+	}
 	fmt.Printf("Server root: %s\n", *serverRoot)
 	fmt.Printf("State dir:   %s\n", *stateDir)
 
@@ -218,6 +216,38 @@ func runServe(args []string) int {
 			return 1
 		}
 		return 0
+	}
+}
+
+func runPeriodicRefresh(
+	ctx context.Context,
+	interval time.Duration,
+	refresh func(context.Context) error,
+	onError func(error),
+) {
+	if interval <= 0 || refresh == nil {
+		return
+	}
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	periodicRefreshLoop(ctx, ticker.C, refresh, onError)
+}
+
+func periodicRefreshLoop(
+	ctx context.Context,
+	ticks <-chan time.Time,
+	refresh func(context.Context) error,
+	onError func(error),
+) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticks:
+			if err := refresh(ctx); err != nil && onError != nil && ctx.Err() == nil {
+				onError(err)
+			}
+		}
 	}
 }
 

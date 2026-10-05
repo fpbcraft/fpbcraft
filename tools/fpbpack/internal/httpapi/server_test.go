@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/catalog"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/doctor"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
@@ -632,5 +633,152 @@ func TestSlice3OperationalEndpoints(t *testing.T) {
 	)
 	if confirmed.Code != http.StatusOK || restoredID != "backup-0123456789abcdef" {
 		t.Fatalf("confirmed restore = %d restored=%q body=%s", confirmed.Code, restoredID, confirmed.Body.String())
+	}
+}
+
+
+func TestToolsEndpointsExposeCatalogAndStartInventoryRefresh(t *testing.T) {
+	refreshCalled := make(chan struct{}, 1)
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			Catalog: func() (catalog.Report, error) {
+				return catalog.Report{
+					SchemaVersion: catalog.ReportSchemaVersion,
+					Managed: []catalog.Entry{{Provider: "modrinth", ProjectID: "test"}},
+				}, nil
+			},
+			CatalogPreview: func() (catalog.Report, error) {
+				return catalog.Report{
+					SchemaVersion: catalog.ReportSchemaVersion,
+					Summary: catalog.Summary{GeneratedProjects: 3, Unresolved: 1},
+				}, nil
+			},
+			RefreshInventory: func(context.Context) error {
+				refreshCalled <- struct{}{}
+				return nil
+			},
+		},
+	)
+
+	catalogRecorder := httptest.NewRecorder()
+	handler.ServeHTTP(catalogRecorder, httptest.NewRequest(http.MethodGet, "/api/catalog", nil))
+	if catalogRecorder.Code != http.StatusOK {
+		t.Fatalf("catalog = %d: %s", catalogRecorder.Code, catalogRecorder.Body.String())
+	}
+	var report catalog.Report
+	if err := json.Unmarshal(catalogRecorder.Body.Bytes(), &report); err != nil {
+		t.Fatal(err)
+	}
+	if len(report.Managed) != 1 || report.Managed[0].ProjectID != "test" {
+		t.Fatalf("unexpected catalog payload: %+v", report)
+	}
+
+	previewRecorder := httptest.NewRecorder()
+	handler.ServeHTTP(
+		previewRecorder,
+		httptest.NewRequest(http.MethodPost, "/api/catalog/preview", nil),
+	)
+	if previewRecorder.Code != http.StatusOK {
+		t.Fatalf("catalog preview = %d: %s", previewRecorder.Code, previewRecorder.Body.String())
+	}
+	var preview catalog.Report
+	if err := json.Unmarshal(previewRecorder.Body.Bytes(), &preview); err != nil {
+		t.Fatal(err)
+	}
+	if preview.Summary.GeneratedProjects != 3 || preview.Summary.Unresolved != 1 {
+		t.Fatalf("unexpected catalog preview: %+v", preview.Summary)
+	}
+
+	refreshRecorder := httptest.NewRecorder()
+	handler.ServeHTTP(
+		refreshRecorder,
+		httptest.NewRequest(http.MethodPost, "/api/inventory/refresh", nil),
+	)
+	if refreshRecorder.Code != http.StatusAccepted {
+		t.Fatalf("inventory refresh = %d: %s", refreshRecorder.Code, refreshRecorder.Body.String())
+	}
+	select {
+	case <-refreshCalled:
+	case <-time.After(time.Second):
+		t.Fatal("inventory refresh handler did not invoke service")
+	}
+}
+
+
+func TestLogsEndpointReturnsStructuredRuntimeEvents(t *testing.T) {
+	now := time.Now().UTC()
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			Logs: func(limit int) []service.RuntimeLogEntry {
+				if limit != 1 {
+					t.Fatalf("limit = %d, want 1", limit)
+				}
+				return []service.RuntimeLogEntry{{
+					ID: 7,
+					Time: now,
+					Level: "error",
+					Area: "refresh",
+					Message: "provider failed",
+				}}
+			},
+		},
+	)
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/logs?limit=1", nil))
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("logs = %d: %s", recorder.Code, recorder.Body.String())
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	entries, ok := payload["entries"].([]any)
+	if !ok || len(entries) != 1 {
+		t.Fatalf("unexpected logs payload: %+v", payload)
+	}
+	entry, ok := entries[0].(map[string]any)
+	if !ok || entry["message"] != "provider failed" || entry["area"] != "refresh" {
+		t.Fatalf("unexpected log entry: %+v", entries[0])
+	}
+}
+
+
+func TestLogsEndpointReturnsBoundedRuntimeEntries(t *testing.T) {
+	now := time.Date(2026, 10, 5, 17, 0, 0, 0, time.UTC)
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			Logs: func(limit int) []service.RuntimeLogEntry {
+				if limit != 25 {
+					t.Fatalf("limit = %d, want 25", limit)
+				}
+				return []service.RuntimeLogEntry{{
+					ID: 7,
+					Time: now,
+					Level: "warn",
+					Area: "refresh",
+					Message: "provider retry",
+				}}
+			},
+		},
+	)
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/logs?limit=25", nil))
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("logs = %d: %s", recorder.Code, recorder.Body.String())
+	}
+	var payload struct {
+		Entries []service.RuntimeLogEntry `json:"entries"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if len(payload.Entries) != 1 || payload.Entries[0].Message != "provider retry" {
+		t.Fatalf("unexpected log payload: %+v", payload.Entries)
 	}
 }

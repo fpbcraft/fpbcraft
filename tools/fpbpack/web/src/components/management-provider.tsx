@@ -28,6 +28,7 @@ interface ManagementContextValue {
   reload: (options?: {silent?: boolean}) => Promise<void>;
   refresh: () => Promise<void>;
   checkUpdates: () => Promise<void>;
+  refreshInventory: () => Promise<void>;
 }
 
 const ManagementContext = createContext<ManagementContextValue | null>(null);
@@ -57,17 +58,25 @@ async function loadManagementState(): Promise<ManagementState> {
     updates = await fetchApi<UpdateReport>('/api/updates');
   } catch {
     if (status.refresh?.last_error) {
-      errors.push('Background refresh failed: ' + status.refresh.last_error);
-    } else {
+      errors.push('Refresh failed: ' + status.refresh.last_error);
+    } else if (status.refresh?.refreshing) {
       errors.push('Update discovery is still refreshing; cached update data is not available yet.');
+    } else {
+      errors.push('No cached update data is available yet. Run Check updates when you want to query providers.');
     }
   }
 
   return {
     status,
-    mods: modsResponse.mods,
-    diagnostics,
-    updates,
+    mods: Array.isArray(modsResponse.mods) ? modsResponse.mods : [],
+    diagnostics: {
+      ...diagnostics,
+      findings: Array.isArray(diagnostics.findings) ? diagnostics.findings : [],
+    },
+    updates: {
+      ...updates,
+      candidates: Array.isArray(updates.candidates) ? updates.candidates : [],
+    },
     source: 'api',
     errors,
   };
@@ -77,6 +86,7 @@ export function ManagementProvider({children}: {children: ReactNode}) {
   const [state, setState] = useState<ManagementState>(() => emptyManagementState());
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('loading');
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [awaitingRefreshStart, setAwaitingRefreshStart] = useState(false);
 
   const reload = useCallback(async (options?: {silent?: boolean}) => {
     if (!options?.silent) {
@@ -96,22 +106,54 @@ export function ManagementProvider({children}: {children: ReactNode}) {
     }
   }, []);
 
-  const refresh = useCallback(async () => {
-    await fetchApi<{status: string}>('/api/refresh', {method: 'POST'});
-    await reload({silent: true});
-  }, [reload]);
+  const startRefresh = useCallback(
+    async (path: string) => {
+      setAwaitingRefreshStart(true);
+      try {
+        const response = await fetchApi<{status: string}>(path, {method: 'POST'});
+        if (response.status === 'already_refreshing') {
+          setAwaitingRefreshStart(false);
+        }
+        await reload({silent: true});
+      } catch (error) {
+        setAwaitingRefreshStart(false);
+        throw error;
+      }
+    },
+    [reload],
+  );
 
-  const checkUpdates = useCallback(async () => {
-    await fetchApi<{status: string}>('/api/updates/check', {method: 'POST'});
-    await reload({silent: true});
-  }, [reload]);
+  const refresh = useCallback(() => startRefresh('/api/refresh'), [startRefresh]);
+
+  const checkUpdates = useCallback(
+    () => startRefresh('/api/updates/check'),
+    [startRefresh],
+  );
+
+  const refreshInventory = useCallback(
+    () => startRefresh('/api/inventory/refresh'),
+    [startRefresh],
+  );
 
   useEffect(() => {
     void reload();
   }, [reload]);
 
   useEffect(() => {
+    if (state.status.refresh?.refreshing && awaitingRefreshStart) {
+      setAwaitingRefreshStart(false);
+    }
+  }, [state.status.refresh?.refreshing, awaitingRefreshStart]);
+
+  useEffect(() => {
+    if (!awaitingRefreshStart) return;
+    const timeout = window.setTimeout(() => setAwaitingRefreshStart(false), 10000);
+    return () => window.clearTimeout(timeout);
+  }, [awaitingRefreshStart]);
+
+  useEffect(() => {
     const shouldPoll =
+      awaitingRefreshStart ||
       state.status.refresh?.refreshing ||
       state.errors.some((message) => message.includes('still refreshing'));
     if (!shouldPoll) {
@@ -119,13 +161,29 @@ export function ManagementProvider({children}: {children: ReactNode}) {
     }
     const timer = window.setTimeout(() => {
       void reload({silent: true});
-    }, 2500);
+    }, awaitingRefreshStart ? 500 : 2500);
     return () => window.clearTimeout(timer);
-  }, [state.status.refresh?.refreshing, state.errors, reload]);
+  }, [awaitingRefreshStart, state.status.refresh?.refreshing, state.errors, reload]);
 
   const value = useMemo(
-    () => ({state, connectionStatus, connectionError, reload, refresh, checkUpdates}),
-    [state, connectionStatus, connectionError, reload, refresh, checkUpdates],
+    () => ({
+      state,
+      connectionStatus,
+      connectionError,
+      reload,
+      refresh,
+      checkUpdates,
+      refreshInventory,
+    }),
+    [
+      state,
+      connectionStatus,
+      connectionError,
+      reload,
+      refresh,
+      checkUpdates,
+      refreshInventory,
+    ],
   );
 
   return <ManagementContext.Provider value={value}>{children}</ManagementContext.Provider>;

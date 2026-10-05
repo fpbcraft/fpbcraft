@@ -88,6 +88,62 @@ type VerifiedGitHubSource struct {
 	Name        string
 }
 
+func (client *GitHubClient) ResolveInstalledAsset(
+	ctx context.Context,
+	repository string,
+	expectedSHA256 string,
+) (VerifiedGitHubSource, error) {
+	repository = strings.TrimSpace(repository)
+	expectedSHA256 = strings.ToLower(strings.TrimSpace(expectedSHA256))
+	if repository == "" || expectedSHA256 == "" {
+		return VerifiedGitHubSource{}, fmt.Errorf("repository and current SHA-256 are required")
+	}
+	releases, err := client.Releases(ctx, repository)
+	if err != nil {
+		return VerifiedGitHubSource{}, err
+	}
+	var matched *VerifiedGitHubSource
+	for _, release := range releases {
+		if release.Draft {
+			continue
+		}
+		for _, asset := range release.Assets {
+			if !strings.HasSuffix(strings.ToLower(asset.Name), ".jar") {
+				continue
+			}
+			digest := strings.ToLower(githubSHA256Digest(asset.Digest))
+			if digest == "" || digest != expectedSHA256 {
+				continue
+			}
+			if matched != nil {
+				return VerifiedGitHubSource{}, fmt.Errorf(
+					"multiple GitHub release assets in %s match the installed JAR SHA-256",
+					repository,
+				)
+			}
+			name := release.Name
+			if name == "" {
+				name = repository
+			}
+			value := VerifiedGitHubSource{
+				Repository: repository,
+				Tag: release.TagName,
+				Asset: asset.Name,
+				DownloadURL: asset.BrowserDownloadURL,
+				Name: name,
+			}
+			matched = &value
+		}
+	}
+	if matched == nil {
+		return VerifiedGitHubSource{}, fmt.Errorf(
+			"no GitHub release asset in %s matches the installed JAR SHA-256",
+			repository,
+		)
+	}
+	return *matched, nil
+}
+
 func (client *GitHubClient) VerifyInstalledAsset(
 	ctx context.Context,
 	repository string,

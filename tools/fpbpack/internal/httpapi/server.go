@@ -6,10 +6,12 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/catalog"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/planning"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/service"
@@ -18,6 +20,7 @@ import (
 
 type Loader func() (management.Snapshot, error)
 type UpdatesLoader func() (updatecheck.Report, error)
+type CatalogLoader func() (catalog.Report, error)
 type RefreshFunc func(context.Context) error
 type PlanCreator func(context.Context, []string) (planning.Plan, error)
 type PlacementPlanCreator func(context.Context, string) (planning.Plan, error)
@@ -30,6 +33,7 @@ type RulesLoader func() map[string]service.UpdateRule
 type RuleSetter func(string, service.UpdateRule) (service.UpdateRule, error)
 type RuleClearer func(string) error
 type RefreshStatusLoader func() service.RefreshStatus
+type LogsLoader func(int) []service.RuntimeLogEntry
 type ProvidersLoader func() []service.ProviderStatus
 type ProviderCredentialSetter func(context.Context, string, string) (service.ProviderStatus, error)
 type ProviderCredentialClearer func(string) (service.ProviderStatus, error)
@@ -45,7 +49,10 @@ type ManualArtifactAccepter func(context.Context, string, string, io.Reader) (pl
 
 type ServerOptions struct {
 	Updates      UpdatesLoader
+	Catalog      CatalogLoader
+	CatalogPreview CatalogLoader
 	Refresh      RefreshFunc
+	RefreshInventory RefreshFunc
 	CheckUpdates RefreshFunc
 	CreatePlan   PlanCreator
 	CreatePlacementPlan PlacementPlanCreator
@@ -58,6 +65,7 @@ type ServerOptions struct {
 	SetRule      RuleSetter
 	ClearRule    RuleClearer
 	RefreshStatus RefreshStatusLoader
+	Logs          LogsLoader
 	Providers    ProvidersLoader
 	SetProviderCredential   ProviderCredentialSetter
 	ClearProviderCredential ProviderCredentialClearer
@@ -78,7 +86,10 @@ type ServerOptions struct {
 type Server struct {
 	loader        Loader
 	updatesLoader UpdatesLoader
+	catalogLoader CatalogLoader
+	catalogPreview CatalogLoader
 	refresh       RefreshFunc
+	refreshInventory RefreshFunc
 	checkUpdates  RefreshFunc
 	createPlan    PlanCreator
 	createPlacementPlan PlacementPlanCreator
@@ -91,6 +102,7 @@ type Server struct {
 	setRule        RuleSetter
 	clearRule      RuleClearer
 	refreshStatus  RefreshStatusLoader
+	logsLoader     LogsLoader
 	providersLoader ProvidersLoader
 	setProviderCredential ProviderCredentialSetter
 	clearProviderCredential ProviderCredentialClearer
@@ -120,13 +132,16 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 		backgroundCtx = context.Background()
 	}
 	server := &Server{
-		loader: loader, updatesLoader: opts.Updates, refresh: opts.Refresh,
+		loader: loader, updatesLoader: opts.Updates, catalogLoader: opts.Catalog,
+		catalogPreview: opts.CatalogPreview,
+		refresh: opts.Refresh, refreshInventory: opts.RefreshInventory,
 		checkUpdates: opts.CheckUpdates, createPlan: opts.CreatePlan,
 		createPlacementPlan: opts.CreatePlacementPlan,
 		plansLoader: opts.Plans, planLoader: opts.Plan, historyLoader: opts.History,
 		retentionLoader: opts.Retention, updateRetention: opts.UpdateRetention,
 		rulesLoader: opts.Rules, setRule: opts.SetRule, clearRule: opts.ClearRule,
 		refreshStatus: opts.RefreshStatus,
+		logsLoader: opts.Logs,
 		providersLoader: opts.Providers,
 		setProviderCredential: opts.SetProviderCredential,
 		clearProviderCredential: opts.ClearProviderCredential,
@@ -147,6 +162,9 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("GET /healthz", server.health)
 	mux.HandleFunc("GET /api/status", server.status)
 	mux.HandleFunc("GET /api/inventory", server.inventory)
+	mux.HandleFunc("POST /api/inventory/refresh", server.refreshInventoryHandler)
+	mux.HandleFunc("GET /api/catalog", server.catalog)
+	mux.HandleFunc("POST /api/catalog/preview", server.catalogPreviewHandler)
 	mux.HandleFunc("GET /api/mods", server.mods)
 	mux.HandleFunc("GET /api/diagnostics", server.diagnostics)
 	mux.HandleFunc("GET /api/updates", server.updates)
@@ -157,6 +175,7 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("POST /api/placement-plans", server.createPlacementPlanHandler)
 	mux.HandleFunc("GET /api/plans/{id}", server.plan)
 	mux.HandleFunc("GET /api/history", server.history)
+	mux.HandleFunc("GET /api/logs", server.logs)
 	mux.HandleFunc("GET /api/settings", server.retentionSettings)
 	mux.HandleFunc("PUT /api/settings", server.updateRetentionSettings)
 	mux.HandleFunc("GET /api/update-rules", server.updateRules)
@@ -237,6 +256,45 @@ type inventorySummary struct {
 	Total  int `json:"total"`
 	Server int `json:"server"`
 	Client int `json:"client"`
+}
+
+func (s *Server) catalog(w http.ResponseWriter, _ *http.Request) {
+	if s.catalogLoader == nil {
+		writeError(w, http.StatusServiceUnavailable, "catalog state is not configured")
+		return
+	}
+	report, err := s.catalogLoader()
+	if err != nil {
+		writeError(w, http.StatusServiceUnavailable, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, report)
+}
+
+func (s *Server) catalogPreviewHandler(w http.ResponseWriter, _ *http.Request) {
+	if s.catalogPreview == nil {
+		writeError(w, http.StatusServiceUnavailable, "catalog preview is not configured")
+		return
+	}
+	report, err := s.catalogPreview()
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, report)
+}
+
+func (s *Server) refreshInventoryHandler(w http.ResponseWriter, _ *http.Request) {
+	if s.refreshInventory == nil {
+		writeError(w, http.StatusServiceUnavailable, "inventory refresh is not configured")
+		return
+	}
+	started := s.startBackgroundRefresh(s.refreshInventory)
+	status := "refreshing"
+	if !started {
+		status = "already_refreshing"
+	}
+	writeJSON(w, http.StatusAccepted, map[string]string{"status": status})
 }
 
 func (s *Server) mods(w http.ResponseWriter, _ *http.Request) {
@@ -404,6 +462,26 @@ func (s *Server) history(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"events": history})
+}
+
+func (s *Server) logs(w http.ResponseWriter, r *http.Request) {
+	if s.logsLoader == nil {
+		writeError(w, http.StatusServiceUnavailable, "runtime logs are not configured")
+		return
+	}
+	limit := 500
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil || value < 1 {
+			writeError(w, http.StatusBadRequest, "limit must be a positive integer")
+			return
+		}
+		if value > 1000 {
+			value = 1000
+		}
+		limit = value
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"entries": s.logsLoader(limit)})
 }
 
 func (s *Server) retentionSettings(w http.ResponseWriter, _ *http.Request) {

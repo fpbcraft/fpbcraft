@@ -158,9 +158,9 @@ FPBPack serves the static GUI and API from one process. **Serve mode is self-con
   --state-dir /path/to/fpbpack-state
 ```
 
-On normal startup FPBPack loads durable state plus the last valid inventory/update caches, starts the HTTP server immediately, and performs inventory hashing/reconciliation/provider discovery in the background. The GUI remains reachable while refresh work runs. A first-ever bootstrap with no state/report may still need enough scanning/provider identification to establish safe ownership before initialization can complete.
+On normal startup FPBPack loads durable state plus the last valid inventory/update caches and starts the HTTP server immediately. It does **not** automatically query providers or rescan the live mod directories at startup. The first automatic refresh waits for the configured `--refresh-interval` (6h by default), and the GUI can trigger inventory-only, update-only, or full refreshes at any time.
 
-The legacy `migration-report.json` is a one-time bootstrap source only. If no FPBPack state exists yet, `serve` can import an existing migration report and then persists its own `state.json`; subsequent starts no longer require the migration report.
+The legacy `migration-report.json` is a one-time bootstrap source only. If no FPBPack state exists yet, `serve` can import an existing migration report and then persists its own `state.json`; subsequent starts no longer require the migration report. If neither `state.json` nor a migration report exists, the very first startup performs the one-time inventory/provider bootstrap needed to establish accepted state.
 
 Open the same address in a browser, for example `http://tower.local:8787/`. The GUI calls relative `/api/*` routes.
 
@@ -170,7 +170,8 @@ The management API covers discovery, remediation, planning, server control, Appl
 
 - `GET /healthz`
 - `GET /api/status`, `/api/inventory`, `/api/mods`, `/api/diagnostics`, `/api/updates`
-- `POST /api/refresh`, `POST /api/updates/check`
+- `POST /api/refresh`, `POST /api/inventory/refresh`, `POST /api/updates/check`
+- `GET /api/catalog`, `POST /api/catalog/preview`, `GET /api/logs`
 - `GET|POST /api/plans`, `GET /api/plans/{id}`
 - `POST /api/placement-plans`
 - `POST /api/plans/{id}/manual-artifact?candidate_key=...`
@@ -184,7 +185,7 @@ The management API covers discovery, remediation, planning, server control, Appl
 
 Live mutation is deliberately narrower than the rest of the API. Apply accepts only a persisted ready/verified plan, rechecks the complete accepted managed state, requires Crafty to positively report the Minecraft server stopped, verifies cached target bytes again, and mutates only the exact file operations in that plan. Restore likewise requires the server stopped and verifies the currently applied files plus backup hashes before reverting them. An unknown or unreachable Crafty state fails closed.
 
-The service owns inventory/reconciliation/update refreshes and persists generated cache snapshots under its state directory. Manual refresh/check requests return immediately and continue on a server-owned context, so reloading or closing the browser does not cancel provider discovery. Cancelled/timed-out refreshes never replace the last good update cache. Provider metadata refresh is non-destructive: transient failures retain the previous target, changelog, dependency and project metadata, mark it stale, and record the refresh error. The standalone `inventory`, `doctor`, and `updates` commands remain available for scripting and debugging, but are not required for GUI operation.
+The service owns inventory/reconciliation/update refreshes and persists generated cache snapshots under its state directory. Manual refresh/check requests return immediately and continue on a server-owned context, so reloading or closing the browser does not cancel provider discovery. Refresh status exposes phase, current provider item, totals, and percentage; the GUI shows this globally. Safe catalog-only remediation remains usable while provider discovery runs, while source/provider actions that would race fail immediately instead of waiting invisibly. Cancelled/timed-out refreshes never replace the last good update cache. Provider metadata refresh is non-destructive: transient failures retain the previous target, changelog, dependency and project metadata, mark it stale, and record the refresh error. The standalone `inventory`, `doctor`, and `updates` commands remain available for scripting and debugging, but are not required for GUI operation.
 
 ## Plan & Protect
 
@@ -294,6 +295,13 @@ For CurseForge update discovery, the normal path is **Settings → Providers →
 
 For verified GitHub release sources, `FPBPACK_GITHUB_TOKEN` is optional and can be used to improve API rate limits or access eligible private sources.
 
-Provider traffic is paced in two modes. Startup/automatic refresh uses a slower background policy with lower concurrency. Explicit **Check updates** and per-mod refresh use a faster interactive policy, while still sharing provider-wide pacing and honoring `Retry-After`, GitHub rate-limit reset headers, and bounded exponential backoff for transient errors.
+Provider traffic is paced in two modes. Scheduled automatic refresh uses a slower background policy with lower concurrency. Startup itself performs no automatic provider refresh. Explicit **Check updates** and per-mod refresh use a faster interactive policy, while still sharing provider-wide pacing and honoring `Retry-After`, GitHub rate-limit reset headers, and bounded exponential backoff for transient errors.
 
 Crafty integration uses API v2 with bearer-token authentication. Start/Stop remain explicit user actions; Apply and Restore never restart the Minecraft server implicitly. Deployment operates only on files represented by a verified plan, and unmanaged/pinned artifacts remain protected.
+
+
+### GUI operations and manual reconciliation
+
+The left navigation includes **Tools** and **Logs**. Tools exposes the practical running-server equivalents of `inventory`, `doctor`, `updates`, and a full refresh, plus JSON views for inventory, accepted catalog, diagnostics, updates, and status/version. The legacy catalog-migration workspace generator remains CLI-only because it accepts arbitrary output paths and an external Packwiz helper.
+
+If a managed JAR is changed manually outside FPBPack, the next inventory/full refresh reports drift instead of silently accepting it. **Adopt current JAR** is the explicit recovery path for intentional manual replacement: FPBPack verifies the replacement against the same Modrinth project, CurseForge project, or GitHub repository before updating accepted state. A replacement that cannot be proven to belong to the accepted source remains blocked.
