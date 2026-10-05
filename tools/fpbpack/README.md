@@ -137,10 +137,18 @@ Generate a read-only update report from the accepted catalog state:
 Update discovery supports the source types FPBPack can verify safely:
 
 - Modrinth: Minecraft/loader filtering, release classification, required dependency closure, icons/project links, and target/intermediate changelogs;
-- CurseForge: official API discovery, project links, changelogs, and conservative required-dependency resolution when a key is configured in the GUI or through `FPBPACK_CURSEFORGE_API_KEY`;
+- CurseForge: official API discovery, project links, changelogs, and conservative required-dependency resolution when a key is configured in the GUI or through `FPBPACK_CURSEFORGE_API_KEY`; files that disable third-party downloads remain Review candidates with a direct manual CurseForge file link;
 - GitHub releases: only for artifacts already verified against an explicit GitHub release source. GitHub candidates require an unambiguous JAR asset with a SHA-256 digest and are always classified Review because GitHub does not provide Minecraft/loader compatibility metadata.
 
 Pinned/unmanaged artifacts stay pinned/unmanaged; FPBPack does not guess an update source for them.
+
+Blocking source/catalog findings can be repaired in the GUI. **Updates → Fix issues** opens **Mods → Needs attention**. From an affected mod you can retry automatic identification, keep the JAR intentionally unmanaged, or verify an explicit Modrinth, CurseForge, or GitHub source. Explicit provider assignments are accepted only when the selected provider artifact hash matches the installed JAR.
+
+Provider traffic is rate-aware: background work is deliberately slower/lower-concurrency than interactive per-mod refreshes, and provider requests retry 429/408/5xx responses with `Retry-After` / rate-limit-reset handling and bounded exponential fallback.
+
+CurseForge projects that disable third-party direct downloads are shown as **Review / manual download required** instead of permanently Blocked. FPBPack keeps the direct CurseForge file-page link in Updates and persisted plan review. Automatic Apply remains blocked until Slice 3 can accept and verify the manually downloaded JAR.
+
+The GUI also provides state-only remediation for blocking diagnostics. **Updates → Fix issues** opens **Mods → Needs attention**, where an installed artifact can be refreshed individually, explicitly marked unmanaged, or assigned a verified GitHub release source. GitHub assignment hashes the installed JAR and requires its SHA-256 to match the selected release asset. Missing accepted catalog entries can be explicitly forgotten. None of these actions mutates the live JAR.
 
 FPBPack serves the static GUI and API from one process. **Serve mode is self-contained**: the normal GUI path does not require running `inventory`, `catalog`, or `updates` first.
 
@@ -180,8 +188,12 @@ The API still has **no live-mod mutation endpoints**. Slice 2 adds only FPBPack-
 - `GET /api/providers`
 - `PUT /api/providers/{id}/credentials`
 - `DELETE /api/providers/{id}/credentials`
+- `POST /api/mod-management`
+- `POST /api/mod-metadata/refresh`
+- `POST /api/mod-management`
+- `POST /api/mod-metadata/refresh`
 
-The service owns inventory/reconciliation/update refreshes and persists generated cache snapshots under its state directory. Manual refresh/check requests return immediately and continue on a server-owned context, so reloading or closing the browser does not cancel provider discovery. Cancelled/timed-out refreshes never replace the last good update cache. The standalone `inventory`, `doctor`, and `updates` commands remain available for scripting and debugging, but are not required for GUI operation. Live-JAR mutation endpoints remain intentionally absent in Slice 2.
+The service owns inventory/reconciliation/update refreshes and persists generated cache snapshots under its state directory. Manual refresh/check requests return immediately and continue on a server-owned context, so reloading or closing the browser does not cancel provider discovery. Cancelled/timed-out refreshes never replace the last good update cache. Provider metadata refresh is non-destructive: transient failures retain the previous target, changelog, dependency and project metadata, mark it stale, and record the refresh error. The standalone `inventory`, `doctor`, and `updates` commands remain available for scripting and debugging, but are not required for GUI operation. Live-JAR mutation endpoints remain intentionally absent in Slice 2.
 
 ## Plan & Protect
 
@@ -274,5 +286,7 @@ For CurseForge update discovery, the normal path is **Settings → Providers →
 `FPBPACK_CURSEFORGE_API_KEY` remains available as a deployment/environment fallback. A GUI-saved key takes precedence over the environment value.
 
 For verified GitHub release sources, `FPBPACK_GITHUB_TOKEN` is optional and can be used to improve API rate limits or access eligible private sources.
+
+Provider traffic is paced in two modes. Startup/automatic refresh uses a slower background policy with lower concurrency. Explicit **Check updates** and per-mod refresh use a faster interactive policy, while still sharing provider-wide pacing and honoring `Retry-After`, GitHub rate-limit reset headers, and bounded exponential backoff for transient errors.
 
 Slice 3 will add controlled live apply/restore. Deployment will only operate on files represented by a verified plan, and unmanaged/pinned artifacts remain protected.

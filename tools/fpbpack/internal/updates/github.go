@@ -2,9 +2,7 @@ package updates
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"sort"
@@ -20,6 +18,7 @@ type GitHubClient struct {
 	BaseURL    string
 	Token      string
 	HTTPClient *http.Client
+	Mode       RefreshMode
 }
 
 type githubRelease struct {
@@ -50,35 +49,92 @@ func (client *GitHubClient) Releases(ctx context.Context, repository string) ([]
 	}
 	parts := strings.SplitN(repository, "/", 2)
 	endpoint := base + "/repos/" + url.PathEscape(parts[0]) + "/" + url.PathEscape(parts[1]) + "/releases?per_page=50"
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
-	if err != nil {
-		return nil, err
-	}
-	request.Header.Set("Accept", "application/vnd.github+json")
-	request.Header.Set("User-Agent", "fpbcraft/fpbpack")
-	request.Header.Set("X-GitHub-Api-Version", "2026-03-10")
-	if strings.TrimSpace(client.Token) != "" {
-		request.Header.Set("Authorization", "Bearer "+strings.TrimSpace(client.Token))
-	}
-
 	httpClient := client.HTTPClient
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: 30 * time.Second}
 	}
-	response, err := httpClient.Do(request)
+	var releases []githubRelease
+	err := doJSONWithRetry(
+		ctx,
+		"github",
+		client.Mode,
+		httpClient,
+		func() (*http.Request, error) {
+			request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+			if err != nil {
+				return nil, err
+			}
+			request.Header.Set("Accept", "application/vnd.github+json")
+			request.Header.Set("User-Agent", "fpbcraft/fpbpack")
+			request.Header.Set("X-GitHub-Api-Version", "2026-03-10")
+			if strings.TrimSpace(client.Token) != "" {
+				request.Header.Set("Authorization", "Bearer "+strings.TrimSpace(client.Token))
+			}
+			return request, nil
+		},
+		&releases,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("GitHub releases: %w", err)
 	}
-	defer response.Body.Close()
-	if response.StatusCode != http.StatusOK {
-		message, _ := io.ReadAll(io.LimitReader(response.Body, 4096))
-		return nil, fmt.Errorf("GitHub releases returned HTTP %d: %s", response.StatusCode, strings.TrimSpace(string(message)))
-	}
-	var releases []githubRelease
-	if err := json.NewDecoder(io.LimitReader(response.Body, 16<<20)).Decode(&releases); err != nil {
-		return nil, err
-	}
 	return releases, nil
+}
+
+type VerifiedGitHubSource struct {
+	Repository  string
+	Tag         string
+	Asset       string
+	DownloadURL string
+	Name        string
+}
+
+func (client *GitHubClient) VerifyInstalledAsset(
+	ctx context.Context,
+	repository string,
+	tag string,
+	assetName string,
+	expectedSHA256 string,
+) (VerifiedGitHubSource, error) {
+	repository = strings.TrimSpace(repository)
+	tag = strings.TrimSpace(tag)
+	assetName = strings.TrimSpace(assetName)
+	expectedSHA256 = strings.ToLower(strings.TrimSpace(expectedSHA256))
+	if repository == "" || tag == "" || expectedSHA256 == "" {
+		return VerifiedGitHubSource{}, fmt.Errorf("repository, installed tag, and current SHA-256 are required")
+	}
+
+	releases, err := client.Releases(ctx, repository)
+	if err != nil {
+		return VerifiedGitHubSource{}, err
+	}
+	for _, release := range releases {
+		if release.TagName != tag {
+			continue
+		}
+		asset, ok := selectGitHubAsset(release, assetName)
+		if !ok {
+			return VerifiedGitHubSource{}, fmt.Errorf("GitHub release %s does not contain an unambiguous matching JAR asset", tag)
+		}
+		digest := strings.ToLower(githubSHA256Digest(asset.Digest))
+		if digest == "" {
+			return VerifiedGitHubSource{}, fmt.Errorf("GitHub asset %s does not expose a SHA-256 digest", asset.Name)
+		}
+		if digest != expectedSHA256 {
+			return VerifiedGitHubSource{}, fmt.Errorf("GitHub asset digest does not match the installed JAR")
+		}
+		name := release.Name
+		if name == "" {
+			name = repository
+		}
+		return VerifiedGitHubSource{
+			Repository: repository,
+			Tag: tag,
+			Asset: asset.Name,
+			DownloadURL: asset.BrowserDownloadURL,
+			Name: name,
+		}, nil
+	}
+	return VerifiedGitHubSource{}, fmt.Errorf("GitHub release tag %s was not found in %s", tag, repository)
 }
 
 func discoverGitHubCandidate(

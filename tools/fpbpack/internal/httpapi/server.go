@@ -30,6 +30,8 @@ type RefreshStatusLoader func() service.RefreshStatus
 type ProvidersLoader func() []service.ProviderStatus
 type ProviderCredentialSetter func(context.Context, string, string) (service.ProviderStatus, error)
 type ProviderCredentialClearer func(string) (service.ProviderStatus, error)
+type ModManager func(context.Context, service.ModManagementRequest) (service.ModManagementResult, error)
+type ModRefresher func(context.Context, string) error
 
 type ServerOptions struct {
 	Updates      UpdatesLoader
@@ -48,6 +50,8 @@ type ServerOptions struct {
 	Providers    ProvidersLoader
 	SetProviderCredential   ProviderCredentialSetter
 	ClearProviderCredential ProviderCredentialClearer
+	ManageMod     ModManager
+	RefreshMod    ModRefresher
 	BackgroundContext context.Context
 	Web          http.Handler
 }
@@ -70,6 +74,8 @@ type Server struct {
 	providersLoader ProvidersLoader
 	setProviderCredential ProviderCredentialSetter
 	clearProviderCredential ProviderCredentialClearer
+	manageMod      ModManager
+	refreshMod     ModRefresher
 	backgroundCtx context.Context
 	backgroundMu sync.Mutex
 	backgroundRefresh bool
@@ -95,6 +101,8 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 		providersLoader: opts.Providers,
 		setProviderCredential: opts.SetProviderCredential,
 		clearProviderCredential: opts.ClearProviderCredential,
+		manageMod: opts.ManageMod,
+		refreshMod: opts.RefreshMod,
 		backgroundCtx: backgroundCtx,
 		version: version,
 	}
@@ -119,6 +127,8 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("GET /api/providers", server.providers)
 	mux.HandleFunc("PUT /api/providers/{id}/credentials", server.setProviderCredentials)
 	mux.HandleFunc("DELETE /api/providers/{id}/credentials", server.clearProviderCredentials)
+	mux.HandleFunc("POST /api/mod-management", server.manageModHandler)
+	mux.HandleFunc("POST /api/mod-metadata/refresh", server.refreshModMetadata)
 	if opts.Web != nil {
 		mux.Handle("/", opts.Web)
 	}
@@ -438,6 +448,53 @@ func (s *Server) clearProviderCredentials(w http.ResponseWriter, r *http.Request
 		return
 	}
 	writeJSON(w, http.StatusOK, status)
+}
+
+func (s *Server) manageModHandler(w http.ResponseWriter, r *http.Request) {
+	if s.manageMod == nil {
+		writeError(w, http.StatusServiceUnavailable, "mod management is not configured")
+		return
+	}
+	var request service.ModManagementRequest
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid mod management request: "+err.Error())
+		return
+	}
+	result, err := s.manageMod(r.Context(), request)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *Server) refreshModMetadata(w http.ResponseWriter, r *http.Request) {
+	if s.refreshMod == nil {
+		writeError(w, http.StatusServiceUnavailable, "per-mod metadata refresh is not configured")
+		return
+	}
+	var request struct {
+		Path string `json:"path"`
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 16<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid metadata refresh request: "+err.Error())
+		return
+	}
+	path := request.Path
+	started := s.startBackgroundRefresh(func(ctx context.Context) error {
+		return s.refreshMod(ctx, path)
+	})
+	status := "refreshing"
+	if !started {
+		status = "already_refreshing"
+	}
+	writeJSON(w, http.StatusAccepted, map[string]string{"status": status})
 }
 
 func (s *Server) load(w http.ResponseWriter) (management.Snapshot, bool) {

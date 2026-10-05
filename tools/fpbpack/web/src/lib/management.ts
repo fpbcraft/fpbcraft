@@ -73,6 +73,8 @@ export interface UpdateRelease {
   sha1?: string;
   sha256?: string;
   sha512?: string;
+  manual_download?: boolean;
+  manual_url?: string;
 }
 
 export interface UpdateDependency {
@@ -121,6 +123,8 @@ export interface UpdateCandidate {
   dependencies?: UpdateDependency[];
   changelogs?: UpdateChangelogEntry[];
   required_by?: string[];
+  metadata_stale?: boolean;
+  refresh_error?: string;
 }
 
 export interface UpdateSummary {
@@ -203,6 +207,8 @@ export interface PlanArtifact {
   sha256?: string;
   sha512: string;
   deployment: string;
+  manual_download?: boolean;
+  manual_url?: string;
 }
 
 export interface PlanFileOperation {

@@ -34,6 +34,18 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 
 	for index := range plan.Changes {
 		change := &plan.Changes[index]
+		if change.Artifact.ManualDownload {
+			message := "This artifact must be downloaded manually from the provider before Apply."
+			if change.Artifact.ManualURL != "" {
+				message += " Manual download: " + change.Artifact.ManualURL
+			}
+			plan.Blockers = append(plan.Blockers, planning.Finding{
+				Code: "manual_download_required",
+				CandidateKey: change.CandidateKey,
+				Message: message,
+			})
+			continue
+		}
 		cacheKey := change.Artifact.SHA512
 		if cacheKey == "" && change.Artifact.SHA256 != "" {
 			cacheKey = "sha256-" + change.Artifact.SHA256

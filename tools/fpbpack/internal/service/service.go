@@ -198,6 +198,7 @@ func (s *Service) Refresh(ctx context.Context) (err error) {
 	defer cancel()
 	report := updatecheck.Discover(updateCtx, s.state.Catalog, updatecheck.Options{
 		Minecraft:       s.options.Minecraft,
+		Mode:            updatecheck.RefreshModeBackground,
 		Loader:          s.options.Loader,
 		ModrinthBaseURL: s.options.ModrinthBaseURL,
 		CurseForgeBaseURL: s.options.CurseForgeBaseURL,
@@ -210,6 +211,13 @@ func (s *Service) Refresh(ctx context.Context) (err error) {
 	})
 	if err := updateCtx.Err(); err != nil {
 		return fmt.Errorf("update discovery: %w", err)
+	}
+	s.mu.RLock()
+	previousReport := s.updates
+	hasPrevious := s.hasUpdate
+	s.mu.RUnlock()
+	if hasPrevious {
+		preserveFailedMetadata(previousReport, &report)
 	}
 	s.applyUpdateRules(&report)
 	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), report); err != nil {
@@ -254,6 +262,7 @@ func (s *Service) CheckUpdates(ctx context.Context) (err error) {
 	defer cancel()
 	report := updatecheck.Discover(updateCtx, s.state.Catalog, updatecheck.Options{
 		Minecraft:       s.options.Minecraft,
+		Mode:            updatecheck.RefreshModeInteractive,
 		Loader:          s.options.Loader,
 		ModrinthBaseURL: s.options.ModrinthBaseURL,
 		CurseForgeBaseURL: s.options.CurseForgeBaseURL,
@@ -266,6 +275,13 @@ func (s *Service) CheckUpdates(ctx context.Context) (err error) {
 	})
 	if err := updateCtx.Err(); err != nil {
 		return fmt.Errorf("update discovery: %w", err)
+	}
+	s.mu.RLock()
+	previousReport := s.updates
+	hasPrevious := s.hasUpdate
+	s.mu.RUnlock()
+	if hasPrevious {
+		preserveFailedMetadata(previousReport, &report)
 	}
 	s.applyUpdateRules(&report)
 	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), report); err != nil {

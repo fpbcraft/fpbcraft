@@ -2,7 +2,7 @@
 
 import {useEffect, useMemo, useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {Clock3, ExternalLink, MoreHorizontal, Pin, RefreshCw, RotateCcw, XCircle} from 'lucide-react';
+import {Clock3, ExternalLink, MoreHorizontal, Pin, RefreshCw, RotateCcw, Wrench, XCircle} from 'lucide-react';
 import {PageHeader, Pill, formatDate} from '@/components/ui';
 import {useManagement} from '@/components/management-provider';
 import type {UpdateCandidate, UpdateClassification, UpdatePlan, UpdateRule} from '@/lib/management';
@@ -67,6 +67,8 @@ function CandidateRow({
             {candidate.target?.channel && candidate.target.channel !== 'release' ? (
               <Pill tone="warn">{candidate.target.channel}</Pill>
             ) : null}
+            {candidate.metadata_stale ? <Pill tone="warn">stale metadata</Pill> : null}
+            {candidate.target?.manual_download ? <Pill tone="warn">manual download</Pill> : null}
           </div>
 
           <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-base-content/45">
@@ -81,6 +83,11 @@ function CandidateRow({
           {candidate.reasons?.length ? (
             <div className="mt-1 text-xs text-base-content/50">{candidate.reasons[0].message}</div>
           ) : null}
+          {candidate.refresh_error ? (
+            <div className="mt-1 text-xs text-warning">
+              Last refresh failed; showing previous metadata.
+            </div>
+          ) : null}
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
@@ -93,6 +100,17 @@ function CandidateRow({
           {rule?.pin_version ? <Pill tone="neutral">pinned</Pill> : null}
           {rule?.ignore_mod ? <Pill tone="neutral">ignored</Pill> : null}
           {rule?.review_after ? <Pill tone="neutral">later</Pill> : null}
+
+          {candidate.target?.manual_download && candidate.target.manual_url ? (
+            <a
+              className="btn btn-xs btn-warning btn-outline"
+              href={candidate.target.manual_url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Manual download <ExternalLink size={12} />
+            </a>
+          ) : null}
 
           {candidate.project_url ? (
             <a
@@ -335,9 +353,17 @@ export default function UpdatesPage() {
         description="Choose update candidates. Nothing on this page can modify live mod files."
         action={
           <div className="flex gap-2">
-            <button className="btn btn-sm btn-ghost" type="button" onClick={() => void check()} disabled={checking}>
-              <RefreshCw size={14} className={checking ? 'animate-spin' : ''} />
-              Check updates
+            <button
+              className="btn btn-sm btn-ghost"
+              type="button"
+              onClick={() => void check()}
+              disabled={checking || state.status.refresh?.refreshing}
+            >
+              <RefreshCw
+                size={14}
+                className={checking || state.status.refresh?.refreshing ? 'animate-spin' : ''}
+              />
+              {state.status.refresh?.refreshing ? 'Checking…' : 'Check updates'}
             </button>
             <button
               className="btn btn-sm btn-primary"
@@ -353,10 +379,17 @@ export default function UpdatesPage() {
 
       {state.diagnostics.summary.blocking > 0 ? (
         <div className="alert alert-warning mb-4 rounded-box py-3 text-sm">
-          <span>
+          <span className="flex-1">
             {state.diagnostics.summary.blocking} blocking diagnostic
             {state.diagnostics.summary.blocking === 1 ? '' : 's'} will prevent plan readiness.
           </span>
+          <button
+            type="button"
+            className="btn btn-sm btn-warning"
+            onClick={() => router.push('/mods/?attention=1')}
+          >
+            <Wrench size={14} /> Fix issues
+          </button>
         </div>
       ) : null}
 

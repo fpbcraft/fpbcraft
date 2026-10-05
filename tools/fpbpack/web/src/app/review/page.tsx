@@ -5,6 +5,7 @@ import {useEffect, useState} from 'react';
 import {
   AlertTriangle,
   ArrowLeft,
+  ExternalLink,
   FileArchive,
   HardDriveDownload,
   ShieldCheck,
@@ -165,6 +166,7 @@ export default function ReviewPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="text-sm font-medium">{change.name}</div>
                     {change.dependency_driven ? <Pill tone="blue">dependency</Pill> : null}
+                    {change.artifact.manual_download ? <Pill tone="warn">manual download</Pill> : null}
                   </div>
                   <div className="mt-0.5 text-xs text-base-content/45">
                     {change.installed.number || change.installed.name || 'installed'} → {change.target.number || change.target.name || change.target.id}
@@ -182,6 +184,25 @@ export default function ReviewPage() {
                   <dd>{change.dependency_driven ? 'Required dependency' : 'Selected update'}</dd>
                   <dt className="text-base-content/40">Provider</dt>
                   <dd>{change.artifact.provider} · {change.artifact.project_id} · {change.artifact.version_id}</dd>
+                  {change.artifact.manual_download ? (
+                    <>
+                      <dt className="text-base-content/40">Download</dt>
+                      <dd>
+                        {change.artifact.manual_url ? (
+                          <a
+                            className="btn btn-xs btn-warning btn-outline"
+                            href={change.artifact.manual_url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Open manual download <ExternalLink size={11} />
+                          </a>
+                        ) : (
+                          <span className="text-warning">Manual provider download required</span>
+                        )}
+                      </dd>
+                    </>
+                  ) : null}
                   {change.operations.map((operation, index) => (
                     <div className="contents" key={index}>
                       <dt className="text-base-content/40">{operation.action}</dt>

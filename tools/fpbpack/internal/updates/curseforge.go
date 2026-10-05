@@ -2,10 +2,8 @@ package updates
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"html"
-	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -20,6 +18,7 @@ type CurseForgeClient struct {
 	BaseURL    string
 	APIKey     string
 	HTTPClient *http.Client
+	Mode       RefreshMode
 }
 
 type curseForgeMod struct {
@@ -75,6 +74,44 @@ type curseForgeFilesResponse struct {
 
 type curseForgeStringResponse struct {
 	Data string `json:"data"`
+}
+
+type VerifiedCurseForgeSource struct {
+	ProjectID   string
+	FileID      uint32
+	DisplayName string
+	Filename    string
+}
+
+func (client *CurseForgeClient) VerifyInstalledFile(
+	ctx context.Context,
+	projectID string,
+	fileID uint32,
+	expectedSHA1 string,
+) (VerifiedCurseForgeSource, error) {
+	projectID = strings.TrimSpace(projectID)
+	expectedSHA1 = strings.ToLower(strings.TrimSpace(expectedSHA1))
+	if projectID == "" || fileID == 0 || expectedSHA1 == "" {
+		return VerifiedCurseForgeSource{}, fmt.Errorf("project ID, file ID, and current SHA-1 are required")
+	}
+
+	file, err := client.GetFile(ctx, projectID, fileID)
+	if err != nil {
+		return VerifiedCurseForgeSource{}, err
+	}
+	if strconv.Itoa(file.ModID) != projectID {
+		return VerifiedCurseForgeSource{}, fmt.Errorf("CurseForge file %d belongs to project %d, not %s", fileID, file.ModID, projectID)
+	}
+	if actual := curseForgeSHA1(file); !strings.EqualFold(actual, expectedSHA1) {
+		return VerifiedCurseForgeSource{}, fmt.Errorf("CurseForge file %d SHA-1 does not match the installed JAR", fileID)
+	}
+
+	return VerifiedCurseForgeSource{
+		ProjectID: projectID,
+		FileID: fileID,
+		DisplayName: file.DisplayName,
+		Filename: file.FileName,
+	}, nil
 }
 
 func (client *CurseForgeClient) Validate(ctx context.Context) error {
@@ -179,31 +216,28 @@ func (client *CurseForgeClient) getJSON(ctx context.Context, path string, target
 	if base == "" {
 		base = DefaultCurseForgeAPI
 	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, base+path, nil)
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Accept", "application/json")
-	request.Header.Set("x-api-key", client.APIKey)
-	request.Header.Set("User-Agent", "fpbcraft/fpbpack")
-
+	endpoint := base + path
 	httpClient := client.HTTPClient
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: 30 * time.Second}
 	}
-	response, err := httpClient.Do(request)
-	if err != nil {
-		return fmt.Errorf("CurseForge request: %w", err)
-	}
-	defer response.Body.Close()
-	if response.StatusCode != http.StatusOK {
-		message, _ := io.ReadAll(io.LimitReader(response.Body, 4096))
-		return fmt.Errorf("CurseForge returned HTTP %d: %s", response.StatusCode, strings.TrimSpace(string(message)))
-	}
-	if err := json.NewDecoder(io.LimitReader(response.Body, 32<<20)).Decode(target); err != nil {
-		return fmt.Errorf("decode CurseForge response: %w", err)
-	}
-	return nil
+	return doJSONWithRetry(
+		ctx,
+		"curseforge",
+		client.Mode,
+		httpClient,
+		func() (*http.Request, error) {
+			request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+			if err != nil {
+				return nil, err
+			}
+			request.Header.Set("Accept", "application/json")
+			request.Header.Set("x-api-key", client.APIKey)
+			request.Header.Set("User-Agent", "fpbcraft/fpbpack")
+			return request, nil
+		},
+		target,
+	)
 }
 
 func curseForgeLoaderType(loader string) int {

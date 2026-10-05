@@ -46,6 +46,7 @@ func runUpdates(args []string) int {
 	result := updatecheck.Discover(ctx, cat, updatecheck.Options{
 		Minecraft: *minecraft,
 		Loader: *loader,
+		Mode: updatecheck.RefreshModeInteractive,
 		ModrinthBaseURL: *modrinthAPI,
 		CurseForgeAPIKey: os.Getenv("FPBPACK_CURSEFORGE_API_KEY"),
 		GitHubToken: os.Getenv("FPBPACK_GITHUB_TOKEN"),

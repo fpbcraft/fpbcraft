@@ -114,6 +114,22 @@ type Entry struct {
 	SourcePaths []Source           `json:"source_paths"`
 }
 
+func (r *Report) RecalculateSummary() {
+	summary := r.Summary
+	summary.GeneratedProjects = len(r.Managed)
+	summary.Unresolved = len(r.Unresolved)
+	summary.ConflictProjects = len(r.Conflicts)
+	summary.PlacementWarnings = len(r.Placement)
+	summary.PinnedArtifacts = len(r.Pinned)
+	summary.DuplicateArtifacts = len(r.Duplicates)
+	unique := len(r.Managed) + len(r.Unresolved) + len(r.Pinned)
+	for _, conflict := range r.Conflicts {
+		unique += len(conflict.Files)
+	}
+	summary.UniqueArtifacts = unique
+	r.Summary = summary
+}
+
 type Result struct {
 	Entries []Entry
 	Report  Report

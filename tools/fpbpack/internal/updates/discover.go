@@ -23,6 +23,7 @@ type Options struct {
 	GitHubBaseURL     string
 	GitHubToken       string
 	HTTPClient       *http.Client
+	Mode             RefreshMode
 }
 
 func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
@@ -52,7 +53,7 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 		}
 	}
 
-	client := &ModrinthClient{BaseURL: opts.ModrinthBaseURL}
+	client := &ModrinthClient{BaseURL: opts.ModrinthBaseURL, Mode: opts.Mode}
 	if opts.HTTPClient != nil {
 		client.HTTPClient = opts.HTTPClient
 	}
@@ -61,16 +62,17 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 		BaseURL: opts.CurseForgeBaseURL,
 		APIKey: opts.CurseForgeAPIKey,
 		HTTPClient: opts.HTTPClient,
+		Mode: opts.Mode,
 	}
 	gitHubClient := &GitHubClient{
 		BaseURL: opts.GitHubBaseURL,
 		Token: opts.GitHubToken,
 		HTTPClient: opts.HTTPClient,
+		Mode: opts.Mode,
 	}
 
 	candidates := make([]Candidate, len(cat.Managed))
-	const providerConcurrency = 6
-	semaphore := make(chan struct{}, providerConcurrency)
+	semaphore := make(chan struct{}, providerConcurrency(opts.Mode))
 	var wait sync.WaitGroup
 
 	for index, entry := range cat.Managed {
@@ -105,7 +107,7 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 					candidates[index] = blockedProviderCandidate(
 						entry,
 						"curseforge_api_key_missing",
-						"CurseForge update discovery requires FPBPACK_CURSEFORGE_API_KEY.",
+						"CurseForge update discovery requires an API key configured in Settings → Providers or FPBPACK_CURSEFORGE_API_KEY.",
 					)
 				} else {
 					candidates[index] = discoverCurseForgeCandidate(
