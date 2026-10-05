@@ -44,6 +44,8 @@ type stagedPlanOperation struct {
 func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyResult, err error) {
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
+	s.catalogMu.Lock()
+	defer s.catalogMu.Unlock()
 
 	plan, err := s.Plan(planID)
 	if err != nil {
@@ -195,6 +197,8 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 func (s *Service) RestoreBackup(ctx context.Context, backupID string) (result RestoreResult, err error) {
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
+	s.catalogMu.Lock()
+	defer s.catalogMu.Unlock()
 
 	if err := s.requireServerStopped(ctx); err != nil {
 		return RestoreResult{}, err
