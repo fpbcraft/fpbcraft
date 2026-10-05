@@ -9,6 +9,7 @@ import (
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/planning"
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/service"
 	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
 
@@ -19,6 +20,8 @@ type PlanCreator func(context.Context, []string) (planning.Plan, error)
 type PlansLoader func() ([]planning.Summary, error)
 type PlanLoader func(string) (planning.Plan, error)
 type HistoryLoader func() ([]planning.HistoryEvent, error)
+type RetentionLoader func() service.RuntimeSettings
+type RetentionUpdater func(service.RuntimeSettings) (service.RuntimeSettings, error)
 
 type ServerOptions struct {
 	Updates      UpdatesLoader
@@ -28,6 +31,8 @@ type ServerOptions struct {
 	Plans        PlansLoader
 	Plan         PlanLoader
 	History      HistoryLoader
+	Retention    RetentionLoader
+	UpdateRetention RetentionUpdater
 	Web          http.Handler
 }
 
@@ -40,6 +45,8 @@ type Server struct {
 	plansLoader   PlansLoader
 	planLoader    PlanLoader
 	historyLoader HistoryLoader
+	retentionLoader RetentionLoader
+	updateRetention RetentionUpdater
 	version       string
 }
 
@@ -52,6 +59,7 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 		loader: loader, updatesLoader: opts.Updates, refresh: opts.Refresh,
 		checkUpdates: opts.CheckUpdates, createPlan: opts.CreatePlan,
 		plansLoader: opts.Plans, planLoader: opts.Plan, historyLoader: opts.History,
+		retentionLoader: opts.Retention, updateRetention: opts.UpdateRetention,
 		version: version,
 	}
 	mux := http.NewServeMux()
@@ -67,6 +75,8 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("POST /api/plans", server.createPlanHandler)
 	mux.HandleFunc("GET /api/plans/{id}", server.plan)
 	mux.HandleFunc("GET /api/history", server.history)
+	mux.HandleFunc("GET /api/settings", server.retentionSettings)
+	mux.HandleFunc("PUT /api/settings", server.updateRetentionSettings)
 	if opts.Web != nil {
 		mux.Handle("/", opts.Web)
 	}
@@ -231,6 +241,35 @@ func (s *Server) history(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"events": history})
+}
+
+func (s *Server) retentionSettings(w http.ResponseWriter, _ *http.Request) {
+	if s.retentionLoader == nil {
+		writeError(w, http.StatusServiceUnavailable, "retention settings are not configured")
+		return
+	}
+	writeJSON(w, http.StatusOK, s.retentionLoader())
+}
+
+func (s *Server) updateRetentionSettings(w http.ResponseWriter, r *http.Request) {
+	if s.updateRetention == nil {
+		writeError(w, http.StatusServiceUnavailable, "retention settings are not configured")
+		return
+	}
+	var value service.RuntimeSettings
+	r.Body = http.MaxBytesReader(w, r.Body, 16<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&value); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid retention settings: "+err.Error())
+		return
+	}
+	updated, err := s.updateRetention(value)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, updated)
 }
 
 func (s *Server) load(w http.ResponseWriter) (management.Snapshot, bool) {
