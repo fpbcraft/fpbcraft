@@ -1,7 +1,7 @@
 'use client';
 
 import {useEffect, useMemo, useState} from 'react';
-import {ExternalLink, PackagePlus, RefreshCw, Search, X} from 'lucide-react';
+import {ExternalLink, PackagePlus, Search, X} from 'lucide-react';
 import {useRouter} from 'next/navigation';
 import {api} from '@/lib/api';
 import {Pill, formatDate} from '@/components/ui';
