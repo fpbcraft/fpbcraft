@@ -180,6 +180,24 @@ func (s *Service) Catalog() (catalog.Report, error) {
 	return s.catalogSnapshot()
 }
 
+func (s *Service) CatalogPreview() (catalog.Report, error) {
+	s.mu.RLock()
+	bytes, err := json.Marshal(s.snapshot.Inventory)
+	s.mu.RUnlock()
+	if err != nil {
+		return catalog.Report{}, err
+	}
+	var inv inventory.Inventory
+	if err := json.Unmarshal(bytes, &inv); err != nil {
+		return catalog.Report{}, err
+	}
+	result, err := catalog.Build(inv)
+	if err != nil {
+		return catalog.Report{}, err
+	}
+	return result.Report, nil
+}
+
 func (s *Service) RefreshStatus() RefreshStatus {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
