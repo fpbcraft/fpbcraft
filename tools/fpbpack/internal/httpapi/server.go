@@ -6,23 +6,35 @@ import (
 	"time"
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
+	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
 
 type Loader func() (management.Snapshot, error)
+type UpdatesLoader func() (updatecheck.Report, error)
+
+type ServerOptions struct {
+	Updates UpdatesLoader
+}
 
 type Server struct {
-	loader  Loader
-	version string
+	loader        Loader
+	updatesLoader UpdatesLoader
+	version       string
 }
 
 func NewHandler(loader Loader, version string) http.Handler {
-	server := &Server{loader: loader, version: version}
+	return NewHandlerWithOptions(loader, version, ServerOptions{})
+}
+
+func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) http.Handler {
+	server := &Server{loader: loader, updatesLoader: opts.Updates, version: version}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", server.health)
 	mux.HandleFunc("GET /api/status", server.status)
 	mux.HandleFunc("GET /api/inventory", server.inventory)
 	mux.HandleFunc("GET /api/mods", server.mods)
 	mux.HandleFunc("GET /api/diagnostics", server.diagnostics)
+	mux.HandleFunc("GET /api/updates", server.updates)
 	return mux
 }
 
@@ -83,6 +95,19 @@ func (s *Server) diagnostics(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, snapshot.Diagnostics)
+}
+
+func (s *Server) updates(w http.ResponseWriter, _ *http.Request) {
+	if s.updatesLoader == nil {
+		writeError(w, http.StatusServiceUnavailable, "update report is not configured")
+		return
+	}
+	report, err := s.updatesLoader()
+	if err != nil {
+		writeError(w, http.StatusServiceUnavailable, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, report)
 }
 
 func (s *Server) load(w http.ResponseWriter) (management.Snapshot, bool) {
