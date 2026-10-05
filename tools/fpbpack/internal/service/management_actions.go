@@ -373,33 +373,109 @@ func (s *Service) assignGitHubSource(
 }
 
 func (s *Service) forgetMissingAcceptedEntry(path string) (ModManagementResult, error) {
+	relative, err := safeRelativePath(path)
+	if err != nil {
+		return ModManagementResult{}, err
+	}
+	livePath := filepath.Join(s.options.ServerRoot, relative)
+	if _, err := os.Stat(livePath); err == nil {
+		return ModManagementResult{}, fmt.Errorf(
+			"cannot forget %q because the live file still exists; refresh inventory or manage the installed artifact instead",
+			path,
+		)
+	} else if !os.IsNotExist(err) {
+		return ModManagementResult{}, fmt.Errorf("check live artifact before forgetting it: %w", err)
+	}
+
 	found := false
-	next := make([]catalog.Entry, 0, len(s.state.Catalog.Managed))
+	removedFilenames := map[string]struct{}{}
+
+	nextManaged := make([]catalog.Entry, 0, len(s.state.Catalog.Managed))
 	for _, entry := range s.state.Catalog.Managed {
-		sources := entry.SourcePaths[:0]
+		sources := make([]catalog.Source, 0, len(entry.SourcePaths))
+		removed := false
 		for _, source := range entry.SourcePaths {
 			if normalizeCatalogPath(source.Path) == path {
 				found = true
+				removed = true
 				continue
 			}
 			sources = append(sources, source)
 		}
 		entry.SourcePaths = sources
+		if removed {
+			removedFilenames[entry.Filename] = struct{}{}
+		}
 		if len(entry.SourcePaths) > 0 {
-			next = append(next, entry)
+			nextManaged = append(nextManaged, entry)
 		}
 	}
-	if !found {
-		return ModManagementResult{}, fmt.Errorf("no accepted managed entry uses path %q", path)
+	s.state.Catalog.Managed = nextManaged
+
+	nextUnresolved := make([]catalog.Unresolved, 0, len(s.state.Catalog.Unresolved))
+	for _, item := range s.state.Catalog.Unresolved {
+		sources := make([]catalog.Source, 0, len(item.Sources))
+		removed := false
+		for _, source := range item.Sources {
+			if normalizeCatalogPath(source.Path) == path {
+				found = true
+				removed = true
+				continue
+			}
+			sources = append(sources, source)
+		}
+		item.Sources = sources
+		if removed {
+			removedFilenames[item.Filename] = struct{}{}
+		}
+		if len(item.Sources) > 0 {
+			nextUnresolved = append(nextUnresolved, item)
+		}
 	}
-	s.state.Catalog.Managed = next
+	s.state.Catalog.Unresolved = nextUnresolved
+
+	// Duplicate records are derived catalog metadata. If a forgotten path was
+	// one side of a former duplicate, remove that stale source as well.
+	nextDuplicates := make([]catalog.Duplicate, 0, len(s.state.Catalog.Duplicates))
+	for _, duplicate := range s.state.Catalog.Duplicates {
+		files := make([]catalog.Source, 0, len(duplicate.Files))
+		for _, source := range duplicate.Files {
+			if normalizeCatalogPath(source.Path) == path {
+				continue
+			}
+			files = append(files, source)
+		}
+		duplicate.Files = files
+		if len(duplicate.Files) > 1 {
+			nextDuplicates = append(nextDuplicates, duplicate)
+		}
+	}
+	s.state.Catalog.Duplicates = nextDuplicates
+
+	if !found {
+		return ModManagementResult{}, fmt.Errorf("no absent catalog entry uses path %q", path)
+	}
+
+	// Placement warnings are meaningful only while the referenced managed
+	// artifact is still represented in the accepted catalog.
+	if len(removedFilenames) > 0 {
+		remaining := make([]catalog.PlacementWarning, 0, len(s.state.Catalog.Placement))
+		for _, warning := range s.state.Catalog.Placement {
+			if _, removed := removedFilenames[warning.Filename]; removed {
+				continue
+			}
+			remaining = append(remaining, warning)
+		}
+		s.state.Catalog.Placement = remaining
+	}
+
 	if err := s.persistCatalogMutation(); err != nil {
 		return ModManagementResult{}, err
 	}
 	return ModManagementResult{
 		Action: "forget_missing",
 		Path: path,
-		Message: "Missing accepted deployment entry was removed from FPBPack state.",
+		Message: "Absent catalog entry was removed from FPBPack state. No server files were changed.",
 	}, nil
 }
 
