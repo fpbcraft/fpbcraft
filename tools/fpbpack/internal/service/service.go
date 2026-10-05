@@ -79,10 +79,22 @@ func New(ctx context.Context, options Options) (*Service, error) {
 			return nil, fmt.Errorf("persist default settings: %w", err)
 		}
 	}
-	if err := service.Refresh(ctx); err != nil {
-		return nil, fmt.Errorf("initial refresh: %w", err)
-	}
+	service.loadRuntimeCaches()
 	return service, nil
+}
+
+func (s *Service) loadRuntimeCaches() {
+	var inv inventory.Inventory
+	if err := readJSON(filepath.Join(s.options.StateDir, "inventory.json"), &inv); err == nil &&
+		inv.SchemaVersion == inventory.SchemaVersion {
+		s.snapshot = management.BuildSnapshot(inv, s.state.Catalog)
+	}
+
+	var report updatecheck.Report
+	if err := readJSON(filepath.Join(s.options.StateDir, "updates.json"), &report); err == nil {
+		s.updates = report
+		s.hasUpdate = true
+	}
 }
 
 func normalizeOptions(options *Options) {
