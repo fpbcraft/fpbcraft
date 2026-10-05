@@ -50,6 +50,7 @@ type ManualArtifactAccepter func(context.Context, string, string, io.Reader) (pl
 type ServerOptions struct {
 	Updates      UpdatesLoader
 	Catalog      CatalogLoader
+	CatalogPreview CatalogLoader
 	Refresh      RefreshFunc
 	RefreshInventory RefreshFunc
 	CheckUpdates RefreshFunc
@@ -86,6 +87,7 @@ type Server struct {
 	loader        Loader
 	updatesLoader UpdatesLoader
 	catalogLoader CatalogLoader
+	catalogPreview CatalogLoader
 	refresh       RefreshFunc
 	refreshInventory RefreshFunc
 	checkUpdates  RefreshFunc
@@ -131,6 +133,7 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	}
 	server := &Server{
 		loader: loader, updatesLoader: opts.Updates, catalogLoader: opts.Catalog,
+		catalogPreview: opts.CatalogPreview,
 		refresh: opts.Refresh, refreshInventory: opts.RefreshInventory,
 		checkUpdates: opts.CheckUpdates, createPlan: opts.CreatePlan,
 		createPlacementPlan: opts.CreatePlacementPlan,
@@ -161,6 +164,7 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("GET /api/inventory", server.inventory)
 	mux.HandleFunc("POST /api/inventory/refresh", server.refreshInventoryHandler)
 	mux.HandleFunc("GET /api/catalog", server.catalog)
+	mux.HandleFunc("POST /api/catalog/preview", server.catalogPreviewHandler)
 	mux.HandleFunc("GET /api/mods", server.mods)
 	mux.HandleFunc("GET /api/diagnostics", server.diagnostics)
 	mux.HandleFunc("GET /api/updates", server.updates)
@@ -262,6 +266,19 @@ func (s *Server) catalog(w http.ResponseWriter, _ *http.Request) {
 	report, err := s.catalogLoader()
 	if err != nil {
 		writeError(w, http.StatusServiceUnavailable, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, report)
+}
+
+func (s *Server) catalogPreviewHandler(w http.ResponseWriter, _ *http.Request) {
+	if s.catalogPreview == nil {
+		writeError(w, http.StatusServiceUnavailable, "catalog preview is not configured")
+		return
+	}
+	report, err := s.catalogPreview()
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, report)
