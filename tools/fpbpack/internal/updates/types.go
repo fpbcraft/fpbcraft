@@ -29,6 +29,7 @@ type Release struct {
 	Channel     string    `json:"channel,omitempty"`
 	Filename    string    `json:"filename,omitempty"`
 	URL         string    `json:"url,omitempty"`
+	SHA1        string    `json:"sha1,omitempty"`
 	SHA512      string    `json:"sha512,omitempty"`
 }
 
