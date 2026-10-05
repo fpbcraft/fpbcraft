@@ -94,13 +94,28 @@ func runInventory(args []string) int {
 	lookupFailed := false
 	if !*offline && len(result.Mods) > 0 {
 		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
-		defer cancel()
 		matches, err := (inventory.ModrinthClient{BaseURL: *modrinthAPI}).Match(ctx, result.Mods)
+		cancel()
 		if err != nil {
 			result.ModrinthError = err.Error()
 			lookupFailed = true
 		} else {
 			inventory.ApplyModrinthMatches(&result, matches)
+		}
+
+		if !lookupFailed && strings.TrimSpace(*curseForgeAPIKey) != "" {
+			ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+			matches, err := (inventory.CurseForgeClient{
+				BaseURL: *curseForgeAPI,
+				APIKey: *curseForgeAPIKey,
+			}).Match(ctx, result.Mods)
+			cancel()
+			if err != nil {
+				result.CurseForgeError = err.Error()
+				lookupFailed = true
+			} else {
+				inventory.ApplyCurseForgeMatches(&result, matches)
+			}
 		}
 	}
 
@@ -115,7 +130,7 @@ func runInventory(args []string) int {
 	}
 
 	if lookupFailed {
-		fmt.Fprintln(os.Stderr, "\nModrinth matching failed; local inventory is complete but remote matches are not. Exit status 2.")
+		fmt.Fprintln(os.Stderr, "\nRemote source matching failed; local inventory is complete but some remote matches are not. Exit status 2.")
 		return 2
 	}
 	return 0
@@ -129,11 +144,22 @@ func renderInventory(result inventory.Inventory) {
 	fmt.Printf("Total JARs:        %d\n", result.Summary.Total)
 	if result.ModrinthChecked {
 		fmt.Printf("Modrinth exact:    %d\n", result.Summary.ModrinthExact)
-		fmt.Printf("Unmatched:         %d\n", result.Summary.Unmatched)
 	} else if result.ModrinthError != "" {
 		fmt.Printf("Modrinth:          LOOKUP FAILED (%s)\n", result.ModrinthError)
 	} else {
 		fmt.Println("Modrinth:          skipped")
+	}
+	if result.CurseForgeChecked {
+		fmt.Printf("CurseForge exact:  %d\n", result.Summary.CurseForgeExact)
+	} else if result.CurseForgeError != "" {
+		fmt.Printf("CurseForge:        LOOKUP FAILED (%s)\n", result.CurseForgeError)
+	} else if result.ModrinthChecked {
+		fmt.Println("CurseForge:        not checked (no API key)")
+	} else {
+		fmt.Println("CurseForge:        skipped")
+	}
+	if result.ModrinthChecked {
+		fmt.Printf("Unmatched:         %d\n", result.Summary.Unmatched)
 	}
 	if result.Summary.MetadataUnreadable > 0 {
 		fmt.Printf("Metadata errors:   %d\n", result.Summary.MetadataUnreadable)
@@ -149,6 +175,8 @@ func renderInventory(result inventory.Inventory) {
 		match := "-"
 		if mod.Modrinth != nil {
 			match = "modrinth"
+		} else if mod.CurseForge != nil {
+			match = "curseforge"
 		} else if !result.ModrinthChecked {
 			match = "unchecked"
 		}
