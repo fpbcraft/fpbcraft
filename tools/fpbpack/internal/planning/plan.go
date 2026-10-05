@@ -404,6 +404,7 @@ func appendDependencyClosure(
 					SHA256: target.SHA256,
 					SHA512: target.SHA512,
 					Deployment: string(deployment),
+					Environment: dependency.Environment,
 					ManualDownload: target.ManualDownload,
 					ManualURL: target.ManualURL,
 				},
