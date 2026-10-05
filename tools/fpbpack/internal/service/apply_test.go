@@ -329,3 +329,131 @@ func writeServiceTestJar(t *testing.T, path, modID, version string) string {
 	}
 	return sha
 }
+
+
+func TestApplyAndRestoreManagedRemoval(t *testing.T) {
+	serverRoot := t.TempDir()
+	stateDir := t.TempDir()
+	modPath := filepath.Join(serverRoot, "mods", "remove-me.jar")
+	modSHA := writeServiceTestJar(t, modPath, "remove_me", "1.0.0")
+	crafty, _ := newTestCraftyServer(t, false)
+
+	inv, err := inventory.Scan(inventory.ScanOptions{
+		ServerRoot: serverRoot,
+		ServerModsPath: "mods",
+		ClientModsPath: inventory.DefaultClientModsPath,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cat := catalog.Report{
+		SchemaVersion: catalog.ReportSchemaVersion,
+		InventorySchema: inventory.SchemaVersion,
+		Managed: []catalog.Entry{{
+			Provider: "modrinth",
+			ProjectID: "remove-me",
+			VersionID: "v1",
+			Name: "Remove Me",
+			Filename: "remove-me.jar",
+			SHA512: modSHA,
+			Side: "both",
+			Deployment: inventory.LocationServer,
+			SourcePaths: []catalog.Source{{
+				Location: inventory.LocationServer,
+				Path: "mods/remove-me.jar",
+			}},
+		}},
+	}
+	cat.RecalculateSummary()
+	now := time.Now().UTC()
+	svc := &Service{
+		options: Options{
+			ServerRoot: serverRoot,
+			StateDir: stateDir,
+			ServerModsPath: "mods",
+			ClientModsPath: inventory.DefaultClientModsPath,
+			CraftyURL: crafty.URL,
+			CraftyServerID: "server-1",
+			CraftyToken: "test-token",
+		},
+		state: State{
+			SchemaVersion: StateSchemaVersion,
+			CreatedAt: now,
+			UpdatedAt: now,
+			Settings: RuntimeSettings{RetentionCount: DefaultRetentionCount},
+			Catalog: cat,
+		},
+		snapshot: management.BuildSnapshot(inv, cat),
+	}
+
+	verifiedAt := now
+	plan := planning.Plan{
+		SchemaVersion: planning.SchemaVersion,
+		ID: "plan-a1b2c3d4e5f60718",
+		CreatedAt: now,
+		Status: planning.StatusReady,
+		Verified: true,
+		VerifiedAt: &verifiedAt,
+		RequiresServerStop: true,
+		RequiresBackup: true,
+		Selected: []string{"modrinth:remove-me"},
+		Changes: []planning.Change{{
+			CandidateKey: "modrinth:remove-me",
+			Name: "Remove Me",
+			Requested: true,
+			Classification: updatecheck.ClassificationReview,
+			Installed: updatecheck.Release{
+				ID: "v1", Number: "1.0.0", Filename: "remove-me.jar", SHA512: modSHA,
+			},
+			Target: updatecheck.Release{
+				ID: "v1", Number: "1.0.0", Filename: "remove-me.jar", SHA512: modSHA,
+			},
+			Artifact: planning.Artifact{
+				Provider: "modrinth",
+				ProjectID: "remove-me",
+				VersionID: "v1",
+				Filename: "remove-me.jar",
+				SHA512: modSHA,
+				Deployment: string(inventory.LocationServer),
+			},
+			Operations: []planning.FileOperation{{
+				Action: "remove",
+				CurrentPath: "mods/remove-me.jar",
+				TargetPath: "mods/remove-me.jar",
+				CurrentSHA512: modSHA,
+			}},
+		}},
+	}
+	if err := writeJSONAtomic(filepath.Join(stateDir, "plans", plan.ID+".json"), plan); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := svc.ApplyPlan(context.Background(), plan.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(modPath); !os.IsNotExist(err) {
+		t.Fatalf("removed JAR still exists: %v", err)
+	}
+	if len(svc.state.Catalog.Managed) != 0 {
+		t.Fatalf("removed mod remains accepted: %+v", svc.state.Catalog.Managed)
+	}
+	if result.BackupID == "" {
+		t.Fatal("remove Apply did not create a restore point")
+	}
+
+	restore, err := svc.RestoreBackup(context.Background(), result.BackupID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if restore.Status != "success" {
+		t.Fatalf("restore result = %+v", restore)
+	}
+	if got, err := sha512File(modPath); err != nil || !strings.EqualFold(got, modSHA) {
+		t.Fatalf("restored removed JAR hash=%q err=%v", got, err)
+	}
+	if len(svc.state.Catalog.Managed) != 1 ||
+		svc.state.Catalog.Managed[0].ProjectID != "remove-me" {
+		t.Fatalf("accepted catalog was not restored: %+v", svc.state.Catalog.Managed)
+	}
+}
