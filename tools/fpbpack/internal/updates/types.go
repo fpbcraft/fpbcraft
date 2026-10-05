@@ -33,13 +33,17 @@ type Release struct {
 }
 
 type Dependency struct {
-	Provider         string `json:"provider"`
-	ProjectID        string `json:"project_id,omitempty"`
-	VersionID        string `json:"version_id,omitempty"`
-	Type             string `json:"type"`
-	Action           string `json:"action"`
-	InstalledVersion string `json:"installed_version,omitempty"`
-	TargetVersion    string `json:"target_version,omitempty"`
+	Provider         string             `json:"provider"`
+	ProjectID        string             `json:"project_id,omitempty"`
+	VersionID        string             `json:"version_id,omitempty"`
+	Name             string             `json:"name,omitempty"`
+	Type             string             `json:"type"`
+	Action           string             `json:"action"`
+	InstalledVersion string             `json:"installed_version,omitempty"`
+	TargetVersion    string             `json:"target_version,omitempty"`
+	Deployment       inventory.Location `json:"deployment,omitempty"`
+	Target           *Release           `json:"target,omitempty"`
+	Dependencies     []Dependency       `json:"dependencies,omitempty"`
 }
 
 type RejectedVersion struct {
