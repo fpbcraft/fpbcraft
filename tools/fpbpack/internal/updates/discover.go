@@ -177,6 +177,7 @@ func discoverModrinthCandidate(
 	target := valid[0]
 	release := releaseFromModrinth(target)
 	candidate.Target = &release
+	candidate.Changelogs = changelogEntries(valid)
 	candidate.Classification = ClassificationSafe
 
 	if target.VersionType != "" && target.VersionType != "release" {
@@ -213,6 +214,28 @@ func discoverModrinthCandidate(
 		)
 	}
 	return candidate
+}
+
+func changelogEntries(versions []modrinthVersion) []ChangelogEntry {
+	if len(versions) == 0 {
+		return nil
+	}
+	ordered := append([]modrinthVersion(nil), versions...)
+	sort.Slice(ordered, func(i, j int) bool {
+		return ordered[i].DatePublished.Before(ordered[j].DatePublished)
+	})
+	result := make([]ChangelogEntry, 0, len(ordered))
+	for _, version := range ordered {
+		result = append(result, ChangelogEntry{
+			ID:          version.ID,
+			Number:      version.VersionNumber,
+			Name:        version.Name,
+			PublishedAt: version.DatePublished,
+			Channel:     version.VersionType,
+			Body:        strings.TrimSpace(version.Changelog),
+		})
+	}
+	return result
 }
 
 func rejectionReasons(version modrinthVersion, minecraft, loader string) []Reason {
