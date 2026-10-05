@@ -244,6 +244,7 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 		}
 		return plan.Changes[i].CandidateKey < plan.Changes[j].CandidateKey
 	})
+	coalesceSatisfiedManagedAdds(&plan, snapshot.Mods)
 	validateOperationCollisions(&plan, snapshot.Mods)
 	plan.Warnings = uniqueFindings(plan.Warnings)
 	plan.Blockers = uniqueFindings(plan.Blockers)
@@ -424,6 +425,56 @@ func modsPath(inv inventory.Inventory, deployment inventory.Location) string {
 		return inv.ServerModsPath
 	}
 	return inventory.DefaultServerModsPath
+}
+
+func coalesceSatisfiedManagedAdds(plan *Plan, mods []management.Mod) {
+	liveByPath := make(map[string]management.Mod, len(mods))
+	for _, mod := range mods {
+		if strings.TrimSpace(mod.Path) == "" {
+			continue
+		}
+		liveByPath[filepath.ToSlash(filepath.Clean(mod.Path))] = mod
+	}
+
+	changes := make([]Change, 0, len(plan.Changes))
+	for _, change := range plan.Changes {
+		operations := make([]FileOperation, 0, len(change.Operations))
+		for _, operation := range change.Operations {
+			if operation.Action != "add" || strings.TrimSpace(operation.TargetSHA512) == "" {
+				operations = append(operations, operation)
+				continue
+			}
+
+			targetPath := filepath.ToSlash(filepath.Clean(operation.TargetPath))
+			live, occupied := liveByPath[targetPath]
+			if !occupied ||
+				live.Management != "managed" ||
+				!strings.EqualFold(strings.TrimSpace(live.SHA512), strings.TrimSpace(operation.TargetSHA512)) {
+				operations = append(operations, operation)
+				continue
+			}
+
+			name := live.Name
+			if strings.TrimSpace(name) == "" {
+				name = live.Filename
+			}
+			plan.Warnings = append(plan.Warnings, Finding{
+				Code: "dependency_already_satisfied",
+				CandidateKey: change.CandidateKey,
+				Message: fmt.Sprintf(
+					"%s is already present at %s with the exact required bytes; no filesystem change is needed for this dependency.",
+					name,
+					targetPath,
+				),
+			})
+		}
+		change.Operations = operations
+		if len(change.Operations) == 0 && change.DependencyDriven && !change.Requested {
+			continue
+		}
+		changes = append(changes, change)
+	}
+	plan.Changes = changes
 }
 
 func validateOperationCollisions(plan *Plan, mods []management.Mod) {
