@@ -32,7 +32,7 @@ The user merges PRs manually. Do not merge these branches automatically.
 - [x] Crafty Start/Stop waits for the requested runtime state instead of assuming an accepted action completed immediately.
 - [x] Apply/Restore publish in-memory state atomically to concurrent API readers.
 - [x] Retention protects plans/backups referenced by retained or in-progress operation history.
-- [ ] PR #15 CI/build/test validation.
+- [x] PR #15 CI/build/test validation (FPBPack workflow green through run #222 on the Slice 3 implementation/docs head).
 - [ ] Exercise Crafty configuration/status/start/stop against the real FPBCraft server.
 - [ ] Exercise a real reviewed Apply on the FPBCraft server while stopped.
 - [ ] Exercise Restore from the resulting history record.
