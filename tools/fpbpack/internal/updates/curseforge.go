@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
-	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -20,6 +19,7 @@ type CurseForgeClient struct {
 	BaseURL    string
 	APIKey     string
 	HTTPClient *http.Client
+	Mode       RefreshMode
 }
 
 type curseForgeMod struct {
@@ -179,31 +179,28 @@ func (client *CurseForgeClient) getJSON(ctx context.Context, path string, target
 	if base == "" {
 		base = DefaultCurseForgeAPI
 	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, base+path, nil)
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Accept", "application/json")
-	request.Header.Set("x-api-key", client.APIKey)
-	request.Header.Set("User-Agent", "fpbcraft/fpbpack")
-
+	endpoint := base + path
 	httpClient := client.HTTPClient
 	if httpClient == nil {
 		httpClient = &http.Client{Timeout: 30 * time.Second}
 	}
-	response, err := httpClient.Do(request)
-	if err != nil {
-		return fmt.Errorf("CurseForge request: %w", err)
-	}
-	defer response.Body.Close()
-	if response.StatusCode != http.StatusOK {
-		message, _ := io.ReadAll(io.LimitReader(response.Body, 4096))
-		return fmt.Errorf("CurseForge returned HTTP %d: %s", response.StatusCode, strings.TrimSpace(string(message)))
-	}
-	if err := json.NewDecoder(io.LimitReader(response.Body, 32<<20)).Decode(target); err != nil {
-		return fmt.Errorf("decode CurseForge response: %w", err)
-	}
-	return nil
+	return doJSONWithRetry(
+		ctx,
+		"curseforge",
+		client.Mode,
+		httpClient,
+		func() (*http.Request, error) {
+			request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+			if err != nil {
+				return nil, err
+			}
+			request.Header.Set("Accept", "application/json")
+			request.Header.Set("x-api-key", client.APIKey)
+			request.Header.Set("User-Agent", "fpbcraft/fpbpack")
+			return request, nil
+		},
+		target,
+	)
 }
 
 func curseForgeLoaderType(loader string) int {
