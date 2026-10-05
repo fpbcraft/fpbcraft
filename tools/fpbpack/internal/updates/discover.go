@@ -3,6 +3,7 @@ package updates
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sort"
 	"strconv"
 	"strings"
