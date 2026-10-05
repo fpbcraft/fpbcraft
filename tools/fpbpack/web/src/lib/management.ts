@@ -29,6 +29,17 @@ export interface RefreshStatus {
   last_error?: string;
 }
 
+export interface CraftyStatus {
+  configured: boolean;
+  connected: boolean;
+  state: string;
+  detail?: string;
+  url?: string;
+  server_id?: string;
+  credential_source?: 'saved' | 'environment';
+  allow_insecure?: boolean;
+}
+
 export interface ManagementStatus {
   mode: string;
   read_only: boolean;
@@ -40,6 +51,7 @@ export interface ManagementStatus {
   diagnostics: DiagnosticSummary;
   version?: string;
   refresh?: RefreshStatus;
+  crafty?: CraftyStatus;
 }
 
 export interface ManagementMod {
@@ -252,6 +264,7 @@ export interface UpdatePlan {
   verified: boolean;
   verified_at?: string;
   backup_id?: string;
+  applied_at?: string;
   requires_server_stop: boolean;
   requires_backup: boolean;
 }
