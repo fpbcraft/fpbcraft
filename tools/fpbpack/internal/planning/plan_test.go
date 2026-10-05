@@ -213,3 +213,54 @@ func TestBuildBlocksConflictingDependencyTargets(t *testing.T) {
 		t.Fatalf("missing dependency target conflict: %+v", plan.Blockers)
 	}
 }
+
+func TestBuildBlocksTargetPathOccupiedByUnmanagedArtifact(t *testing.T) {
+	invTime := time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: invTime.Add(time.Minute),
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:main",
+			Provider: "modrinth",
+			ProjectID: "main",
+			Name: "Main",
+			Deployment: inventory.LocationServer,
+			Classification: updatecheck.ClassificationReview,
+			Installed: updatecheck.Release{ID: "main-old"},
+			Target: &updatecheck.Release{
+				ID: "main-new", Filename: "main-new.jar",
+				URL: "https://cdn.example/main.jar", SHA512: "main-target",
+			},
+			Dependencies: []updatecheck.Dependency{{
+				Provider: "modrinth", ProjectID: "dep", Name: "Dependency",
+				Type: "required", Action: "add", Deployment: inventory.LocationServer,
+				Target: &updatecheck.Release{
+					ID: "dep-v1", Filename: "occupied.jar",
+					URL: "https://cdn.example/dep.jar", SHA512: "dep-target",
+				},
+			}},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{GeneratedAt: invTime, ServerModsPath: "mods"},
+		Mods: []management.Mod{
+			{Provider: "modrinth", ProjectID: "main", Name: "Main", Path: "mods/main-old.jar"},
+			{Name: "Pinned Custom", Filename: "occupied.jar", Management: "unmanaged", Path: "mods/occupied.jar"},
+		},
+	}
+	plan, err := Build([]string{"modrinth:main"}, report, snapshot, invTime.Add(2*time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Status != StatusBlocked {
+		t.Fatalf("expected occupied target to block: %+v", plan)
+	}
+	found := false
+	for _, blocker := range plan.Blockers {
+		if blocker.Code == "target_path_occupied" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("missing target_path_occupied blocker: %+v", plan.Blockers)
+	}
+}
