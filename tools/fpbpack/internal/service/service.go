@@ -29,8 +29,10 @@ type Options struct {
 	ClientModsPath  string
 	Minecraft       string
 	Loader          string
-	ModrinthBaseURL string
-	BootstrapReport string
+	ModrinthBaseURL  string
+	CurseForgeBaseURL string
+	CurseForgeAPIKey string
+	BootstrapReport  string
 }
 
 type RuntimeSettings struct {
@@ -158,6 +160,8 @@ func (s *Service) Refresh(ctx context.Context) error {
 		Minecraft:       s.options.Minecraft,
 		Loader:          s.options.Loader,
 		ModrinthBaseURL: s.options.ModrinthBaseURL,
+		CurseForgeBaseURL: s.options.CurseForgeBaseURL,
+		CurseForgeAPIKey: s.options.CurseForgeAPIKey,
 	})
 	if err := updateCtx.Err(); err != nil && !errors.Is(err, context.Canceled) {
 		return fmt.Errorf("update discovery: %w", err)
@@ -203,6 +207,8 @@ func (s *Service) CheckUpdates(ctx context.Context) error {
 		Minecraft:       s.options.Minecraft,
 		Loader:          s.options.Loader,
 		ModrinthBaseURL: s.options.ModrinthBaseURL,
+		CurseForgeBaseURL: s.options.CurseForgeBaseURL,
+		CurseForgeAPIKey: s.options.CurseForgeAPIKey,
 	})
 	if err := updateCtx.Err(); err != nil && !errors.Is(err, context.Canceled) {
 		return fmt.Errorf("update discovery: %w", err)
