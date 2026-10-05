@@ -44,6 +44,7 @@ type Artifact struct {
 	SHA512     string `json:"sha512,omitempty"`
 	Deployment     string `json:"deployment"`
 	ManualDownload bool   `json:"manual_download,omitempty"`
+	ManualProvided bool   `json:"manual_provided,omitempty"`
 	ManualURL      string `json:"manual_url,omitempty"`
 }
 
