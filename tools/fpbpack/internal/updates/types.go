@@ -46,6 +46,15 @@ type Dependency struct {
 	Dependencies     []Dependency       `json:"dependencies,omitempty"`
 }
 
+type ChangelogEntry struct {
+	ID          string    `json:"id"`
+	Number      string    `json:"number"`
+	Name        string    `json:"name,omitempty"`
+	PublishedAt time.Time `json:"published_at,omitempty"`
+	Channel     string    `json:"channel,omitempty"`
+	Body        string    `json:"body,omitempty"`
+}
+
 type RejectedVersion struct {
 	ID      string   `json:"id"`
 	Number  string   `json:"number"`
@@ -66,6 +75,7 @@ type Candidate struct {
 	Classification Classification     `json:"classification"`
 	Reasons        []Reason           `json:"reasons,omitempty"`
 	Dependencies   []Dependency       `json:"dependencies,omitempty"`
+	Changelogs     []ChangelogEntry   `json:"changelogs,omitempty"`
 	Rejected       []RejectedVersion  `json:"rejected,omitempty"`
 }
 
