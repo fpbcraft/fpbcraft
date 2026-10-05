@@ -218,7 +218,12 @@ export default function SettingsPage() {
                 </div>
 
                 {provider.id === 'curseforge' && provider.credential_configurable ? (
-                  <div className="mt-3 flex flex-col gap-2 border-t border-base-300 pt-3 sm:flex-row sm:items-end">
+                  <div className="mt-3 border-t border-base-300 pt-3">
+                    <p className="mb-2 text-xs text-base-content/40">
+                      Saved locally in the FPBPack state directory with owner-only file permissions.
+                      Existing credentials are never returned to the browser.
+                    </p>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                     <label className="form-control min-w-0 flex-1">
                       <span className="mb-1 text-xs text-base-content/45">
                         {provider.credential_source === 'saved' ? 'Replace API key' : 'CurseForge API key'}
@@ -256,6 +261,7 @@ export default function SettingsPage() {
                         Clear saved key
                       </button>
                     ) : null}
+                    </div>
                   </div>
                 ) : null}
               </div>
