@@ -87,6 +87,15 @@ jobs:
           sha256sum dist/packwiz-linux-amd64 > dist/packwiz-linux-amd64.sha256
           file dist/packwiz-linux-amd64
 
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t fpbpack-pr \
+            --build-arg FPBPACK_VERSION="${GITHUB_SHA::12}" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            -f tools/fpbpack/Dockerfile \
+            .
+
       - name: Upload Unraid binaries
         uses: actions/upload-artifact@v7
         with:
