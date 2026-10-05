@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -471,6 +472,9 @@ func TestSlice3OperationalEndpoints(t *testing.T) {
 	var appliedID string
 	var restoredID string
 	var placementPath string
+	var manualPlanID string
+	var manualCandidate string
+	var manualBytes string
 	var started, stopped bool
 	handler := NewHandlerWithOptions(
 		func() (management.Snapshot, error) {
@@ -505,6 +509,25 @@ func TestSlice3OperationalEndpoints(t *testing.T) {
 			RestoreBackup: func(_ context.Context, id string) (service.RestoreResult, error) {
 				restoredID = id
 				return service.RestoreResult{BackupID: id, Status: "success"}, nil
+			},
+			AcceptManualArtifact: func(
+				_ context.Context,
+				planID string,
+				candidateKey string,
+				reader io.Reader,
+			) (planning.Plan, error) {
+				manualPlanID = planID
+				manualCandidate = candidateKey
+				content, err := io.ReadAll(reader)
+				if err != nil {
+					return planning.Plan{}, err
+				}
+				manualBytes = string(content)
+				return planning.Plan{
+					ID: planID,
+					Status: planning.StatusReady,
+					Verified: true,
+				}, nil
 			},
 		},
 	)
@@ -551,6 +574,29 @@ func TestSlice3OperationalEndpoints(t *testing.T) {
 	)
 	if placement.Code != http.StatusCreated || placementPath != "mods/example.jar" {
 		t.Fatalf("placement plan = %d path=%q body=%s", placement.Code, placementPath, placement.Body.String())
+	}
+
+	manual := httptest.NewRecorder()
+	handler.ServeHTTP(
+		manual,
+		httptest.NewRequest(
+			http.MethodPost,
+			"/api/plans/plan-0123456789abcdef/manual-artifact?candidate_key=curseforge%3A123",
+			strings.NewReader("jar-bytes"),
+		),
+	)
+	if manual.Code != http.StatusOK ||
+		manualPlanID != "plan-0123456789abcdef" ||
+		manualCandidate != "curseforge:123" ||
+		manualBytes != "jar-bytes" {
+		t.Fatalf(
+			"manual artifact = %d plan=%q candidate=%q bytes=%q body=%s",
+			manual.Code,
+			manualPlanID,
+			manualCandidate,
+			manualBytes,
+			manual.Body.String(),
+		)
 	}
 
 	apply := httptest.NewRecorder()
