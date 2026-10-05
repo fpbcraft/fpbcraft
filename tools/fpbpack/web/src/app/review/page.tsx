@@ -276,21 +276,44 @@ export default function ReviewPage() {
                     ) : null}
                   </div>
                   <div className="mt-0.5 text-xs text-base-content/45">
-                    {change.installed.number || change.installed.name || 'installed'} → {change.target.number || change.target.name || change.target.id}
+                    {change.operations.some((operation) => operation.action === 'remove')
+                      ? (change.installed.number || change.installed.name || 'installed') + ' → removed'
+                      : (change.installed.number || change.installed.name || 'not installed') +
+                        ' → ' +
+                        (change.target.number || change.target.name || change.target.id)}
                   </div>
                 </div>
                 <Pill tone={change.classification === 'safe' ? 'good' : 'warn'}>{change.classification}</Pill>
               </summary>
               <div className="border-t border-base-300 bg-base-200/40 px-4 py-3">
                 <dl className="grid gap-2 text-xs sm:grid-cols-[130px_minmax(0,1fr)]">
-                  <dt className="text-base-content/40">Target file</dt>
+                  <dt className="text-base-content/40">
+                    {change.operations.some((operation) => operation.action === 'remove')
+                      ? 'Current file'
+                      : 'Target file'}
+                  </dt>
                   <dd className="mono break-all">{change.artifact.filename}</dd>
-                  <dt className="text-base-content/40">Target SHA-512</dt>
+                  <dt className="text-base-content/40">
+                    {change.operations.some((operation) => operation.action === 'remove')
+                      ? 'Current SHA-512'
+                      : 'Target SHA-512'}
+                  </dt>
                   <dd className="mono break-all">
-                    {change.artifact.sha512 || 'pending manual verification'}
+                    {change.artifact.sha512 ||
+                      (change.operations.some((operation) => operation.action === 'remove')
+                        ? '—'
+                        : 'pending manual verification')}
                   </dd>
                   <dt className="text-base-content/40">Reason</dt>
-                  <dd>{change.dependency_driven ? 'Required dependency' : 'Selected update'}</dd>
+                  <dd>
+                    {change.dependency_driven
+                      ? 'Required dependency'
+                      : change.operations.some((operation) => operation.action === 'remove')
+                        ? 'Selected removal'
+                        : change.operations.some((operation) => operation.action === 'add')
+                          ? 'Selected installation'
+                          : 'Selected version change'}
+                  </dd>
                   <dt className="text-base-content/40">Provider</dt>
                   <dd>{change.artifact.provider} · {change.artifact.project_id} · {change.artifact.version_id}</dd>
                   {change.artifact.manual_download ? (
