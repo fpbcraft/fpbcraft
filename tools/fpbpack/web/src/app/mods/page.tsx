@@ -152,17 +152,6 @@ export default function ModsPage() {
     attentionOnly,
   ]);
 
-  const missingFindings = useMemo(
-    () =>
-      blockers.filter((finding) => {
-        if (!finding.path) return true;
-        return !state.mods.some(
-          (mod) => normalizePath(mod.path) === normalizePath(finding.path),
-        );
-      }),
-    [blockers, state.mods],
-  );
-
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const rows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
