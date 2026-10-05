@@ -79,7 +79,30 @@ jobs:
       - name: Build Docker image
         env:
           FPBPACK_VERSION: ${{ github.event.pull_request.head.sha }}
-        run: docker build --build-arg FPBPACK_VERSION="${FPBPACK_VERSION::12}" -f tools/fpbpack/Dockerfile .
+        run: docker build -t fpbpack-ci --build-arg FPBPACK_VERSION="${FPBPACK_VERSION::12}" -f tools/fpbpack/Dockerfile .
+
+      - name: Smoke-test Docker serve defaults
+        run: |
+          mkdir -p "${RUNNER_TEMP}/fpbpack-server/mods" "${RUNNER_TEMP}/fpbpack-state"
+          docker run -d --name fpbpack-ci \
+            -p 127.0.0.1:18787:8787 \
+            -v "${RUNNER_TEMP}/fpbpack-server:/server" \
+            -v "${RUNNER_TEMP}/fpbpack-state:/data" \
+            fpbpack-ci
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:18787/healthz >/dev/null; then
+              break
+            fi
+            if [ "${attempt}" -eq 30 ]; then
+              docker logs fpbpack-ci
+              exit 1
+            fi
+            sleep 1
+          done
+          test -f "${RUNNER_TEMP}/fpbpack-state/state.json"
+          test -f "${RUNNER_TEMP}/fpbpack-state/inventory.json"
+          test -f "${RUNNER_TEMP}/fpbpack-state/updates.json"
+          docker rm -f fpbpack-ci
 
       - name: Upload Unraid binaries
         uses: actions/upload-artifact@v7
