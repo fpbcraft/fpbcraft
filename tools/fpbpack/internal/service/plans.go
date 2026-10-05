@@ -13,6 +13,13 @@ import (
 )
 
 func (s *Service) CreatePlan(ctx context.Context, candidateKeys []string) (planning.Plan, error) {
+	// Planning captures accepted state, live inventory, provider metadata,
+	// verified artifacts, and a restore point as one deterministic snapshot.
+	// Serialize it with refresh/reconciliation so those inputs cannot change
+	// halfway through plan creation.
+	s.refreshMu.Lock()
+	defer s.refreshMu.Unlock()
+
 	s.mu.RLock()
 	snapshot := s.snapshot
 	report := s.updates
