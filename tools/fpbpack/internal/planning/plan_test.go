@@ -264,3 +264,66 @@ func TestBuildBlocksTargetPathOccupiedByUnmanagedArtifact(t *testing.T) {
 		t.Fatalf("missing target_path_occupied blocker: %+v", plan.Blockers)
 	}
 }
+
+
+func TestBuildPlansSiblingArtifactsFromSameProviderProject(t *testing.T) {
+	now := time.Now().UTC()
+	report := updatecheck.Report{
+		GeneratedAt: now,
+		Candidates: []updatecheck.Candidate{
+			{
+				Key: "github:fpbcraft/player-history-mc#recorder",
+				Provider: "github", ProjectID: "fpbcraft/player-history-mc", Name: "Recorder",
+				Deployment: inventory.LocationServer, Classification: updatecheck.ClassificationReview,
+				Installed: updatecheck.Release{ID: "v1", Number: "v1"},
+				Target: &updatecheck.Release{
+					ID: "v2", Number: "v2", Filename: "recorder-v2.jar",
+					URL: "https://example.invalid/recorder.jar", SHA512: "recorder-target",
+				},
+			},
+			{
+				Key: "github:fpbcraft/player-history-mc#bluemap",
+				Provider: "github", ProjectID: "fpbcraft/player-history-mc", Name: "BlueMap addon",
+				Deployment: inventory.LocationServer, Classification: updatecheck.ClassificationReview,
+				Installed: updatecheck.Release{ID: "v1", Number: "v1"},
+				Target: &updatecheck.Release{
+					ID: "v2", Number: "v2", Filename: "bluemap-v2.jar",
+					URL: "https://example.invalid/bluemap.jar", SHA512: "bluemap-target",
+				},
+			},
+		},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{GeneratedAt: now},
+		Mods: []management.Mod{
+			{
+				ID: "github:fpbcraft/player-history-mc#recorder",
+				Provider: "github", ProjectID: "fpbcraft/player-history-mc",
+				Path: "mods/recorder-v1.jar", SHA512: "recorder-current",
+			},
+			{
+				ID: "github:fpbcraft/player-history-mc#bluemap",
+				Provider: "github", ProjectID: "fpbcraft/player-history-mc",
+				Path: "mods/bluemap-v1.jar", SHA512: "bluemap-current",
+			},
+		},
+	}
+	plan, err := Build(
+		[]string{
+			"github:fpbcraft/player-history-mc#recorder",
+			"github:fpbcraft/player-history-mc#bluemap",
+		},
+		report,
+		snapshot,
+		now,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Status != StatusReady || len(plan.Changes) != 2 {
+		t.Fatalf("unexpected multi-artifact plan: status=%s changes=%d blockers=%+v", plan.Status, len(plan.Changes), plan.Blockers)
+	}
+	if plan.Changes[0].CandidateKey == plan.Changes[1].CandidateKey {
+		t.Fatalf("sibling artifacts were coalesced: %+v", plan.Changes)
+	}
+}
