@@ -21,6 +21,9 @@ import (
 type ModManagementRequest struct {
 	Action     string `json:"action"`
 	Path       string `json:"path"`
+	ProjectID  string `json:"project_id,omitempty"`
+	VersionID  string `json:"version_id,omitempty"`
+	FileID     uint32 `json:"file_id,omitempty"`
 	Repository string `json:"repository,omitempty"`
 	Tag        string `json:"tag,omitempty"`
 	Asset      string `json:"asset,omitempty"`
@@ -48,6 +51,10 @@ func (s *Service) ManageMod(ctx context.Context, request ModManagementRequest) (
 	switch request.Action {
 	case "mark_unmanaged":
 		return s.markModUnmanaged(request.Path)
+	case "assign_modrinth":
+		return s.assignModrinthSource(ctx, request)
+	case "assign_curseforge":
+		return s.assignCurseForgeSource(ctx, request)
 	case "assign_github":
 		return s.assignGitHubSource(ctx, request)
 	case "forget_missing":
@@ -91,7 +98,7 @@ func (s *Service) RefreshModMetadata(ctx context.Context, path string) (err erro
 	}
 	match, ok := matches[mod.SHA512]
 	if !ok {
-		return fmt.Errorf("no exact Modrinth source was found; assign a GitHub source or mark this artifact unmanaged")
+		return fmt.Errorf("no exact Modrinth source was found; assign a Modrinth, CurseForge, or GitHub source manually, or keep this artifact unmanaged")
 	}
 
 	copyMod := mod
@@ -142,6 +149,141 @@ func (s *Service) markModUnmanaged(path string) (ModManagementResult, error) {
 		Path: path,
 		Management: "unmanaged",
 		Message: "Artifact is now explicitly unmanaged and excluded from update planning.",
+	}, nil
+}
+
+func (s *Service) assignModrinthSource(
+	ctx context.Context,
+	request ModManagementRequest,
+) (ModManagementResult, error) {
+	mod, ok := s.liveModByPath(request.Path)
+	if !ok {
+		return ModManagementResult{}, fmt.Errorf("live mod %q was not found", request.Path)
+	}
+	projectID := strings.TrimSpace(request.ProjectID)
+	versionID := strings.TrimSpace(request.VersionID)
+	if projectID == "" || versionID == "" {
+		return ModManagementResult{}, fmt.Errorf("Modrinth project ID and installed version ID are required")
+	}
+
+	verifyCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+	client := &updatecheck.ModrinthClient{
+		BaseURL: s.options.ModrinthBaseURL,
+		Mode: updatecheck.RefreshModeInteractive,
+	}
+	verified, err := client.VerifyInstalledVersion(
+		verifyCtx,
+		projectID,
+		versionID,
+		mod.Filename,
+		mod.SHA512,
+	)
+	if err != nil {
+		return ModManagementResult{}, fmt.Errorf("verify Modrinth source: %w", err)
+	}
+
+	name := managementDisplayName(mod)
+	if strings.TrimSpace(verified.VersionName) != "" {
+		name = verified.VersionName
+	}
+	entry := catalog.Entry{
+		Provider: "modrinth",
+		ProjectID: projectID,
+		VersionID: verified.VersionID,
+		Name: name,
+		Filename: mod.Filename,
+		SHA1: mod.SHA1,
+		SHA512: mod.SHA512,
+		URL: verified.DownloadURL,
+		Side: s.sideForPath(mod.Path),
+		Deployment: mod.Location,
+		Environment: verified.Environment,
+		SourcePaths: s.sourcesForSHA(mod.SHA512),
+	}
+	s.replaceCatalogArtifact(mod, entry, "modrinth:"+projectID)
+	if err := s.persistCatalogMutation(); err != nil {
+		return ModManagementResult{}, err
+	}
+	message := "Modrinth source verified and accepted."
+	if err := s.refreshSingleManagedEntry(ctx, entry); err != nil {
+		message = "Modrinth source was verified and saved, but its update metadata refresh failed: " + err.Error()
+	}
+	return ModManagementResult{
+		Action: "assign_modrinth",
+		Path: request.Path,
+		Management: "managed",
+		Provider: "modrinth",
+		ProjectID: projectID,
+		Message: message,
+	}, nil
+}
+
+func (s *Service) assignCurseForgeSource(
+	ctx context.Context,
+	request ModManagementRequest,
+) (ModManagementResult, error) {
+	mod, ok := s.liveModByPath(request.Path)
+	if !ok {
+		return ModManagementResult{}, fmt.Errorf("live mod %q was not found", request.Path)
+	}
+	projectID := strings.TrimSpace(request.ProjectID)
+	if projectID == "" || request.FileID == 0 {
+		return ModManagementResult{}, fmt.Errorf("CurseForge project ID and installed file ID are required")
+	}
+	apiKey, _ := s.effectiveCurseForgeAPIKey()
+	if apiKey == "" {
+		return ModManagementResult{}, fmt.Errorf("configure a CurseForge API key in Settings → Providers before assigning a CurseForge source")
+	}
+
+	verifyCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	defer cancel()
+	client := &updatecheck.CurseForgeClient{
+		BaseURL: s.options.CurseForgeBaseURL,
+		APIKey: apiKey,
+		Mode: updatecheck.RefreshModeInteractive,
+	}
+	verified, err := client.VerifyInstalledFile(
+		verifyCtx,
+		projectID,
+		request.FileID,
+		mod.SHA1,
+	)
+	if err != nil {
+		return ModManagementResult{}, fmt.Errorf("verify CurseForge source: %w", err)
+	}
+
+	name := managementDisplayName(mod)
+	if strings.TrimSpace(verified.DisplayName) != "" {
+		name = verified.DisplayName
+	}
+	entry := catalog.Entry{
+		Provider: "curseforge",
+		ProjectID: projectID,
+		FileID: request.FileID,
+		Name: name,
+		Filename: mod.Filename,
+		SHA1: mod.SHA1,
+		SHA512: mod.SHA512,
+		Side: s.sideForPath(mod.Path),
+		Deployment: mod.Location,
+		SourcePaths: s.sourcesForSHA(mod.SHA512),
+	}
+	s.replaceCatalogArtifact(mod, entry, "curseforge:"+projectID)
+	if err := s.persistCatalogMutation(); err != nil {
+		return ModManagementResult{}, err
+	}
+	message := "CurseForge source verified and accepted."
+	if err := s.refreshSingleManagedEntry(ctx, entry); err != nil {
+		message = "CurseForge source was verified and saved, but its update metadata refresh failed: " + err.Error()
+	}
+	return ModManagementResult{
+		Action: "assign_curseforge",
+		Path: request.Path,
+		Management: "managed",
+		Provider: "curseforge",
+		ProjectID: projectID,
+		Message: message,
 	}, nil
 }
 
