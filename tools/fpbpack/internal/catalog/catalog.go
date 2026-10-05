@@ -253,7 +253,12 @@ func Build(inv inventory.Inventory) (Result, error) {
 		}
 		entries = append(entries, entry)
 	}
-	sort.Slice(entries, func(i, j int) bool { return entries[i].ProjectID < entries[j].ProjectID })
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].Provider != entries[j].Provider {
+			return entries[i].Provider < entries[j].Provider
+		}
+		return entries[i].ProjectID < entries[j].ProjectID
+	})
 
 	report.Managed = append([]Entry(nil), entries...)
 	report.Summary.GeneratedProjects = len(entries)
