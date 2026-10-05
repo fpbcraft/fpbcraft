@@ -10,6 +10,13 @@ interface RuntimeSettings {
   retention_count: number;
 }
 
+interface ProviderStatus {
+  id: string;
+  label: string;
+  status: string;
+  detail: string;
+}
+
 export default function SettingsPage() {
   const {state, connectionStatus, connectionError, refresh} = useManagement();
   const connected = connectionStatus === 'connected';
@@ -17,16 +24,20 @@ export default function SettingsPage() {
   const [savedRetention, setSavedRetention] = useState(20);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [providers, setProviders] = useState<ProviderStatus[]>([]);
 
   useEffect(() => {
-    api<RuntimeSettings>('/api/settings')
-      .then((settings) => {
+    void Promise.all([
+      api<RuntimeSettings>('/api/settings').then((settings) => {
         setRetention(settings.retention_count);
         setSavedRetention(settings.retention_count);
-      })
-      .catch((error: unknown) => {
-        setSettingsError(error instanceof Error ? error.message : String(error));
-      });
+      }),
+      api<{providers: ProviderStatus[]}>('/api/providers').then((response) => {
+        setProviders(response.providers);
+      }),
+    ]).catch((error: unknown) => {
+      setSettingsError(error instanceof Error ? error.message : String(error));
+    });
   }, []);
 
   const saveRetention = async () => {
@@ -130,6 +141,28 @@ export default function SettingsPage() {
               </div>
             ))}
           </dl>
+        </section>
+
+        <section className="panel xl:col-span-2">
+          <div className="panel-header">
+            <div>
+              <div className="section-label">Providers</div>
+              <h2 className="mt-0.5 text-sm font-semibold">Update sources</h2>
+            </div>
+          </div>
+          <div className="divide-y divide-base-300">
+            {providers.map((provider) => (
+              <div className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between" key={provider.id}>
+                <div>
+                  <div className="text-sm font-medium">{provider.label}</div>
+                  <div className="mt-0.5 text-xs text-base-content/45">{provider.detail}</div>
+                </div>
+                <Pill tone={provider.status === 'ready' ? 'good' : 'warn'}>
+                  {provider.status === 'ready' ? 'Ready' : 'Needs configuration'}
+                </Pill>
+              </div>
+            ))}
+          </div>
         </section>
 
         <section className="panel xl:col-span-2">
