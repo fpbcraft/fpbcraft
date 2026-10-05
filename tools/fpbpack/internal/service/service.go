@@ -103,9 +103,10 @@ func New(ctx context.Context, options Options) (*Service, error) {
 		return nil, err
 	}
 	artifactIDsChanged := catalog.EnsureManagedArtifactIDs(service.state.Catalog.Managed)
-	placementWarningsBefore := len(service.state.Catalog.Placement)
+	placementWarningsBefore, _ := json.Marshal(service.state.Catalog.Placement)
 	service.state.Catalog.RecalculateSummary()
-	if artifactIDsChanged || len(service.state.Catalog.Placement) != placementWarningsBefore {
+	placementWarningsAfter, _ := json.Marshal(service.state.Catalog.Placement)
+	if artifactIDsChanged || string(placementWarningsBefore) != string(placementWarningsAfter) {
 		service.state.UpdatedAt = time.Now().UTC()
 		if err := service.persistState(); err != nil {
 			return nil, fmt.Errorf("persist catalog state normalization: %w", err)
