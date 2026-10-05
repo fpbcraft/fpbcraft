@@ -100,6 +100,10 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 	wait.Wait()
 	report.Candidates = append(report.Candidates, candidates...)
 
+	for index := range report.Candidates {
+		report.Candidates[index].BaseClassification = report.Candidates[index].Classification
+	}
+
 	sort.Slice(report.Candidates, func(i, j int) bool {
 		if report.Candidates[i].Name != report.Candidates[j].Name {
 			return strings.ToLower(report.Candidates[i].Name) < strings.ToLower(report.Candidates[j].Name)
