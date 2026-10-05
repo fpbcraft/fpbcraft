@@ -96,8 +96,10 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 	}
 	defer cleanupStagedOperations(staged)
 
+	s.mu.RLock()
 	previousState := s.state
 	previousSnapshot := s.snapshot
+	s.mu.RUnlock()
 	committed := false
 	defer func() {
 		if err == nil || !committed {
@@ -107,8 +109,10 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 		_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "state.json"), previousState)
 		_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "inventory.json"), previousSnapshot.Inventory)
 		_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "plans", rollbackPlan.ID+".json"), rollbackPlan)
+		s.mu.Lock()
 		s.state = previousState
 		s.snapshot = previousSnapshot
+		s.mu.Unlock()
 	}()
 
 	if err = commitStagedOperations(s.options.ServerRoot, staged); err != nil {
@@ -163,15 +167,18 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 		return ApplyResult{}, fmt.Errorf("persist apply history: %w", err)
 	}
 
-	s.state = nextState
-	s.snapshot = nextSnapshot
-	s.updates = updatecheck.Report{
+	nextUpdates := updatecheck.Report{
 		GeneratedAt: now,
 		Minecraft: s.options.Minecraft,
 		Loader: s.options.Loader,
 	}
+	_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), nextUpdates)
+	s.mu.Lock()
+	s.state = nextState
+	s.snapshot = nextSnapshot
+	s.updates = nextUpdates
 	s.hasUpdate = true
-	_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), s.updates)
+	s.mu.Unlock()
 
 	result = ApplyResult{
 		PlanID: plan.ID,
@@ -213,8 +220,10 @@ func (s *Service) RestoreBackup(ctx context.Context, backupID string) (result Re
 		return RestoreResult{}, err
 	}
 
+	s.mu.RLock()
 	previousState := s.state
 	previousSnapshot := s.snapshot
+	s.mu.RUnlock()
 	restored := false
 	defer func() {
 		if err == nil || !restored {
@@ -223,8 +232,10 @@ func (s *Service) RestoreBackup(ctx context.Context, backupID string) (result Re
 		_ = s.restoreAppliedTargets(plan)
 		_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "state.json"), previousState)
 		_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "inventory.json"), previousSnapshot.Inventory)
+		s.mu.Lock()
 		s.state = previousState
 		s.snapshot = previousSnapshot
+		s.mu.Unlock()
 	}()
 
 	if err = s.restoreManifestFiles(plan, manifest); err != nil {
@@ -270,15 +281,18 @@ func (s *Service) RestoreBackup(ctx context.Context, backupID string) (result Re
 		return RestoreResult{}, err
 	}
 
-	s.state = nextState
-	s.snapshot = nextSnapshot
-	s.updates = updatecheck.Report{
+	nextUpdates := updatecheck.Report{
 		GeneratedAt: now,
 		Minecraft: s.options.Minecraft,
 		Loader: s.options.Loader,
 	}
+	_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), nextUpdates)
+	s.mu.Lock()
+	s.state = nextState
+	s.snapshot = nextSnapshot
+	s.updates = nextUpdates
 	s.hasUpdate = true
-	_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), s.updates)
+	s.mu.Unlock()
 
 	return RestoreResult{
 		PlanID: plan.ID,
@@ -306,6 +320,9 @@ func (s *Service) loadBackupManifest(backupID string) (planning.BackupManifest, 
 }
 
 func (s *Service) validateCurrentManagedState() error {
+	s.mu.RLock()
+	acceptedCatalog := s.state.Catalog
+	s.mu.RUnlock()
 	inv, err := inventory.Scan(inventory.ScanOptions{
 		ServerRoot:     s.options.ServerRoot,
 		ServerModsPath: s.options.ServerModsPath,
@@ -314,7 +331,7 @@ func (s *Service) validateCurrentManagedState() error {
 	if err != nil {
 		return err
 	}
-	snapshot := management.BuildSnapshot(inv, s.state.Catalog)
+	snapshot := management.BuildSnapshot(inv, acceptedCatalog)
 	if snapshot.Diagnostics.Summary.Blocking == 0 {
 		return nil
 	}
@@ -340,8 +357,11 @@ func (s *Service) validateCurrentManagedState() error {
 }
 
 func (s *Service) validatePlanCatalogState(plan planning.Plan) error {
-	managed := make(map[string]catalog.Entry, len(s.state.Catalog.Managed))
-	for _, entry := range s.state.Catalog.Managed {
+	s.mu.RLock()
+	accepted := append([]catalog.Entry(nil), s.state.Catalog.Managed...)
+	s.mu.RUnlock()
+	managed := make(map[string]catalog.Entry, len(accepted))
+	for _, entry := range accepted {
 		managed[catalog.EntryKey(entry)] = entry
 	}
 	for _, change := range plan.Changes {
