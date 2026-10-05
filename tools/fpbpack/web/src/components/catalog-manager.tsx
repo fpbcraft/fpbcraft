@@ -63,7 +63,19 @@ export function CatalogManagerDialog({
       const next = Array.isArray(response.versions) ? response.versions : [];
       setVersions(next);
       const firstRelease = next.find((version) => version.channel === 'release');
-      setSelectedVersionID((firstRelease ?? next[0])?.id ?? '');
+      const defaultVersion = firstRelease ?? next[0];
+      setSelectedVersionID(defaultVersion?.id ?? '');
+      if (
+        defaultVersion?.environment === 'client_only' ||
+        defaultVersion?.environment === 'singleplayer_only'
+      ) {
+        setPlacement('client');
+      } else if (
+        defaultVersion?.environment === 'server_only' ||
+        defaultVersion?.environment === 'dedicated_server_only'
+      ) {
+        setPlacement('server');
+      }
     } catch (value: unknown) {
       setError(value instanceof Error ? value.message : String(value));
     } finally {
@@ -124,6 +136,9 @@ export function CatalogManagerDialog({
       ),
     [versions, channel],
   );
+  const latestReleaseID = versions.find(
+    (version) => (version.channel || 'release') === 'release',
+  )?.id;
 
   const chooseVersion = (version: CatalogVersion) => {
     setSelectedVersionID(version.id);
@@ -370,6 +385,9 @@ export function CatalogManagerDialog({
                       <Pill tone={version.channel === 'release' ? 'good' : 'warn'}>
                         {version.channel || 'release'}
                       </Pill>
+                      {version.id === latestReleaseID ? (
+                        <Pill tone="blue">latest stable</Pill>
+                      ) : null}
                       {mod?.installed_version === version.number ? (
                         <Pill tone="neutral">installed</Pill>
                       ) : null}
