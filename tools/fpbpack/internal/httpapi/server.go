@@ -21,6 +21,9 @@ import (
 type Loader func() (management.Snapshot, error)
 type UpdatesLoader func() (updatecheck.Report, error)
 type CatalogLoader func() (catalog.Report, error)
+type CatalogSearcher func(context.Context, string, string) ([]updatecheck.CatalogProject, error)
+type CatalogVersionsLoader func(context.Context, string, string) ([]updatecheck.CatalogVersion, error)
+type CatalogPlanCreator func(context.Context, service.CatalogPlanRequest) (planning.Plan, error)
 type RefreshFunc func(context.Context) error
 type PlanCreator func(context.Context, []string) (planning.Plan, error)
 type PlacementPlanCreator func(context.Context, string) (planning.Plan, error)
@@ -51,6 +54,9 @@ type ServerOptions struct {
 	Updates      UpdatesLoader
 	Catalog      CatalogLoader
 	CatalogPreview CatalogLoader
+	SearchCatalog CatalogSearcher
+	CatalogVersions CatalogVersionsLoader
+	CreateCatalogPlan CatalogPlanCreator
 	Refresh      RefreshFunc
 	RefreshInventory RefreshFunc
 	CheckUpdates RefreshFunc
@@ -88,6 +94,9 @@ type Server struct {
 	updatesLoader UpdatesLoader
 	catalogLoader CatalogLoader
 	catalogPreview CatalogLoader
+	searchCatalog CatalogSearcher
+	catalogVersions CatalogVersionsLoader
+	createCatalogPlan CatalogPlanCreator
 	refresh       RefreshFunc
 	refreshInventory RefreshFunc
 	checkUpdates  RefreshFunc
@@ -134,6 +143,9 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	server := &Server{
 		loader: loader, updatesLoader: opts.Updates, catalogLoader: opts.Catalog,
 		catalogPreview: opts.CatalogPreview,
+		searchCatalog: opts.SearchCatalog,
+		catalogVersions: opts.CatalogVersions,
+		createCatalogPlan: opts.CreateCatalogPlan,
 		refresh: opts.Refresh, refreshInventory: opts.RefreshInventory,
 		checkUpdates: opts.CheckUpdates, createPlan: opts.CreatePlan,
 		createPlacementPlan: opts.CreatePlacementPlan,
@@ -165,6 +177,9 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("POST /api/inventory/refresh", server.refreshInventoryHandler)
 	mux.HandleFunc("GET /api/catalog", server.catalog)
 	mux.HandleFunc("POST /api/catalog/preview", server.catalogPreviewHandler)
+	mux.HandleFunc("GET /api/catalog/search", server.catalogSearch)
+	mux.HandleFunc("GET /api/catalog/projects/{provider}/{id}/versions", server.catalogProjectVersions)
+	mux.HandleFunc("POST /api/catalog/plans", server.createCatalogPlanHandler)
 	mux.HandleFunc("GET /api/mods", server.mods)
 	mux.HandleFunc("GET /api/diagnostics", server.diagnostics)
 	mux.HandleFunc("GET /api/updates", server.updates)
@@ -282,6 +297,63 @@ func (s *Server) catalogPreviewHandler(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, report)
+}
+
+func (s *Server) catalogSearch(w http.ResponseWriter, r *http.Request) {
+	if s.searchCatalog == nil {
+		writeError(w, http.StatusServiceUnavailable, "catalog search is not configured")
+		return
+	}
+	provider := strings.TrimSpace(r.URL.Query().Get("provider"))
+	query := strings.TrimSpace(r.URL.Query().Get("q"))
+	if provider == "" || query == "" {
+		writeError(w, http.StatusBadRequest, "provider and q are required")
+		return
+	}
+	projects, err := s.searchCatalog(r.Context(), provider, query)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"projects": projects})
+}
+
+func (s *Server) catalogProjectVersions(w http.ResponseWriter, r *http.Request) {
+	if s.catalogVersions == nil {
+		writeError(w, http.StatusServiceUnavailable, "catalog version browsing is not configured")
+		return
+	}
+	versions, err := s.catalogVersions(
+		r.Context(),
+		r.PathValue("provider"),
+		r.PathValue("id"),
+	)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"versions": versions})
+}
+
+func (s *Server) createCatalogPlanHandler(w http.ResponseWriter, r *http.Request) {
+	if s.createCatalogPlan == nil {
+		writeError(w, http.StatusServiceUnavailable, "catalog planning is not configured")
+		return
+	}
+	var request service.CatalogPlanRequest
+	r.Body = http.MaxBytesReader(w, r.Body, 32<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid catalog plan request: "+err.Error())
+		return
+	}
+	plan, err := s.createCatalogPlan(r.Context(), request)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, plan)
 }
 
 func (s *Server) refreshInventoryHandler(w http.ResponseWriter, _ *http.Request) {
