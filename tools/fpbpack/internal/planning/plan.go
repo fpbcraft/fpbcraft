@@ -504,7 +504,14 @@ func coalesceSatisfiedManagedAdds(plan *Plan, mods []management.Mod) {
 	for _, change := range plan.Changes {
 		operations := make([]FileOperation, 0, len(change.Operations))
 		for _, operation := range change.Operations {
-			if operation.Action != "add" || strings.TrimSpace(operation.TargetSHA512) == "" {
+			// Only dependency-driven additions may be satisfied by an already
+			// present byte-identical managed JAR. An explicit user-requested
+			// install must retain its operation so normal occupied-target
+			// validation can reject ambiguous cross-provider ownership.
+			if change.Requested ||
+				!change.DependencyDriven ||
+				operation.Action != "add" ||
+				strings.TrimSpace(operation.TargetSHA512) == "" {
 				operations = append(operations, operation)
 				continue
 			}
