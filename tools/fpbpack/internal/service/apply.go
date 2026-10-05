@@ -71,6 +71,7 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "plans", plan.ID+".json"), plan); err != nil {
 		return ApplyResult{}, fmt.Errorf("persist restore-point link: %w", err)
 	}
+	rollbackPlan := plan
 
 	manifest, err := s.loadBackupManifest(plan.BackupID)
 	if err != nil {
@@ -99,6 +100,7 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 		_ = s.rollbackPlanFiles(plan, manifest)
 		_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "state.json"), previousState)
 		_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "inventory.json"), previousSnapshot.Inventory)
+		_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "plans", rollbackPlan.ID+".json"), rollbackPlan)
 		s.state = previousState
 		s.snapshot = previousSnapshot
 	}()
