@@ -4,8 +4,11 @@ on:
   pull_request:
     paths:
       - "tools/fpbpack/**"
+      - "scripts/release_version.py"
+      - "tests/test_release_version.py"
       - ".github/workflows/fpbpack.yml"
       - ".github/workflows/fpbpack-release.yml"
+      - ".github/workflows/release.yml"
 
 permissions:
   contents: read
@@ -15,6 +18,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Check release version tooling
+        run: python -m unittest discover -s tests -p "test_release_version.py"
 
       - uses: actions/setup-node@v6
         with:
