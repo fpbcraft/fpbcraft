@@ -140,8 +140,16 @@ func inspectFile(root, path string, location Location) (ModFile, error) {
 
 	sha1Hash := sha1.New()
 	sha512Hash := sha512.New()
-	if _, err := io.Copy(io.MultiWriter(sha1Hash, sha512Hash), file); err != nil {
+	normalizedLength := &normalizedLengthWriter{}
+	if _, err := io.Copy(io.MultiWriter(sha1Hash, sha512Hash, normalizedLength), file); err != nil {
 		return ModFile{}, fmt.Errorf("hash %s: %w", path, err)
+	}
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return ModFile{}, fmt.Errorf("rewind %s for CurseForge fingerprint: %w", path, err)
+	}
+	curseForgeFingerprint, err := computeCurseForgeFingerprint(file, normalizedLength.n)
+	if err != nil {
+		return ModFile{}, fmt.Errorf("CurseForge fingerprint %s: %w", path, err)
 	}
 
 	relative, err := filepath.Rel(root, path)
@@ -149,12 +157,13 @@ func inspectFile(root, path string, location Location) (ModFile, error) {
 		return ModFile{}, fmt.Errorf("make path relative to server root: %w", err)
 	}
 	mod := ModFile{
-		Location: location,
-		Path:     filepath.ToSlash(relative),
-		Filename: filepath.Base(path),
-		Size:     info.Size(),
-		SHA1:     hex.EncodeToString(sha1Hash.Sum(nil)),
-		SHA512:   hex.EncodeToString(sha512Hash.Sum(nil)),
+		Location:              location,
+		Path:                  filepath.ToSlash(relative),
+		Filename:              filepath.Base(path),
+		Size:                  info.Size(),
+		SHA1:                  hex.EncodeToString(sha1Hash.Sum(nil)),
+		SHA512:                hex.EncodeToString(sha512Hash.Sum(nil)),
+		CurseForgeFingerprint: curseForgeFingerprint,
 	}
 
 	metadata, err := ReadMetadata(path)

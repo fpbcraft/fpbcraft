@@ -29,6 +29,14 @@ func run(args []string) int {
 	switch args[0] {
 	case "inventory":
 		return runInventory(args[1:])
+	case "catalog":
+		return runCatalog(args[1:])
+	case "doctor":
+		return runDoctor(args[1:])
+	case "updates":
+		return runUpdates(args[1:])
+	case "serve":
+		return runServe(args[1:])
 	case "version", "--version", "-version":
 		fmt.Printf("fpbpack %s\n", version)
 		return 0
@@ -47,14 +55,29 @@ func printUsage() {
 
 Usage:
   fpbpack inventory --server-root PATH [options]
+  fpbpack catalog --inventory FILE [options]
+  fpbpack doctor --inventory FILE --report FILE [options]
+  fpbpack updates --report FILE [options]
+  fpbpack serve --inventory FILE --report FILE [options]
   fpbpack version
 
 Inventory is read-only. It scans:
   mods/*.jar
   automodpack/host-modpack/main/mods/*.jar
 
+Catalog converts a verified inventory into a safe partial Packwiz catalog,
+deduplicating identical artifacts and withholding ambiguous project versions.
+
+Doctor compares current inventory with the accepted catalog state and reports
+management drift without mutating files. Serve hosts the embedded web GUI and
+the same read-only management API from one HTTP process and origin.
+
 Options are available with:
-  fpbpack inventory --help`)
+  fpbpack inventory --help
+  fpbpack catalog --help
+  fpbpack doctor --help
+  fpbpack updates --help
+  fpbpack serve --help`)
 }
 
 func runInventory(args []string) int {
@@ -87,14 +110,15 @@ func runInventory(args []string) int {
 	lookupFailed := false
 	if !*offline && len(result.Mods) > 0 {
 		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
-		defer cancel()
 		matches, err := (inventory.ModrinthClient{BaseURL: *modrinthAPI}).Match(ctx, result.Mods)
+		cancel()
 		if err != nil {
 			result.ModrinthError = err.Error()
 			lookupFailed = true
 		} else {
 			inventory.ApplyModrinthMatches(&result, matches)
 		}
+
 	}
 
 	renderInventory(result)
@@ -108,7 +132,13 @@ func runInventory(args []string) int {
 	}
 
 	if lookupFailed {
-		fmt.Fprintln(os.Stderr, "\nModrinth matching failed; local inventory is complete but remote matches are not. Exit status 2.")
+		if result.ModrinthError != "" {
+			fmt.Fprintf(os.Stderr, "\nModrinth matching failed: %s\n", result.ModrinthError)
+		}
+		if result.CurseForgeError != "" {
+			fmt.Fprintf(os.Stderr, "\nCurseForge matching failed: %s\n", result.CurseForgeError)
+		}
+		fmt.Fprintln(os.Stderr, "Local inventory is complete, but remote source matching is incomplete. Exit status 2.")
 		return 2
 	}
 	return 0
@@ -116,17 +146,22 @@ func runInventory(args []string) int {
 
 func renderInventory(result inventory.Inventory) {
 	fmt.Println("FPBPack inventory")
-	fmt.Printf("Server root: %s\n", result.ServerRoot)
+	fmt.Printf("Version:           %s\n", version)
+	fmt.Printf("Schema:            %d\n", result.SchemaVersion)
+	fmt.Printf("Server root:       %s\n", result.ServerRoot)
 	fmt.Printf("Server/common JARs: %d\n", result.Summary.Server)
 	fmt.Printf("Client-only JARs:  %d\n", result.Summary.Client)
 	fmt.Printf("Total JARs:        %d\n", result.Summary.Total)
 	if result.ModrinthChecked {
 		fmt.Printf("Modrinth exact:    %d\n", result.Summary.ModrinthExact)
-		fmt.Printf("Unmatched:         %d\n", result.Summary.Unmatched)
 	} else if result.ModrinthError != "" {
 		fmt.Printf("Modrinth:          LOOKUP FAILED (%s)\n", result.ModrinthError)
 	} else {
 		fmt.Println("Modrinth:          skipped")
+	}
+	fmt.Println("CurseForge:        deferred to catalog stage (Packwiz)")
+	if result.ModrinthChecked {
+		fmt.Printf("Unmatched:         %d\n", result.Summary.Unmatched)
 	}
 	if result.Summary.MetadataUnreadable > 0 {
 		fmt.Printf("Metadata errors:   %d\n", result.Summary.MetadataUnreadable)
@@ -142,6 +177,8 @@ func renderInventory(result inventory.Inventory) {
 		match := "-"
 		if mod.Modrinth != nil {
 			match = "modrinth"
+		} else if mod.CurseForge != nil {
+			match = "curseforge"
 		} else if !result.ModrinthChecked {
 			match = "unchecked"
 		}

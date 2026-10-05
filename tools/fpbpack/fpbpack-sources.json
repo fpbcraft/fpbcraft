@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "sha512": "254fa5a5c8c1816e24aceadd5e5412eb1da762680a94510042b537af4fe9a960179b1ba5271c50d5ef6a4696e7b28e8fa511956aa2873ca5f60d14d7ac890120",
+      "type": "pinned_local",
+      "reason": "BlueMap 5.7-17 is intentionally managed outside Packwiz; leave the installed JAR untouched."
+    },
+    {
+      "sha512": "251f6254c0571a50634a2390575ec5ee237b14878a7268418ba593a09e4797b01d080bee91443698836779bd0ac10c1b241fd7497b149a000089db1262468372",
+      "type": "pinned_local",
+      "reason": "BlueMap3D is intentionally managed outside Packwiz; leave the installed JAR untouched."
+    },
+    {
+      "sha512": "41828787ee51131a1a7e8f007b9ad314f088c3528534db428cab1ae0b668de66a72c2b3bddad8e033020135ab6e6bd3cc8e7c969204a0aec705c6ddaa96aec92",
+      "type": "pinned_local",
+      "reason": "BlueMapModelLoaders is intentionally managed outside Packwiz; leave the installed JAR untouched."
+    },
+    {
+      "sha512": "4737a51b7354a01577d9201dabda8f333c8ce2fbfb4cf0299b5dff18974f3202ace10106a8d01aa162d9a680d9cd1ddbdd2304560bdfdd9dcdcb2068733de298",
+      "type": "pinned_local",
+      "reason": "FPBCraft compatibility fixes are intentionally managed outside Packwiz; leave the installed JAR untouched."
+    },
+    {
+      "sha512": "afc70d3b071aa1f23168b70205231b6d81c75437a1faca2c828f6169094a4a828cc8ca4c80fca8e0032db54abcee595ab824399d17d752463984e6fc6e149faa",
+      "type": "pinned_local",
+      "reason": "Player History BlueMap is intentionally managed outside Packwiz; leave the installed JAR untouched."
+    },
+    {
+      "sha512": "22b2f48d7eb0d4663aec8bd531afb4048af37e213a0741076cb36d6edf6c8165540e6eca6d8544e299329bd8806c86b7668f5ff8c2f0ffd0b9b7e76f4b25bbc0",
+      "type": "pinned_local",
+      "reason": "Player History Recorder is intentionally managed outside Packwiz; leave the installed JAR untouched."
+    }
+  ]
+}
