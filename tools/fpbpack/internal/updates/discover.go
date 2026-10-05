@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/catalog"
@@ -49,46 +50,55 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 	}
 	projects, projectErr := client.ListProjects(ctx, projectIDs)
 
-	for _, entry := range cat.Managed {
-		switch entry.Provider {
-		case "modrinth":
-			candidate := discoverModrinthCandidate(ctx, client, entry, projects[entry.ProjectID], installedModrinth, opts)
-			if projectErr != nil {
-				candidate.Reasons = append(candidate.Reasons, Reason{
-					Code: "project_metadata_unavailable",
-					Message: "Project metadata could not be refreshed; installed identity was retained.",
-				})
+	candidates := make([]Candidate, len(cat.Managed))
+	const providerConcurrency = 6
+	semaphore := make(chan struct{}, providerConcurrency)
+	var wait sync.WaitGroup
+
+	for index, entry := range cat.Managed {
+		index, entry := index, entry
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			select {
+			case semaphore <- struct{}{}:
+				defer func() { <-semaphore }()
+			case <-ctx.Done():
+				candidates[index] = blockedProviderCandidate(
+					entry,
+					"provider_discovery_cancelled",
+					"Update discovery was cancelled before this provider could be checked.",
+				)
+				return
 			}
-			report.Candidates = append(report.Candidates, candidate)
-		case "curseforge", "github":
-			report.Candidates = append(report.Candidates, Candidate{
-				Key:            entry.Provider + ":" + entry.ProjectID,
-				Provider:       entry.Provider,
-				ProjectID:      entry.ProjectID,
-				Name:           entry.Name,
-				Side:           entry.Side,
-				Deployment:     entry.Deployment,
-				Installed:      installedRelease(entry),
-				Classification: ClassificationBlocked,
-				Reasons: []Reason{{
-					Code: "provider_discovery_pending",
-					Message: "Update discovery for this provider is not implemented yet.",
-				}},
-			})
-		default:
-			report.Candidates = append(report.Candidates, Candidate{
-				Key:            entry.Provider + ":" + entry.ProjectID,
-				Provider:       entry.Provider,
-				ProjectID:      entry.ProjectID,
-				Name:           entry.Name,
-				Side:           entry.Side,
-				Deployment:     entry.Deployment,
-				Installed:      installedRelease(entry),
-				Classification: ClassificationBlocked,
-				Reasons: []Reason{{Code: "unsupported_provider", Message: "No update provider is registered for this managed artifact."}},
-			})
-		}
+
+			switch entry.Provider {
+			case "modrinth":
+				candidate := discoverModrinthCandidate(ctx, client, entry, projects[entry.ProjectID], installedModrinth, opts)
+				if projectErr != nil {
+					candidate.Reasons = append(candidate.Reasons, Reason{
+						Code: "project_metadata_unavailable",
+						Message: "Project metadata could not be refreshed; installed identity was retained.",
+					})
+				}
+				candidates[index] = candidate
+			case "curseforge", "github":
+				candidates[index] = blockedProviderCandidate(
+					entry,
+					"provider_discovery_pending",
+					"Update discovery for this provider is not implemented yet.",
+				)
+			default:
+				candidates[index] = blockedProviderCandidate(
+					entry,
+					"unsupported_provider",
+					"No update provider is registered for this managed artifact.",
+				)
+			}
+		}()
 	}
+	wait.Wait()
+	report.Candidates = append(report.Candidates, candidates...)
 
 	sort.Slice(report.Candidates, func(i, j int) bool {
 		if report.Candidates[i].Name != report.Candidates[j].Name {
@@ -98,6 +108,27 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 	})
 	report.RecalculateSummary()
 	return report
+}
+
+func blockedProviderCandidate(entry catalog.Entry, code, message string) Candidate {
+	candidate := Candidate{
+		Key:            entry.Provider + ":" + entry.ProjectID,
+		Provider:       entry.Provider,
+		ProjectID:      entry.ProjectID,
+		Name:           entry.Name,
+		Side:           entry.Side,
+		Deployment:     entry.Deployment,
+		Installed:      installedRelease(entry),
+		Classification: ClassificationBlocked,
+		Reasons:        []Reason{{Code: code, Message: message}},
+	}
+	switch entry.Provider {
+	case "github":
+		if entry.Repository != "" {
+			candidate.ProjectURL = "https://github.com/" + entry.Repository
+		}
+	}
+	return candidate
 }
 
 func discoverModrinthCandidate(
