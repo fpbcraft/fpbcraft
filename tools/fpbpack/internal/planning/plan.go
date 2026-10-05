@@ -44,6 +44,7 @@ type Artifact struct {
 	SHA512     string `json:"sha512,omitempty"`
 	Deployment     string `json:"deployment"`
 	ManualDownload bool   `json:"manual_download,omitempty"`
+	ManualProvided bool   `json:"manual_provided,omitempty"`
 	ManualURL      string `json:"manual_url,omitempty"`
 }
 
@@ -89,6 +90,7 @@ type Plan struct {
 	Verified             bool                 `json:"verified"`
 	VerifiedAt           *time.Time            `json:"verified_at,omitempty"`
 	BackupID             string                `json:"backup_id,omitempty"`
+	AppliedAt            *time.Time             `json:"applied_at,omitempty"`
 	RequiresServerStop   bool                  `json:"requires_server_stop"`
 	RequiresBackup       bool                  `json:"requires_backup"`
 }
@@ -133,10 +135,23 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 	for _, candidate := range report.Candidates {
 		candidates[candidate.Key] = candidate
 	}
-	mods := make(map[string]management.Mod, len(snapshot.Mods))
+	mods := make(map[string]management.Mod, len(snapshot.Mods)*2)
+	projectCounts := map[string]int{}
 	for _, mod := range snapshot.Mods {
 		if mod.Provider != "" && mod.ProjectID != "" {
-			mods[mod.Provider+":"+mod.ProjectID] = mod
+			projectCounts[mod.Provider+":"+mod.ProjectID]++
+		}
+	}
+	for _, mod := range snapshot.Mods {
+		if mod.Provider == "" || mod.ProjectID == "" {
+			continue
+		}
+		base := mod.Provider + ":" + mod.ProjectID
+		if strings.TrimSpace(mod.ID) != "" {
+			mods[mod.ID] = mod
+		}
+		if projectCounts[base] == 1 || strings.TrimSpace(mod.ID) == "" {
+			mods[base] = mod
 		}
 	}
 
@@ -162,13 +177,13 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 		target := *candidate.Target
 		validateTargetArtifact(&plan, key, candidate.Name, target)
 
-		mod, installed := mods[candidate.Provider+":"+candidate.ProjectID]
+		mod, installed := mods[candidate.Key]
 		if !installed {
 			addBlocker(&plan, "installed_artifact_missing", key, "The currently managed artifact could not be matched to the live inventory.")
 		}
 
-		targetPath := target.Filename
-		if installed && mod.Path != "" {
+		targetPath := filepath.ToSlash(filepath.Join(modsPath(snapshot.Inventory, candidate.Deployment), target.Filename))
+		if installed && mod.Path != "" && mod.Deployment == candidate.Deployment {
 			targetPath = filepath.ToSlash(filepath.Join(filepath.Dir(mod.Path), target.Filename))
 		}
 		change := Change{
@@ -229,6 +244,7 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 		}
 		return plan.Changes[i].CandidateKey < plan.Changes[j].CandidateKey
 	})
+	coalesceSatisfiedManagedAdds(&plan, snapshot.Mods)
 	validateOperationCollisions(&plan, snapshot.Mods)
 	plan.Warnings = uniqueFindings(plan.Warnings)
 	plan.Blockers = uniqueFindings(plan.Blockers)
@@ -292,7 +308,9 @@ func appendDependencyClosure(
 				} else {
 					operation.Action = "replace"
 					operation.CurrentPath = mod.Path
-					operation.TargetPath = filepath.ToSlash(filepath.Join(filepath.Dir(mod.Path), target.Filename))
+					if mod.Deployment == deployment {
+						operation.TargetPath = filepath.ToSlash(filepath.Join(filepath.Dir(mod.Path), target.Filename))
+					}
 					operation.CurrentSHA512 = mod.SHA512
 					installedRelease = updatecheck.Release{
 						ID: dependency.InstalledVersion,
@@ -342,7 +360,7 @@ func appendDependencyClosure(
 }
 
 func appendChange(plan *Plan, change Change, changeIndex map[string]int) {
-	key := change.Artifact.Provider + ":" + change.Artifact.ProjectID
+	key := change.CandidateKey
 	if index, exists := changeIndex[key]; exists {
 		current := &plan.Changes[index]
 		if current.Target.ID != change.Target.ID {
@@ -407,6 +425,56 @@ func modsPath(inv inventory.Inventory, deployment inventory.Location) string {
 		return inv.ServerModsPath
 	}
 	return inventory.DefaultServerModsPath
+}
+
+func coalesceSatisfiedManagedAdds(plan *Plan, mods []management.Mod) {
+	liveByPath := make(map[string]management.Mod, len(mods))
+	for _, mod := range mods {
+		if strings.TrimSpace(mod.Path) == "" {
+			continue
+		}
+		liveByPath[filepath.ToSlash(filepath.Clean(mod.Path))] = mod
+	}
+
+	changes := make([]Change, 0, len(plan.Changes))
+	for _, change := range plan.Changes {
+		operations := make([]FileOperation, 0, len(change.Operations))
+		for _, operation := range change.Operations {
+			if operation.Action != "add" || strings.TrimSpace(operation.TargetSHA512) == "" {
+				operations = append(operations, operation)
+				continue
+			}
+
+			targetPath := filepath.ToSlash(filepath.Clean(operation.TargetPath))
+			live, occupied := liveByPath[targetPath]
+			if !occupied ||
+				live.Management != "managed" ||
+				!strings.EqualFold(strings.TrimSpace(live.SHA512), strings.TrimSpace(operation.TargetSHA512)) {
+				operations = append(operations, operation)
+				continue
+			}
+
+			name := live.Name
+			if strings.TrimSpace(name) == "" {
+				name = live.Filename
+			}
+			plan.Warnings = append(plan.Warnings, Finding{
+				Code: "dependency_already_satisfied",
+				CandidateKey: change.CandidateKey,
+				Message: fmt.Sprintf(
+					"Provider metadata described %s as an addition, but the exact required managed bytes are already present at %s; no filesystem change is needed for this dependency.",
+					name,
+					targetPath,
+				),
+			})
+		}
+		change.Operations = operations
+		if len(change.Operations) == 0 && change.DependencyDriven && !change.Requested {
+			continue
+		}
+		changes = append(changes, change)
+	}
+	plan.Changes = changes
 }
 
 func validateOperationCollisions(plan *Plan, mods []management.Mod) {

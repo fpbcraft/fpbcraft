@@ -5,6 +5,7 @@ import {KeyRound, RefreshCw, Save, Trash2} from 'lucide-react';
 import {PageHeader, Pill} from '@/components/ui';
 import {useManagement} from '@/components/management-provider';
 import {api} from '@/lib/api';
+import type {CraftyStatus} from '@/lib/management';
 
 interface RuntimeSettings {
   retention_count: number;
@@ -30,6 +31,13 @@ export default function SettingsPage() {
   const [curseForgeKey, setCurseForgeKey] = useState('');
   const [savingCurseForge, setSavingCurseForge] = useState(false);
   const [clearingCurseForge, setClearingCurseForge] = useState(false);
+  const [crafty, setCrafty] = useState<CraftyStatus | null>(null);
+  const [craftyURL, setCraftyURL] = useState('');
+  const [craftyServerID, setCraftyServerID] = useState('');
+  const [craftyToken, setCraftyToken] = useState('');
+  const [craftyInsecure, setCraftyInsecure] = useState(false);
+  const [savingCrafty, setSavingCrafty] = useState(false);
+  const [clearingCrafty, setClearingCrafty] = useState(false);
 
   useEffect(() => {
     void Promise.all([
@@ -39,6 +47,12 @@ export default function SettingsPage() {
       }),
       api<{providers: ProviderStatus[]}>('/api/providers').then((response) => {
         setProviders(response.providers);
+      }),
+      api<CraftyStatus>('/api/crafty').then((status) => {
+        setCrafty(status);
+        setCraftyURL(status.url ?? '');
+        setCraftyServerID(status.server_id ?? '');
+        setCraftyInsecure(status.allow_insecure ?? false);
       }),
     ]).catch((error: unknown) => {
       setSettingsError(error instanceof Error ? error.message : String(error));
@@ -101,6 +115,45 @@ export default function SettingsPage() {
       setSettingsError(error instanceof Error ? error.message : String(error));
     } finally {
       setClearingCurseForge(false);
+    }
+  };
+
+  const saveCrafty = async () => {
+    setSavingCrafty(true);
+    setSettingsError(null);
+    try {
+      const updated = await api<CraftyStatus>('/api/crafty', {
+        method: 'PUT',
+        body: JSON.stringify({
+          url: craftyURL,
+          server_id: craftyServerID,
+          api_token: craftyToken || undefined,
+          allow_insecure: craftyInsecure,
+        }),
+      });
+      setCrafty(updated);
+      setCraftyURL(updated.url ?? craftyURL);
+      setCraftyServerID(updated.server_id ?? craftyServerID);
+      setCraftyInsecure(updated.allow_insecure ?? craftyInsecure);
+      setCraftyToken('');
+    } catch (error: unknown) {
+      setSettingsError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setSavingCrafty(false);
+    }
+  };
+
+  const clearCraftyCredential = async () => {
+    setClearingCrafty(true);
+    setSettingsError(null);
+    try {
+      const updated = await api<CraftyStatus>('/api/crafty/credentials', {method: 'DELETE'});
+      setCrafty(updated);
+      setCraftyToken('');
+    } catch (error: unknown) {
+      setSettingsError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setClearingCrafty(false);
     }
   };
 
@@ -188,6 +241,99 @@ export default function SettingsPage() {
               </div>
             ))}
           </dl>
+        </section>
+
+        <section className="panel xl:col-span-2">
+          <div className="panel-header">
+            <div>
+              <div className="section-label">Crafty Controller</div>
+              <h2 className="mt-0.5 text-sm font-semibold">Minecraft server control</h2>
+            </div>
+            <Pill tone={crafty?.connected ? 'good' : crafty?.configured ? 'warn' : 'neutral'}>
+              {crafty?.connected
+                ? crafty.state
+                : crafty?.configured
+                  ? 'Connection failed'
+                  : 'Not configured'}
+            </Pill>
+          </div>
+          <div className="p-4">
+            <p className="mb-3 text-xs text-base-content/45">
+              Apply and Restore require Crafty to positively report this server as stopped.
+              The API token is saved in secrets.json with owner-only permissions and is never returned
+              to the browser.
+            </p>
+            {crafty?.detail ? (
+              <div className="mb-3 text-xs text-base-content/55">{crafty.detail}</div>
+            ) : null}
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="form-control">
+                <span className="mb-1 text-xs text-base-content/45">Crafty URL</span>
+                <input
+                  className="input input-sm input-bordered"
+                  value={craftyURL}
+                  onChange={(event) => setCraftyURL(event.target.value)}
+                  placeholder="https://crafty:8443"
+                />
+              </label>
+              <label className="form-control">
+                <span className="mb-1 text-xs text-base-content/45">Server ID / UUID</span>
+                <input
+                  className="input input-sm input-bordered"
+                  value={craftyServerID}
+                  onChange={(event) => setCraftyServerID(event.target.value)}
+                  placeholder="Crafty server ID"
+                />
+              </label>
+              <label className="form-control md:col-span-2">
+                <span className="mb-1 text-xs text-base-content/45">
+                  {crafty?.credential_source ? 'Replace API token' : 'API token'}
+                </span>
+                <div className="input input-sm input-bordered flex items-center gap-2">
+                  <KeyRound size={13} className="text-base-content/35" />
+                  <input
+                    className="min-w-0 grow"
+                    type="password"
+                    autoComplete="new-password"
+                    value={craftyToken}
+                    onChange={(event) => setCraftyToken(event.target.value)}
+                    placeholder={crafty?.credential_source ? 'Leave blank to keep current token' : 'Paste Crafty API token'}
+                  />
+                </div>
+              </label>
+            </div>
+            <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs">
+              <input
+                className="checkbox checkbox-sm"
+                type="checkbox"
+                checked={craftyInsecure}
+                onChange={(event) => setCraftyInsecure(event.target.checked)}
+              />
+              Allow Crafty's self-signed TLS certificate
+            </label>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                className="btn btn-sm btn-primary"
+                type="button"
+                disabled={savingCrafty || !craftyURL.trim() || !craftyServerID.trim() || (!craftyToken.trim() && !crafty?.credential_source)}
+                onClick={() => void saveCrafty()}
+              >
+                {savingCrafty ? <span className="loading loading-spinner loading-xs" /> : <Save size={13} />}
+                Validate & save
+              </button>
+              {crafty?.credential_source === 'saved' ? (
+                <button
+                  className="btn btn-sm btn-ghost"
+                  type="button"
+                  disabled={clearingCrafty}
+                  onClick={() => void clearCraftyCredential()}
+                >
+                  {clearingCrafty ? <span className="loading loading-spinner loading-xs" /> : <Trash2 size={13} />}
+                  Clear saved token
+                </button>
+              ) : null}
+            </div>
+          </div>
         </section>
 
         <section className="panel xl:col-span-2">

@@ -33,6 +33,10 @@ type Options struct {
 	CurseForgeAPIKey string
 	GitHubBaseURL     string
 	GitHubToken       string
+	CraftyURL         string
+	CraftyServerID    string
+	CraftyToken       string
+	CraftyAllowInsecure bool
 	BootstrapReport  string
 }
 
@@ -47,12 +51,19 @@ type UpdateRule struct {
 	ReviewAfter     *time.Time `json:"review_after,omitempty"`
 }
 
+type CraftySettings struct {
+	URL           string `json:"url,omitempty"`
+	ServerID      string `json:"server_id,omitempty"`
+	AllowInsecure bool   `json:"allow_insecure,omitempty"`
+}
+
 type State struct {
 	SchemaVersion int             `json:"schema_version"`
 	CreatedAt     time.Time       `json:"created_at"`
 	UpdatedAt     time.Time       `json:"updated_at"`
 	ImportedFrom  string          `json:"imported_from,omitempty"`
 	Settings      RuntimeSettings       `json:"settings"`
+	Crafty        CraftySettings        `json:"crafty,omitempty"`
 	UpdateRules   map[string]UpdateRule `json:"update_rules,omitempty"`
 	Catalog       catalog.Report        `json:"catalog"`
 }
@@ -90,6 +101,16 @@ func New(ctx context.Context, options Options) (*Service, error) {
 	service := &Service{options: options}
 	if err := service.loadOrBootstrapState(ctx); err != nil {
 		return nil, err
+	}
+	artifactIDsChanged := catalog.EnsureManagedArtifactIDs(service.state.Catalog.Managed)
+	placementWarningsBefore, _ := json.Marshal(service.state.Catalog.Placement)
+	service.state.Catalog.RecalculateSummary()
+	placementWarningsAfter, _ := json.Marshal(service.state.Catalog.Placement)
+	if artifactIDsChanged || string(placementWarningsBefore) != string(placementWarningsAfter) {
+		service.state.UpdatedAt = time.Now().UTC()
+		if err := service.persistState(); err != nil {
+			return nil, fmt.Errorf("persist catalog state normalization: %w", err)
+		}
 	}
 	if err := service.loadProviderSecrets(); err != nil {
 		return nil, err

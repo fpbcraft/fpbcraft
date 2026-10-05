@@ -179,7 +179,55 @@ func (client *ModrinthClient) GetVersion(ctx context.Context, versionID string) 
 }
 
 func (client *ModrinthClient) ListVersions(ctx context.Context, projectID string) ([]modrinthVersion, error) {
-	endpoint := client.baseURL() + "/project/" + url.PathEscape(projectID) + "/version?include_changelog=true"
+	return client.listVersions(ctx, projectID, "", "", false)
+}
+
+func (client *ModrinthClient) ListCompatibleVersions(
+	ctx context.Context,
+	projectID string,
+	minecraft string,
+	loader string,
+) ([]modrinthVersion, error) {
+	return client.listVersions(ctx, projectID, minecraft, loader, false)
+}
+
+func (client *ModrinthClient) ListCompatibleVersionsWithChangelog(
+	ctx context.Context,
+	projectID string,
+	minecraft string,
+	loader string,
+) ([]modrinthVersion, error) {
+	return client.listVersions(ctx, projectID, minecraft, loader, true)
+}
+
+func (client *ModrinthClient) listVersions(
+	ctx context.Context,
+	projectID string,
+	minecraft string,
+	loader string,
+	includeChangelog bool,
+) ([]modrinthVersion, error) {
+	query := url.Values{}
+	if includeChangelog {
+		query.Set("include_changelog", "true")
+	} else {
+		query.Set("include_changelog", "false")
+	}
+	if minecraft = strings.TrimSpace(minecraft); minecraft != "" {
+		encoded, err := json.Marshal([]string{minecraft})
+		if err != nil {
+			return nil, err
+		}
+		query.Set("game_versions", string(encoded))
+	}
+	if loader = strings.TrimSpace(loader); loader != "" {
+		encoded, err := json.Marshal([]string{loader})
+		if err != nil {
+			return nil, err
+		}
+		query.Set("loaders", string(encoded))
+	}
+	endpoint := client.baseURL() + "/project/" + url.PathEscape(projectID) + "/version?" + query.Encode()
 	var versions []modrinthVersion
 	if err := client.getJSON(ctx, endpoint, &versions); err != nil {
 		return nil, fmt.Errorf("Modrinth versions for %s: %w", projectID, err)

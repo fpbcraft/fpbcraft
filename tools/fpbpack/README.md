@@ -146,7 +146,7 @@ Blocking source/catalog findings can be repaired in the GUI. **Updates → Fix i
 
 Provider traffic is rate-aware: background work is deliberately slower/lower-concurrency than interactive per-mod refreshes, and provider requests retry 429/408/5xx responses with `Retry-After` / rate-limit-reset handling and bounded exponential fallback.
 
-CurseForge projects that disable third-party direct downloads are shown as **Review / manual download required** instead of permanently Blocked. FPBPack keeps the direct CurseForge file-page link in Updates and persisted plan review. Automatic Apply remains blocked until Slice 3 can accept and verify the manually downloaded JAR.
+CurseForge projects that disable third-party direct downloads are shown as **Review / manual download required** instead of permanently Blocked. FPBPack keeps the direct CurseForge file-page link in Updates and persisted plan review. From Review, upload the JAR downloaded from CurseForge; FPBPack streams it into its state cache, verifies the provider checksum, computes SHA-512, and rejects any mismatch before the plan can become ready.
 
 The GUI also provides state-only remediation for blocking diagnostics. **Updates → Fix issues** opens **Mods → Needs attention**, where an installed artifact can be refreshed individually, explicitly marked unmanaged, or assigned a verified GitHub release source. GitHub assignment hashes the installed JAR and requires its SHA-256 to match the selected release asset. Missing accepted catalog entries can be explicitly forgotten. None of these actions mutates the live JAR.
 
@@ -166,34 +166,25 @@ Open the same address in a browser, for example `http://tower.local:8787/`. The 
 
 Release binaries embed the static GUI. For local frontend development, build/export the GUI separately and point FPBPack at it with `--web-dir web/out`.
 
-The API still has **no live-mod mutation endpoints**. Slice 2 adds only FPBPack-owned planning/state mutations:
+The management API covers discovery, remediation, planning, server control, Apply, and Restore:
 
 - `GET /healthz`
-- `GET /api/status`
-- `GET /api/inventory`
-- `GET /api/mods`
-- `GET /api/diagnostics`
-- `GET /api/updates`
-- `POST /api/refresh`
-- `POST /api/updates/check`
-- `GET /api/plans`
-- `POST /api/plans`
-- `GET /api/plans/{id}`
+- `GET /api/status`, `/api/inventory`, `/api/mods`, `/api/diagnostics`, `/api/updates`
+- `POST /api/refresh`, `POST /api/updates/check`
+- `GET|POST /api/plans`, `GET /api/plans/{id}`
+- `POST /api/placement-plans`
+- `POST /api/plans/{id}/manual-artifact?candidate_key=...`
+- `POST /api/plans/{id}/apply`
 - `GET /api/history`
-- `GET /api/settings`
-- `PUT /api/settings`
-- `GET /api/update-rules`
-- `PUT /api/update-rules`
-- `DELETE /api/update-rules?key=...`
-- `GET /api/providers`
-- `PUT /api/providers/{id}/credentials`
-- `DELETE /api/providers/{id}/credentials`
-- `POST /api/mod-management`
-- `POST /api/mod-metadata/refresh`
-- `POST /api/mod-management`
-- `POST /api/mod-metadata/refresh`
+- `POST /api/backups/{id}/restore` with explicit confirmation
+- `GET|PUT /api/settings`
+- update-rule, provider-credential, mod-management, and per-mod refresh endpoints
+- `GET|PUT /api/crafty`, `DELETE /api/crafty/credentials`
+- `POST /api/server/start`, `POST /api/server/stop`
 
-The service owns inventory/reconciliation/update refreshes and persists generated cache snapshots under its state directory. Manual refresh/check requests return immediately and continue on a server-owned context, so reloading or closing the browser does not cancel provider discovery. Cancelled/timed-out refreshes never replace the last good update cache. Provider metadata refresh is non-destructive: transient failures retain the previous target, changelog, dependency and project metadata, mark it stale, and record the refresh error. The standalone `inventory`, `doctor`, and `updates` commands remain available for scripting and debugging, but are not required for GUI operation. Live-JAR mutation endpoints remain intentionally absent in Slice 2.
+Live mutation is deliberately narrower than the rest of the API. Apply accepts only a persisted ready/verified plan, rechecks the complete accepted managed state, requires Crafty to positively report the Minecraft server stopped, verifies cached target bytes again, and mutates only the exact file operations in that plan. Restore likewise requires the server stopped and verifies the currently applied files plus backup hashes before reverting them. An unknown or unreachable Crafty state fails closed.
+
+The service owns inventory/reconciliation/update refreshes and persists generated cache snapshots under its state directory. Manual refresh/check requests return immediately and continue on a server-owned context, so reloading or closing the browser does not cancel provider discovery. Cancelled/timed-out refreshes never replace the last good update cache. Provider metadata refresh is non-destructive: transient failures retain the previous target, changelog, dependency and project metadata, mark it stale, and record the refresh error. The standalone `inventory`, `doctor`, and `updates` commands remain available for scripting and debugging, but are not required for GUI operation.
 
 ## Plan & Protect
 
@@ -221,7 +212,21 @@ For a plan to be marked `ready`, FPBPack also:
 
 Plans and history are retained under the state directory. The default retention count is 20 and can be changed from Settings (1–100). Reducing retention prunes old plan records and their linked restore points.
 
-This is still a dry-run/protection stage. There is no endpoint or GUI action in Slice 2 that applies a plan to the live server.
+## Apply & Restore
+
+Review is the mandatory boundary before mutation. Normal update flow is:
+
+```text
+Check updates → select candidates → Review exact plan
+             → stop server in Crafty → Apply
+             → verify inventory/history → start server manually
+```
+
+Apply stages target JARs in their final filesystem directory and verifies SHA-512 before renaming them into place. Immediately before mutation it rechecks all blocking diagnostics, accepted managed identity/path/hash, target occupancy, and prefetched artifacts. A restore point contains both affected pre-change files and the complete accepted catalog state. If post-apply verification or persistence fails, FPBPack attempts to roll the filesystem and accepted state back to that restore point.
+
+Current placement and preferred placement are separate. Changing a preference does not silently move a JAR. **Review move** creates a same-version verified placement plan, caches the current bytes as its target artifact, creates a restore point, and sends the move through the same stopped-server Apply path. This works even when no version update exists.
+
+History records plan, Apply, manual-artifact verification, and Restore operations. Restore shows the exact affected paths, requires explicit confirmation, preserves unmanaged artifacts, and leaves server start manual.
 
 ### Web stack / visual system
 
@@ -251,7 +256,9 @@ docker run --rm \
 
 The image defaults to `fpbpack serve`, with `/server` and `/data` as the standard mounts. No command override or separate inventory/update generation job is required.
 
-The same image is suitable for an eventual Unraid template. Future write-capable slices will mount only the server/state paths FPBPack actually needs.
+For Apply/Restore, the server mount must be writable. FPBPack never clears a mod directory; writes are limited to verified plan operations and restore files. The state mount stores durable catalog state, cached artifacts, history, secrets, plans, and restore points.
+
+Crafty can be configured in **Settings → Crafty**. Environment fallbacks are also available: `FPBPACK_CRAFTY_URL`, `FPBPACK_CRAFTY_SERVER_ID`, `FPBPACK_CRAFTY_TOKEN`, and `FPBPACK_CRAFTY_INSECURE=true` for an explicitly accepted self-signed TLS certificate.
 
 ## Unraid
 
@@ -289,4 +296,4 @@ For verified GitHub release sources, `FPBPACK_GITHUB_TOKEN` is optional and can 
 
 Provider traffic is paced in two modes. Startup/automatic refresh uses a slower background policy with lower concurrency. Explicit **Check updates** and per-mod refresh use a faster interactive policy, while still sharing provider-wide pacing and honoring `Retry-After`, GitHub rate-limit reset headers, and bounded exponential backoff for transient errors.
 
-Slice 3 will add controlled live apply/restore. Deployment will only operate on files represented by a verified plan, and unmanaged/pinned artifacts remain protected.
+Crafty integration uses API v2 with bearer-token authentication. Start/Stop remain explicit user actions; Apply and Restore never restart the Minecraft server implicitly. Deployment operates only on files represented by a verified plan, and unmanaged/pinned artifacts remain protected.

@@ -4,13 +4,41 @@ Last updated: **2026-10-05**
 
 ## Active slice
 
-**Slice 2 — Plan & Protect: in progress**
+**Slice 3 — Apply & Restore: in progress**
 
-Working branch: `fpbcraft/fpbcraft:feat/plan-protect` → draft PR #13 against `main`.
+Working branch: `fpbcraft/fpbcraft:feat/apply-restore` → draft PR #15 against `main`.
 
-PR #10 has been merged. PR #13 contains the post-merge Slice 2 hardening/remediation work requested during real-server testing.
+Slices 1–2 and the release-only Docker CI adjustment are merged. PR #15 contains the combined Slice 3 backend/GUI work plus real-server remediation discovered while exercising Slice 2.
 
 The user merges PRs manually. Do not merge these branches automatically.
+
+### Slice 3 work currently in PR #15
+
+- [x] Multi-artifact management identity supports multiple independently managed JARs from one provider project/repository.
+- [x] Verified source assignment no longer removes sibling artifacts from the same repository.
+- [x] Mods expose current vs preferred server/common or AutoModpack client-only placement.
+- [x] Preferred placement is persisted separately from current placement; **Review move** creates a verified same-version placement plan even when no update exists.
+- [x] Updates can deep-link to the exact mod in Mods.
+- [x] Mods filters/page persist across reloads and remain URL-addressable.
+- [x] Blocking catalog entries missing from the live inventory render as explicit diagnostic rows instead of disappearing from the Mods table.
+- [x] Absent unresolved/managed catalog rows can be explicitly forgotten; the backend rechecks that no live file exists before changing state.
+- [x] Optional Modrinth environments such as `client_only_server_optional` on the server are not placement warnings; stale persisted warnings are normalized on startup.
+- [x] Crafty API v2 status, explicit Start/Stop controls, GUI configuration, secret token storage, and opt-in self-signed TLS support.
+- [x] Apply requires a persisted ready/verified plan and a positively confirmed stopped server.
+- [x] Apply rechecks the complete managed state for unrelated drift plus selected accepted identity/path/hash, target occupancy, and cached target hashes immediately before mutation.
+- [x] Target artifacts are staged and hash-verified before filesystem commit.
+- [x] Post-mutation failures roll files, accepted state, inventory, and plan state back.
+- [x] Restore points include the accepted pre-apply catalog state, including add-only plans.
+- [x] History exposes explicit confirmed Restore, shows the exact paths being reverted, suppresses already-restored actions, and keeps server restart manual.
+- [x] CurseForge/manual provider downloads can be uploaded from Review; provider checksums are verified before the plan can become ready.
+- [x] Crafty Start/Stop waits for the requested runtime state instead of assuming an accepted action completed immediately.
+- [x] Apply/Restore publish in-memory state atomically to concurrent API readers.
+- [x] Retention protects plans/backups referenced by retained or in-progress operation history.
+- [x] PR #15 CI/build/test validation is continuously exercised by the FPBPack workflow; latest real-pack remediation commits remain under the same gate.
+- [ ] Exercise Crafty configuration/status/start/stop against the real FPBCraft server.
+- [ ] Exercise a real reviewed Apply on the FPBCraft server while stopped.
+- [ ] Exercise Restore from the resulting history record.
+- [ ] Resolve any real-pack edge cases before marking Slice 3 complete.
 
 ## Architecture / runtime completed
 
@@ -23,6 +51,8 @@ The user merges PRs manually. Do not merge these branches automatically.
 - [x] Manual refresh/check jobs are server-owned, survive browser disconnects/page reloads, deduplicate active refreshes, and never persist cancelled partial reports.
 - [x] Provider discovery uses bounded concurrency instead of serial per-project requests.
 - [x] Provider HTTP calls are paced per provider/refresh mode and retry 429/408/5xx responses with Retry-After / rate-limit reset handling and bounded exponential fallback.
+- [x] Truncated HTTP-200 JSON bodies are retried atomically instead of publishing partially decoded provider metadata; exhausted retries report an incomplete provider response clearly.
+- [x] Broad Modrinth version history omits changelog payloads; changelogs are hydrated only for the configured Minecraft/loader versions to reduce response size without losing rejected-version visibility.
 - [x] Automatic/startup provider refresh uses a deliberately slower background policy; user-triggered checks use a faster interactive policy.
 - [x] Provider clients pace requests globally and honor Retry-After / rate-limit reset headers with bounded exponential backoff.
 - [x] Failed provider metadata refreshes preserve the last-good target/changelog/dependency/project metadata and mark it stale instead of flushing it.
@@ -81,6 +111,7 @@ The remaining decision/review hardening is being completed in PR #13 instead of 
 - [x] Coalesce duplicate dependency requirements.
 - [x] Block conflicting dependency target versions.
 - [x] Block target-path collisions, including collisions with unmanaged/pinned artifacts.
+- [x] Treat a dependency target already occupied by SHA-512-identical managed bytes as already satisfied, including when the installed JAR is managed under another provider identity; different/unmanaged occupants still block.
 - [x] Carry blocking inventory/drift diagnostics into plan readiness.
 
 ### Prefetch and verification

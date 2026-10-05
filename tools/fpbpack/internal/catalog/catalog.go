@@ -98,6 +98,7 @@ type Report struct {
 type Entry struct {
 	Provider    string             `json:"provider"`
 	ProjectID   string             `json:"project_id"`
+	ArtifactID  string             `json:"artifact_id,omitempty"`
 	VersionID   string             `json:"version_id,omitempty"`
 	FileID      uint32             `json:"file_id,omitempty"`
 	Name        string             `json:"name"`
@@ -114,7 +115,87 @@ type Entry struct {
 	SourcePaths []Source           `json:"source_paths"`
 }
 
+// EntryKey identifies one managed artifact. Project identity alone is not
+// sufficient because a single provider project/repository can ship multiple
+// independently installed JARs (for example recorder + BlueMap addon).
+func EntryKey(entry Entry) string {
+	base := entry.Provider + ":" + entry.ProjectID
+	if strings.TrimSpace(entry.ArtifactID) == "" {
+		return base
+	}
+	return base + "#" + entry.ArtifactID
+}
+
+// EnsureManagedArtifactIDs adds stable per-artifact discriminators only when a
+// provider project owns multiple managed JARs. Existing single-artifact keys
+// remain unchanged for backward compatibility. Once assigned, ArtifactID is
+// persisted and must be carried forward when that artifact is updated.
+func EnsureManagedArtifactIDs(entries []Entry) bool {
+	groups := map[string][]int{}
+	for index, entry := range entries {
+		base := entry.Provider + ":" + entry.ProjectID
+		groups[base] = append(groups[base], index)
+	}
+
+	changed := false
+	for base, indexes := range groups {
+		if len(indexes) < 2 {
+			continue
+		}
+		used := map[string]struct{}{}
+		for _, index := range indexes {
+			id := strings.TrimSpace(entries[index].ArtifactID)
+			if id == "" {
+				seed := entries[index].Filename
+				if len(entries[index].SourcePaths) > 0 {
+					source := entries[index].SourcePaths[0]
+					seed = string(source.Location) + ":" + strings.TrimPrefix(strings.ReplaceAll(source.Path, "\\", "/"), "./")
+				}
+				sum := sha256.Sum256([]byte(base + "\x00" + seed))
+				id = hex.EncodeToString(sum[:6])
+				entries[index].ArtifactID = id
+				changed = true
+			}
+			if _, exists := used[id]; exists {
+				sum := sha256.Sum256([]byte(base + "\x00" + entries[index].Filename + "\x00" + entries[index].SHA512))
+				id = hex.EncodeToString(sum[:8])
+				entries[index].ArtifactID = id
+				changed = true
+			}
+			used[id] = struct{}{}
+		}
+	}
+	return changed
+}
+
 func (r *Report) RecalculateSummary() {
+	EnsureManagedArtifactIDs(r.Managed)
+
+	// Placement warnings are derived state. Rebuild them from the accepted
+	// managed entries so source reassignment and preferred-placement changes
+	// cannot leave stale warnings behind. Optional-side environments remain
+	// valid in their optional deployment.
+	placement := make([]PlacementWarning, 0)
+	for _, entry := range r.Managed {
+		if strings.TrimSpace(entry.Environment) == "" ||
+			!placementMismatch(entry.Deployment, entry.Environment) {
+			continue
+		}
+		placement = append(placement, PlacementWarning{
+			ProjectID: entry.ProjectID,
+			Environment: entry.Environment,
+			Deployment: entry.Deployment,
+			Filename: entry.Filename,
+		})
+	}
+	sort.Slice(placement, func(i, j int) bool {
+		if placement[i].Filename != placement[j].Filename {
+			return placement[i].Filename < placement[j].Filename
+		}
+		return placement[i].ProjectID < placement[j].ProjectID
+	})
+	r.Placement = placement
+
 	summary := r.Summary
 	summary.GeneratedProjects = len(r.Managed)
 	summary.Unresolved = len(r.Unresolved)

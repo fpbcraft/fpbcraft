@@ -204,7 +204,7 @@ func normalizeNames(values []string) []string {
 
 func blockedProviderCandidate(entry catalog.Entry, code, message string) Candidate {
 	candidate := Candidate{
-		Key:            entry.Provider + ":" + entry.ProjectID,
+		Key:            catalog.EntryKey(entry),
 		Provider:       entry.Provider,
 		ProjectID:      entry.ProjectID,
 		Name:           entry.Name,
@@ -240,7 +240,7 @@ func discoverModrinthCandidate(
 		projectURL = "https://modrinth.com/mod/" + project.Slug
 	}
 	candidate := Candidate{
-		Key:        "modrinth:" + entry.ProjectID,
+		Key:        catalog.EntryKey(entry),
 		Provider:   "modrinth",
 		ProjectID:  entry.ProjectID,
 		Name:       name,
@@ -300,8 +300,36 @@ func discoverModrinthCandidate(
 	target := valid[0]
 	release := releaseFromModrinth(target)
 	candidate.Target = &release
-	candidate.Changelogs = changelogEntries(valid)
 	candidate.Classification = ClassificationSafe
+
+	// Keep the broad version-history request lightweight so large projects do
+	// not need to return years of changelog text. Hydrate changelogs only for
+	// versions compatible with the configured Minecraft/loader pair.
+	changelogVersions, changelogErr := client.ListCompatibleVersionsWithChangelog(
+		ctx,
+		entry.ProjectID,
+		opts.Minecraft,
+		opts.Loader,
+	)
+	if changelogErr == nil {
+		relevant := make([]modrinthVersion, 0, len(changelogVersions))
+		for _, version := range changelogVersions {
+			if !version.DatePublished.After(current.DatePublished) {
+				continue
+			}
+			if len(rejectionReasons(version, opts.Minecraft, opts.Loader)) > 0 {
+				continue
+			}
+			relevant = append(relevant, version)
+		}
+		candidate.Changelogs = changelogEntries(relevant)
+	} else {
+		candidate.Changelogs = changelogEntries(valid)
+		candidate.Reasons = append(candidate.Reasons, Reason{
+			Code: "changelog_refresh_failed",
+			Message: "Compatible releases were resolved, but their changelogs could not be refreshed: " + changelogErr.Error(),
+		})
+	}
 
 	if target.VersionType != "" && target.VersionType != "release" {
 		promote(&candidate, ClassificationReview, Reason{
@@ -543,7 +571,7 @@ func (r dependencyResolver) resolveTarget(
 		return version, nil
 	}
 
-	versions, err := r.client.ListVersions(r.ctx, projectID)
+	versions, err := r.client.ListCompatibleVersions(r.ctx, projectID, r.opts.Minecraft, r.opts.Loader)
 	if err != nil {
 		return modrinthVersion{}, fmt.Errorf("required dependency %s versions could not be loaded: %w", projectID, err)
 	}

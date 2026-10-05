@@ -45,6 +45,7 @@ type Mod struct {
 	ProjectURL       string             `json:"project_url,omitempty"`
 	Side             string             `json:"side"`
 	Deployment       inventory.Location `json:"deployment"`
+	PreferredDeployment inventory.Location `json:"preferred_deployment"`
 	Management       string             `json:"management"`
 	Path             string             `json:"path"`
 	SHA512           string             `json:"sha512,omitempty"`
@@ -141,6 +142,7 @@ func BuildMods(inv inventory.Inventory, cat catalog.Report) []Mod {
 			InstalledVersion: displayVersion(file),
 			Side:             string(file.Location),
 			Deployment:       file.Location,
+			PreferredDeployment: file.Location,
 			Management:       "unresolved",
 			Path:             file.Path,
 			SHA512:           file.SHA512,
@@ -149,6 +151,9 @@ func BuildMods(inv inventory.Inventory, cat catalog.Report) []Mod {
 		switch {
 		case isManaged:
 			mod.Management = "managed"
+			if managed.Deployment != "" {
+				mod.PreferredDeployment = managed.Deployment
+			}
 			mod.Provider = managed.Provider
 			mod.ProjectID = managed.ProjectID
 			if managed.Side != "" {
@@ -209,7 +214,7 @@ func displayVersion(file inventory.ModFile) string {
 
 func modID(file inventory.ModFile, managed catalog.Entry, isManaged bool) string {
 	if isManaged && managed.Provider != "" && managed.ProjectID != "" {
-		return managed.Provider + ":" + managed.ProjectID
+		return catalog.EntryKey(managed)
 	}
 	if file.SHA512 != "" {
 		hash := strings.ToLower(file.SHA512)

@@ -2,6 +2,7 @@ package management
 
 import (
 	"testing"
+	"time"
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/catalog"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
@@ -51,5 +52,48 @@ func TestBuildModsUsesDomainFields(t *testing.T) {
 	mod := mods[0]
 	if mod.ID != "modrinth:project-id" || mod.InstalledVersion != "1.2.3" || mod.ProjectURL == "" {
 		t.Fatalf("unexpected mod view: %#v", mod)
+	}
+}
+
+
+func TestBuildModsKeepsSiblingArtifactsDistinctAndShowsPreferredPlacement(t *testing.T) {
+	inv := inventory.Inventory{
+		SchemaVersion: inventory.SchemaVersion,
+		GeneratedAt: time.Now().UTC(),
+		Mods: []inventory.ModFile{
+			{Location: inventory.LocationServer, Path: "mods/recorder.jar", Filename: "recorder.jar", SHA512: "recorder"},
+			{Location: inventory.LocationServer, Path: "mods/bluemap.jar", Filename: "bluemap.jar", SHA512: "bluemap"},
+		},
+	}
+	cat := catalog.Report{
+		Managed: []catalog.Entry{
+			{
+				Provider: "github", ProjectID: "fpbcraft/player-history-mc",
+				Filename: "recorder.jar", SHA512: "recorder", Deployment: inventory.LocationServer,
+				SourcePaths: []catalog.Source{{Location: inventory.LocationServer, Path: "mods/recorder.jar"}},
+			},
+			{
+				Provider: "github", ProjectID: "fpbcraft/player-history-mc",
+				Filename: "bluemap.jar", SHA512: "bluemap", Deployment: inventory.LocationClient,
+				SourcePaths: []catalog.Source{{Location: inventory.LocationServer, Path: "mods/bluemap.jar"}},
+			},
+		},
+	}
+	catalog.EnsureManagedArtifactIDs(cat.Managed)
+	mods := BuildMods(inv, cat)
+	if len(mods) != 2 {
+		t.Fatalf("mods = %d", len(mods))
+	}
+	if mods[0].ID == mods[1].ID {
+		t.Fatalf("sibling artifacts share ID %q", mods[0].ID)
+	}
+	var bluemap Mod
+	for _, mod := range mods {
+		if mod.Filename == "bluemap.jar" {
+			bluemap = mod
+		}
+	}
+	if bluemap.Deployment != inventory.LocationServer || bluemap.PreferredDeployment != inventory.LocationClient {
+		t.Fatalf("placement current=%q preferred=%q", bluemap.Deployment, bluemap.PreferredDeployment)
 	}
 }

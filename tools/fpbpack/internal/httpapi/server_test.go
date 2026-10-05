@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -463,5 +464,173 @@ func TestProviderCredentialEndpointsNeverReturnSecret(t *testing.T) {
 	)
 	if del.Code != http.StatusOK {
 		t.Fatalf("DELETE credential = %d: %s", del.Code, del.Body.String())
+	}
+}
+
+
+func TestSlice3OperationalEndpoints(t *testing.T) {
+	var appliedID string
+	var restoredID string
+	var placementPath string
+	var manualPlanID string
+	var manualCandidate string
+	var manualBytes string
+	var started, stopped bool
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) {
+			return management.Snapshot{Status: management.Status{Mode: "read-only", ReadOnly: true}}, nil
+		},
+		"dev",
+		ServerOptions{
+			CraftyStatus: func(context.Context) service.CraftyStatus {
+				return service.CraftyStatus{
+					Configured: true,
+					Connected: true,
+					State: "stopped",
+					ServerID: "server-1",
+				}
+			},
+			StartServer: func(context.Context) (service.CraftyStatus, error) {
+				started = true
+				return service.CraftyStatus{Configured: true, Connected: true, State: "running"}, nil
+			},
+			StopServer: func(context.Context) (service.CraftyStatus, error) {
+				stopped = true
+				return service.CraftyStatus{Configured: true, Connected: true, State: "stopped"}, nil
+			},
+			CreatePlacementPlan: func(_ context.Context, path string) (planning.Plan, error) {
+				placementPath = path
+				return planning.Plan{ID: "plan-aaaaaaaaaaaaaaaa", Status: planning.StatusReady, Verified: true}, nil
+			},
+			ApplyPlan: func(_ context.Context, id string) (service.ApplyResult, error) {
+				appliedID = id
+				return service.ApplyResult{PlanID: id, Status: "success"}, nil
+			},
+			RestoreBackup: func(_ context.Context, id string) (service.RestoreResult, error) {
+				restoredID = id
+				return service.RestoreResult{BackupID: id, Status: "success"}, nil
+			},
+			AcceptManualArtifact: func(
+				_ context.Context,
+				planID string,
+				candidateKey string,
+				reader io.Reader,
+			) (planning.Plan, error) {
+				manualPlanID = planID
+				manualCandidate = candidateKey
+				content, err := io.ReadAll(reader)
+				if err != nil {
+					return planning.Plan{}, err
+				}
+				manualBytes = string(content)
+				return planning.Plan{
+					ID: planID,
+					Status: planning.StatusReady,
+					Verified: true,
+				}, nil
+			},
+		},
+	)
+
+	statusRecorder := httptest.NewRecorder()
+	handler.ServeHTTP(statusRecorder, httptest.NewRequest(http.MethodGet, "/api/status", nil))
+	if statusRecorder.Code != http.StatusOK {
+		t.Fatalf("status = %d", statusRecorder.Code)
+	}
+	var status struct {
+		Mode string `json:"mode"`
+		ReadOnly bool `json:"read_only"`
+		ServerState string `json:"server_state"`
+	}
+	if err := json.Unmarshal(statusRecorder.Body.Bytes(), &status); err != nil {
+		t.Fatal(err)
+	}
+	if status.Mode != "managed" || status.ReadOnly || status.ServerState != "stopped" {
+		t.Fatalf("unexpected managed status: %+v", status)
+	}
+
+	for route, flag := range map[string]*bool{
+		"/api/server/start": &started,
+		"/api/server/stop": &stopped,
+	} {
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, route, nil))
+		if recorder.Code != http.StatusAccepted {
+			t.Fatalf("%s = %d: %s", route, recorder.Code, recorder.Body.String())
+		}
+		if !*flag {
+			t.Fatalf("%s did not invoke server control", route)
+		}
+	}
+
+	placement := httptest.NewRecorder()
+	handler.ServeHTTP(
+		placement,
+		httptest.NewRequest(
+			http.MethodPost,
+			"/api/placement-plans",
+			strings.NewReader("{\"path\":\"mods/example.jar\"}"),
+		),
+	)
+	if placement.Code != http.StatusCreated || placementPath != "mods/example.jar" {
+		t.Fatalf("placement plan = %d path=%q body=%s", placement.Code, placementPath, placement.Body.String())
+	}
+
+	manual := httptest.NewRecorder()
+	handler.ServeHTTP(
+		manual,
+		httptest.NewRequest(
+			http.MethodPost,
+			"/api/plans/plan-0123456789abcdef/manual-artifact?candidate_key=curseforge%3A123",
+			strings.NewReader("jar-bytes"),
+		),
+	)
+	if manual.Code != http.StatusOK ||
+		manualPlanID != "plan-0123456789abcdef" ||
+		manualCandidate != "curseforge:123" ||
+		manualBytes != "jar-bytes" {
+		t.Fatalf(
+			"manual artifact = %d plan=%q candidate=%q bytes=%q body=%s",
+			manual.Code,
+			manualPlanID,
+			manualCandidate,
+			manualBytes,
+			manual.Body.String(),
+		)
+	}
+
+	apply := httptest.NewRecorder()
+	handler.ServeHTTP(
+		apply,
+		httptest.NewRequest(http.MethodPost, "/api/plans/plan-0123456789abcdef/apply", nil),
+	)
+	if apply.Code != http.StatusOK || appliedID != "plan-0123456789abcdef" {
+		t.Fatalf("apply = %d id=%q body=%s", apply.Code, appliedID, apply.Body.String())
+	}
+
+	unconfirmed := httptest.NewRecorder()
+	handler.ServeHTTP(
+		unconfirmed,
+		httptest.NewRequest(
+			http.MethodPost,
+			"/api/backups/backup-0123456789abcdef/restore",
+			strings.NewReader("{\"confirm\":false}"),
+		),
+	)
+	if unconfirmed.Code != http.StatusBadRequest || restoredID != "" {
+		t.Fatalf("unconfirmed restore = %d restored=%q", unconfirmed.Code, restoredID)
+	}
+
+	confirmed := httptest.NewRecorder()
+	handler.ServeHTTP(
+		confirmed,
+		httptest.NewRequest(
+			http.MethodPost,
+			"/api/backups/backup-0123456789abcdef/restore",
+			strings.NewReader("{\"confirm\":true}"),
+		),
+	)
+	if confirmed.Code != http.StatusOK || restoredID != "backup-0123456789abcdef" {
+		t.Fatalf("confirmed restore = %d restored=%q body=%s", confirmed.Code, restoredID, confirmed.Body.String())
 	}
 }

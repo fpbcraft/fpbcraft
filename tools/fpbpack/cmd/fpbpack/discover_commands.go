@@ -114,6 +114,10 @@ func runServe(args []string) int {
 		ModrinthBaseURL: *modrinthAPI,
 		CurseForgeAPIKey: strings.TrimSpace(os.Getenv("FPBPACK_CURSEFORGE_API_KEY")),
 		GitHubToken: strings.TrimSpace(os.Getenv("FPBPACK_GITHUB_TOKEN")),
+		CraftyURL: strings.TrimSpace(os.Getenv("FPBPACK_CRAFTY_URL")),
+		CraftyServerID: strings.TrimSpace(os.Getenv("FPBPACK_CRAFTY_SERVER_ID")),
+		CraftyToken: strings.TrimSpace(os.Getenv("FPBPACK_CRAFTY_TOKEN")),
+		CraftyAllowInsecure: strings.EqualFold(strings.TrimSpace(os.Getenv("FPBPACK_CRAFTY_INSECURE")), "true"),
 		BootstrapReport: *bootstrapReport,
 	})
 	if err != nil {
@@ -133,6 +137,7 @@ func runServe(args []string) int {
 			Refresh:      app.Refresh,
 			CheckUpdates: app.CheckUpdates,
 			CreatePlan:   app.CreatePlan,
+			CreatePlacementPlan: app.CreatePlacementPlan,
 			Plans:        app.Plans,
 			Plan:         app.Plan,
 			History:      app.History,
@@ -147,6 +152,14 @@ func runServe(args []string) int {
 			ClearProviderCredential: app.ClearProviderCredential,
 			ManageMod:      app.ManageMod,
 			RefreshMod:     app.RefreshModMetadata,
+			CraftyStatus:   app.CraftyStatus,
+			SetCraftyConfig: app.SetCraftyConfig,
+			ClearCraftyCredential: app.ClearCraftyCredential,
+			StartServer:    app.StartServer,
+			StopServer:     app.StopServer,
+			ApplyPlan:      app.ApplyPlan,
+			RestoreBackup:  app.RestoreBackup,
+			AcceptManualArtifact: app.AcceptManualArtifact,
 			BackgroundContext: ctx,
 			Web:          webHandler,
 		}),
@@ -181,7 +194,7 @@ func runServe(args []string) int {
 		}()
 	}
 
-	fmt.Printf("FPBPack listening on http://%s (GUI + read-only API)\n", *listen)
+	fmt.Printf("FPBPack listening on http://%s (GUI + management API)\n", *listen)
 	fmt.Println("Initial inventory/update refresh is running in the background.")
 	fmt.Printf("Server root: %s\n", *serverRoot)
 	fmt.Printf("State dir:   %s\n", *stateDir)

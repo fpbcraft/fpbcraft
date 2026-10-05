@@ -3,9 +3,11 @@ package updates
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -134,12 +136,49 @@ func doJSONWithRetry(
 		}
 
 		if response.StatusCode == http.StatusOK {
-			decodeErr := json.NewDecoder(io.LimitReader(response.Body, 32<<20)).Decode(target)
+			const maxJSONBytes = 32 << 20
+			body, readErr := io.ReadAll(io.LimitReader(response.Body, maxJSONBytes+1))
 			closeErr := response.Body.Close()
+			if readErr != nil {
+				if attempt < maxAttempts-1 {
+					if err := waitForRetry(ctx, retryDelay(nil, attempt)); err != nil {
+						return err
+					}
+					continue
+				}
+				return readErr
+			}
+			if closeErr != nil {
+				if attempt < maxAttempts-1 {
+					if err := waitForRetry(ctx, retryDelay(nil, attempt)); err != nil {
+						return err
+					}
+					continue
+				}
+				return closeErr
+			}
+			if len(body) > maxJSONBytes {
+				return fmt.Errorf("%s response exceeded %d byte JSON safety limit", provider, maxJSONBytes)
+			}
+			decodeErr := decodeJSONAtomically(body, target)
 			if decodeErr != nil {
+				if retryableJSONDecodeError(decodeErr) {
+					if attempt < maxAttempts-1 {
+						if err := waitForRetry(ctx, retryDelay(nil, attempt)); err != nil {
+							return err
+						}
+						continue
+					}
+					return fmt.Errorf(
+						"%s returned incomplete JSON after %d attempts: %w",
+						provider,
+						maxAttempts,
+						decodeErr,
+					)
+				}
 				return decodeErr
 			}
-			return closeErr
+			return nil
 		}
 
 		message, _ := io.ReadAll(io.LimitReader(response.Body, 4096))
@@ -156,6 +195,31 @@ func doJSONWithRetry(
 		}
 	}
 	return fmt.Errorf("%s request failed after retries", provider)
+}
+
+func decodeJSONAtomically(body []byte, target any) error {
+	value := reflect.ValueOf(target)
+	if value.Kind() != reflect.Pointer || value.IsNil() {
+		return json.Unmarshal(body, target)
+	}
+	temporary := reflect.New(value.Elem().Type())
+	if err := json.Unmarshal(body, temporary.Interface()); err != nil {
+		return err
+	}
+	value.Elem().Set(temporary.Elem())
+	return nil
+}
+
+func retryableJSONDecodeError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		return true
+	}
+	message := strings.ToLower(err.Error())
+	return strings.Contains(message, "unexpected eof") ||
+		strings.Contains(message, "unexpected end of json input")
 }
 
 func retryableProviderResponse(provider string, status int, header http.Header) bool {

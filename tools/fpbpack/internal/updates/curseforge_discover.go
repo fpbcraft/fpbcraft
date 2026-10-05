@@ -20,7 +20,7 @@ func discoverCurseForgeCandidate(
 	opts Options,
 ) Candidate {
 	candidate := Candidate{
-		Key:        "curseforge:" + entry.ProjectID,
+		Key:        catalog.EntryKey(entry),
 		Provider:   "curseforge",
 		ProjectID:  entry.ProjectID,
 		Name:       entry.Name,

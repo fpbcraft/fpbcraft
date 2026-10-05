@@ -27,6 +27,7 @@ type ModManagementRequest struct {
 	Repository string `json:"repository,omitempty"`
 	Tag        string `json:"tag,omitempty"`
 	Asset      string `json:"asset,omitempty"`
+	Placement  string `json:"placement,omitempty"`
 }
 
 type ModManagementResult struct {
@@ -59,6 +60,8 @@ func (s *Service) ManageMod(ctx context.Context, request ModManagementRequest) (
 		return s.assignGitHubSource(ctx, request)
 	case "forget_missing":
 		return s.forgetMissingAcceptedEntry(request.Path)
+	case "set_placement":
+		return s.setPreferredPlacement(request.Path, request.Placement)
 	default:
 		return ModManagementResult{}, fmt.Errorf("unsupported mod management action %q", request.Action)
 	}
@@ -118,7 +121,7 @@ func (s *Service) RefreshModMetadata(ctx context.Context, path string) (err erro
 	}
 	entry := result.Report.Managed[0]
 	entry.SourcePaths = s.sourcesForSHA(mod.SHA512)
-	s.replaceCatalogArtifact(mod, entry, "")
+	s.replaceCatalogArtifact(mod, entry)
 	if err := s.persistCatalogMutation(); err != nil {
 		return err
 	}
@@ -131,7 +134,7 @@ func (s *Service) markModUnmanaged(path string) (ModManagementResult, error) {
 		return ModManagementResult{}, fmt.Errorf("live mod %q was not found", path)
 	}
 
-	s.removeCatalogArtifact(mod, "")
+	s.removeCatalogArtifact(mod)
 	s.state.Catalog.Pinned = append(s.state.Catalog.Pinned, catalog.PinnedArtifact{
 		SHA512: mod.SHA512,
 		Filename: mod.Filename,
@@ -201,7 +204,7 @@ func (s *Service) assignModrinthSource(
 		Environment: verified.Environment,
 		SourcePaths: s.sourcesForSHA(mod.SHA512),
 	}
-	s.replaceCatalogArtifact(mod, entry, "modrinth:"+projectID)
+	s.replaceCatalogArtifact(mod, entry)
 	if err := s.persistCatalogMutation(); err != nil {
 		return ModManagementResult{}, err
 	}
@@ -269,7 +272,7 @@ func (s *Service) assignCurseForgeSource(
 		Deployment: mod.Location,
 		SourcePaths: s.sourcesForSHA(mod.SHA512),
 	}
-	s.replaceCatalogArtifact(mod, entry, "curseforge:"+projectID)
+	s.replaceCatalogArtifact(mod, entry)
 	if err := s.persistCatalogMutation(); err != nil {
 		return ModManagementResult{}, err
 	}
@@ -296,6 +299,9 @@ func (s *Service) assignGitHubSource(
 		return ModManagementResult{}, fmt.Errorf("live mod %q was not found", request.Path)
 	}
 	repository := strings.TrimSpace(request.Repository)
+	repository = strings.TrimPrefix(repository, "https://github.com/")
+	repository = strings.TrimPrefix(repository, "http://github.com/")
+	repository = strings.TrimRight(repository, "/")
 	tag := strings.TrimSpace(request.Tag)
 	asset := strings.TrimSpace(request.Asset)
 	if asset == "" {
@@ -303,6 +309,9 @@ func (s *Service) assignGitHubSource(
 	}
 	if repository == "" || tag == "" {
 		return ModManagementResult{}, fmt.Errorf("GitHub repository and installed release tag are required")
+	}
+	if strings.Count(repository, "/") != 1 {
+		return ModManagementResult{}, fmt.Errorf("GitHub repository must be in owner/repository form")
 	}
 
 	livePath := filepath.Join(s.options.ServerRoot, filepath.FromSlash(mod.Path))
@@ -339,7 +348,7 @@ func (s *Service) assignGitHubSource(
 		Asset: verified.Asset,
 		SourcePaths: s.sourcesForSHA(mod.SHA512),
 	}
-	s.replaceCatalogArtifact(mod, entry, "github:"+repository)
+	s.replaceCatalogArtifact(mod, entry)
 	if err := s.persistCatalogMutation(); err != nil {
 		return ModManagementResult{}, err
 	}
@@ -364,38 +373,149 @@ func (s *Service) assignGitHubSource(
 }
 
 func (s *Service) forgetMissingAcceptedEntry(path string) (ModManagementResult, error) {
+	relative, err := safeRelativePath(path)
+	if err != nil {
+		return ModManagementResult{}, err
+	}
+	livePath := filepath.Join(s.options.ServerRoot, relative)
+	if _, err := os.Stat(livePath); err == nil {
+		return ModManagementResult{}, fmt.Errorf(
+			"cannot forget %q because the live file still exists; refresh inventory or manage the installed artifact instead",
+			path,
+		)
+	} else if !os.IsNotExist(err) {
+		return ModManagementResult{}, fmt.Errorf("check live artifact before forgetting it: %w", err)
+	}
+
 	found := false
-	next := make([]catalog.Entry, 0, len(s.state.Catalog.Managed))
+	removedFilenames := map[string]struct{}{}
+
+	nextManaged := make([]catalog.Entry, 0, len(s.state.Catalog.Managed))
 	for _, entry := range s.state.Catalog.Managed {
-		sources := entry.SourcePaths[:0]
+		sources := make([]catalog.Source, 0, len(entry.SourcePaths))
+		removed := false
 		for _, source := range entry.SourcePaths {
 			if normalizeCatalogPath(source.Path) == path {
 				found = true
+				removed = true
 				continue
 			}
 			sources = append(sources, source)
 		}
 		entry.SourcePaths = sources
+		if removed {
+			removedFilenames[entry.Filename] = struct{}{}
+		}
 		if len(entry.SourcePaths) > 0 {
-			next = append(next, entry)
+			nextManaged = append(nextManaged, entry)
 		}
 	}
-	if !found {
-		return ModManagementResult{}, fmt.Errorf("no accepted managed entry uses path %q", path)
+	s.state.Catalog.Managed = nextManaged
+
+	nextUnresolved := make([]catalog.Unresolved, 0, len(s.state.Catalog.Unresolved))
+	for _, item := range s.state.Catalog.Unresolved {
+		sources := make([]catalog.Source, 0, len(item.Sources))
+		removed := false
+		for _, source := range item.Sources {
+			if normalizeCatalogPath(source.Path) == path {
+				found = true
+				removed = true
+				continue
+			}
+			sources = append(sources, source)
+		}
+		item.Sources = sources
+		if removed {
+			removedFilenames[item.Filename] = struct{}{}
+		}
+		if len(item.Sources) > 0 {
+			nextUnresolved = append(nextUnresolved, item)
+		}
 	}
-	s.state.Catalog.Managed = next
+	s.state.Catalog.Unresolved = nextUnresolved
+
+	// Duplicate records are derived catalog metadata. If a forgotten path was
+	// one side of a former duplicate, remove that stale source as well.
+	nextDuplicates := make([]catalog.Duplicate, 0, len(s.state.Catalog.Duplicates))
+	for _, duplicate := range s.state.Catalog.Duplicates {
+		files := make([]catalog.Source, 0, len(duplicate.Files))
+		for _, source := range duplicate.Files {
+			if normalizeCatalogPath(source.Path) == path {
+				continue
+			}
+			files = append(files, source)
+		}
+		duplicate.Files = files
+		if len(duplicate.Files) > 1 {
+			nextDuplicates = append(nextDuplicates, duplicate)
+		}
+	}
+	s.state.Catalog.Duplicates = nextDuplicates
+
+	if !found {
+		return ModManagementResult{}, fmt.Errorf("no absent catalog entry uses path %q", path)
+	}
+
+	// Placement warnings are meaningful only while the referenced managed
+	// artifact is still represented in the accepted catalog.
+	if len(removedFilenames) > 0 {
+		remaining := make([]catalog.PlacementWarning, 0, len(s.state.Catalog.Placement))
+		for _, warning := range s.state.Catalog.Placement {
+			if _, removed := removedFilenames[warning.Filename]; removed {
+				continue
+			}
+			remaining = append(remaining, warning)
+		}
+		s.state.Catalog.Placement = remaining
+	}
+
 	if err := s.persistCatalogMutation(); err != nil {
 		return ModManagementResult{}, err
 	}
 	return ModManagementResult{
 		Action: "forget_missing",
 		Path: path,
-		Message: "Missing accepted deployment entry was removed from FPBPack state.",
+		Message: "Absent catalog entry was removed from FPBPack state. No server files were changed.",
+	}, nil
+}
+
+func (s *Service) setPreferredPlacement(path, placement string) (ModManagementResult, error) {
+	placement = strings.TrimSpace(strings.ToLower(placement))
+	var target inventory.Location
+	switch placement {
+	case string(inventory.LocationServer):
+		target = inventory.LocationServer
+	case string(inventory.LocationClient):
+		target = inventory.LocationClient
+	default:
+		return ModManagementResult{}, fmt.Errorf("placement must be %q or %q", inventory.LocationServer, inventory.LocationClient)
+	}
+
+	path = normalizeCatalogPath(path)
+	updated := false
+	for index := range s.state.Catalog.Managed {
+		if sourcesContainPath(s.state.Catalog.Managed[index].SourcePaths, path) {
+			s.state.Catalog.Managed[index].Deployment = target
+			updated = true
+			break
+		}
+	}
+	if !updated {
+		return ModManagementResult{}, fmt.Errorf("preferred placement can only be changed after the artifact has a verified management source")
+	}
+	if err := s.persistCatalogMutation(); err != nil {
+		return ModManagementResult{}, err
+	}
+	return ModManagementResult{
+		Action: "set_placement",
+		Path: path,
+		Management: "managed",
+		Message: fmt.Sprintf("Preferred placement set to %s. The live JAR is not moved until a protected Apply operation.", target),
 	}, nil
 }
 
 func (s *Service) refreshSingleManagedEntry(ctx context.Context, entry catalog.Entry) error {
-	key := entry.Provider + ":" + entry.ProjectID
+	key := catalog.EntryKey(entry)
 	report := updatecheck.Discover(ctx, catalog.Report{Managed: []catalog.Entry{entry}}, updatecheck.Options{
 		Minecraft: s.options.Minecraft,
 		Loader: s.options.Loader,
@@ -464,6 +584,7 @@ func (s *Service) refreshSingleManagedEntry(ctx context.Context, entry catalog.E
 }
 
 func (s *Service) persistCatalogMutation() error {
+	catalog.EnsureManagedArtifactIDs(s.state.Catalog.Managed)
 	s.state.Catalog.RecalculateSummary()
 	s.state.UpdatedAt = time.Now().UTC()
 	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "state.json"), s.state); err != nil {
@@ -477,7 +598,7 @@ func (s *Service) persistCatalogMutation() error {
 func (s *Service) pruneUpdateCandidatesToCatalog() {
 	managed := make(map[string]struct{}, len(s.state.Catalog.Managed))
 	for _, entry := range s.state.Catalog.Managed {
-		managed[entry.Provider+":"+entry.ProjectID] = struct{}{}
+		managed[catalog.EntryKey(entry)] = struct{}{}
 	}
 	filtered := s.updates.Candidates[:0]
 	for _, candidate := range s.updates.Candidates {
@@ -492,29 +613,35 @@ func (s *Service) pruneUpdateCandidatesToCatalog() {
 	}
 }
 
-func (s *Service) replaceCatalogArtifact(mod inventory.ModFile, entry catalog.Entry, managedKey string) {
-	s.removeCatalogArtifact(mod, managedKey)
+func (s *Service) replaceCatalogArtifact(mod inventory.ModFile, entry catalog.Entry) {
+	if previous, ok := s.managedEntryByPath(mod.Path); ok {
+		// Carry the stable artifact discriminator and user's preferred placement
+		// across source reassignment or installed-version verification.
+		entry.ArtifactID = previous.ArtifactID
+		entry.Deployment = previous.Deployment
+	}
+	s.removeCatalogArtifact(mod)
 	s.state.Catalog.Managed = append(s.state.Catalog.Managed, entry)
+	catalog.EnsureManagedArtifactIDs(s.state.Catalog.Managed)
 	sort.Slice(s.state.Catalog.Managed, func(i, j int) bool {
 		if s.state.Catalog.Managed[i].Name != s.state.Catalog.Managed[j].Name {
 			return strings.ToLower(s.state.Catalog.Managed[i].Name) < strings.ToLower(s.state.Catalog.Managed[j].Name)
 		}
-		return s.state.Catalog.Managed[i].ProjectID < s.state.Catalog.Managed[j].ProjectID
+		if s.state.Catalog.Managed[i].ProjectID != s.state.Catalog.Managed[j].ProjectID {
+			return s.state.Catalog.Managed[i].ProjectID < s.state.Catalog.Managed[j].ProjectID
+		}
+		return catalog.EntryKey(s.state.Catalog.Managed[i]) < catalog.EntryKey(s.state.Catalog.Managed[j])
 	})
 }
 
-func (s *Service) removeCatalogArtifact(mod inventory.ModFile, managedKey string) {
+func (s *Service) removeCatalogArtifact(mod inventory.ModFile) {
 	path := normalizeCatalogPath(mod.Path)
 	s.state.Catalog.Unresolved = filterUnresolved(s.state.Catalog.Unresolved, path, mod.SHA512)
 	s.state.Catalog.Pinned = filterPinned(s.state.Catalog.Pinned, path, mod.SHA512)
 
 	managed := make([]catalog.Entry, 0, len(s.state.Catalog.Managed))
 	for _, entry := range s.state.Catalog.Managed {
-		entryKey := entry.Provider + ":" + entry.ProjectID
 		remove := entry.SHA512 == mod.SHA512 || sourcesContainPath(entry.SourcePaths, path)
-		if managedKey != "" && entryKey == managedKey {
-			remove = true
-		}
 		if !remove {
 			managed = append(managed, entry)
 		}
