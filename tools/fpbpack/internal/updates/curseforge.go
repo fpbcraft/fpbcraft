@@ -2,7 +2,6 @@ package updates
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"html"
 	"net/http"
