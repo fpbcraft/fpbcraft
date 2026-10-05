@@ -36,10 +36,15 @@ func (s *Service) currentRequiredBy(
 			Mode:    updatecheck.RefreshModeInteractive,
 		}
 		for _, entry := range cat.Managed {
-			if entry.Provider != "modrinth" ||
-				entry.ProjectID == target.ProjectID ||
-				strings.TrimSpace(entry.VersionID) == "" {
+			if entry.Provider != "modrinth" || entry.ProjectID == target.ProjectID {
 				continue
+			}
+			if strings.TrimSpace(entry.VersionID) == "" {
+				return nil, fmt.Errorf(
+					"cannot verify whether %s depends on %s because its installed Modrinth version ID is missing",
+					entry.Name,
+					target.Name,
+				)
 			}
 			version, err := client.GetVersion(ctx, entry.VersionID)
 			if err != nil {
@@ -89,10 +94,15 @@ func (s *Service) currentRequiredBy(
 			return nil, fmt.Errorf("invalid CurseForge project ID %q", target.ProjectID)
 		}
 		for _, entry := range cat.Managed {
-			if entry.Provider != "curseforge" ||
-				entry.ProjectID == target.ProjectID ||
-				entry.FileID == 0 {
+			if entry.Provider != "curseforge" || entry.ProjectID == target.ProjectID {
 				continue
+			}
+			if entry.FileID == 0 {
+				return nil, fmt.Errorf(
+					"cannot verify whether %s depends on %s because its installed CurseForge file ID is missing",
+					entry.Name,
+					target.Name,
+				)
 			}
 			file, err := client.GetFile(ctx, entry.ProjectID, entry.FileID)
 			if err != nil {
