@@ -137,6 +137,7 @@ func runServe(args []string) int {
 			Refresh:      app.Refresh,
 			CheckUpdates: app.CheckUpdates,
 			CreatePlan:   app.CreatePlan,
+			CreatePlacementPlan: app.CreatePlacementPlan,
 			Plans:        app.Plans,
 			Plan:         app.Plan,
 			History:      app.History,
