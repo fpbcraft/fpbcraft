@@ -1,7 +1,7 @@
 'use client';
 
 import {useEffect, useState} from 'react';
-import {RefreshCw, Save} from 'lucide-react';
+import {KeyRound, RefreshCw, Save, Trash2} from 'lucide-react';
 import {PageHeader, Pill} from '@/components/ui';
 import {useManagement} from '@/components/management-provider';
 import {api} from '@/lib/api';
@@ -15,6 +15,8 @@ interface ProviderStatus {
   label: string;
   status: string;
   detail: string;
+  credential_configurable?: boolean;
+  credential_source?: 'saved' | 'environment';
 }
 
 export default function SettingsPage() {
@@ -25,6 +27,9 @@ export default function SettingsPage() {
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [providers, setProviders] = useState<ProviderStatus[]>([]);
+  const [curseForgeKey, setCurseForgeKey] = useState('');
+  const [savingCurseForge, setSavingCurseForge] = useState(false);
+  const [clearingCurseForge, setClearingCurseForge] = useState(false);
 
   useEffect(() => {
     void Promise.all([
@@ -54,6 +59,48 @@ export default function SettingsPage() {
       setSettingsError(error instanceof Error ? error.message : String(error));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const updateProvider = (updated: ProviderStatus) => {
+    setProviders((current) =>
+      current.map((provider) => (provider.id === updated.id ? updated : provider)),
+    );
+  };
+
+  const saveCurseForgeKey = async () => {
+    const apiKey = curseForgeKey.trim();
+    if (!apiKey) return;
+
+    setSavingCurseForge(true);
+    setSettingsError(null);
+    try {
+      const updated = await api<ProviderStatus>('/api/providers/curseforge/credentials', {
+        method: 'PUT',
+        body: JSON.stringify({api_key: apiKey}),
+      });
+      updateProvider(updated);
+      setCurseForgeKey('');
+    } catch (error: unknown) {
+      setSettingsError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setSavingCurseForge(false);
+    }
+  };
+
+  const clearCurseForgeKey = async () => {
+    setClearingCurseForge(true);
+    setSettingsError(null);
+    try {
+      const updated = await api<ProviderStatus>('/api/providers/curseforge/credentials', {
+        method: 'DELETE',
+      });
+      updateProvider(updated);
+      setCurseForgeKey('');
+    } catch (error: unknown) {
+      setSettingsError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setClearingCurseForge(false);
     }
   };
 
@@ -152,14 +199,65 @@ export default function SettingsPage() {
           </div>
           <div className="divide-y divide-base-300">
             {providers.map((provider) => (
-              <div className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between" key={provider.id}>
-                <div>
-                  <div className="text-sm font-medium">{provider.label}</div>
-                  <div className="mt-0.5 text-xs text-base-content/45">{provider.detail}</div>
+              <div className="px-4 py-3" key={provider.id}>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="text-sm font-medium">{provider.label}</div>
+                      {provider.credential_source ? (
+                        <Pill tone="neutral">
+                          {provider.credential_source === 'saved' ? 'Saved in FPBPack' : 'Environment'}
+                        </Pill>
+                      ) : null}
+                    </div>
+                    <div className="mt-0.5 text-xs text-base-content/45">{provider.detail}</div>
+                  </div>
+                  <Pill tone={provider.status === 'ready' ? 'good' : 'warn'}>
+                    {provider.status === 'ready' ? 'Ready' : 'Needs configuration'}
+                  </Pill>
                 </div>
-                <Pill tone={provider.status === 'ready' ? 'good' : 'warn'}>
-                  {provider.status === 'ready' ? 'Ready' : 'Needs configuration'}
-                </Pill>
+
+                {provider.id === 'curseforge' && provider.credential_configurable ? (
+                  <div className="mt-3 flex flex-col gap-2 border-t border-base-300 pt-3 sm:flex-row sm:items-end">
+                    <label className="form-control min-w-0 flex-1">
+                      <span className="mb-1 text-xs text-base-content/45">
+                        {provider.credential_source === 'saved' ? 'Replace API key' : 'CurseForge API key'}
+                      </span>
+                      <div className="input input-sm input-bordered flex items-center gap-2">
+                        <KeyRound size={13} className="text-base-content/35" />
+                        <input
+                          className="min-w-0 grow"
+                          type="password"
+                          autoComplete="new-password"
+                          value={curseForgeKey}
+                          onChange={(event) => setCurseForgeKey(event.target.value)}
+                          placeholder={provider.status === 'ready' ? 'Enter a new key to replace it' : 'Paste API key'}
+                          aria-label="CurseForge API key"
+                        />
+                      </div>
+                    </label>
+                    <button
+                      className="btn btn-sm btn-primary"
+                      type="button"
+                      disabled={savingCurseForge || !curseForgeKey.trim()}
+                      onClick={() => void saveCurseForgeKey()}
+                    >
+                      {savingCurseForge ? <span className="loading loading-spinner loading-xs" /> : <Save size={13} />}
+                      Validate & save
+                    </button>
+                    {provider.credential_source === 'saved' ? (
+                      <button
+                        className="btn btn-sm btn-ghost"
+                        type="button"
+                        disabled={clearingCurseForge}
+                        onClick={() => void clearCurseForgeKey()}
+                      >
+                        {clearingCurseForge ? <span className="loading loading-spinner loading-xs" /> : <Trash2 size={13} />}
+                        Clear saved key
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             ))}
           </div>
