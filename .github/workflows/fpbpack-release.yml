@@ -4,22 +4,28 @@ on:
   release:
     types:
       - published
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag to build and smoke-test
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   docker:
-    if: ${{ !github.event.release.prerelease }}
+    if: ${{ github.event_name == 'workflow_call' || !github.event.release.prerelease }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.event_name == 'workflow_call' && inputs.tag || github.event.release.tag_name }}
 
       - name: Build Docker image
         env:
-          FPBPACK_VERSION: ${{ github.event.release.tag_name }}
+          FPBPACK_VERSION: ${{ github.event_name == 'workflow_call' && inputs.tag || github.event.release.tag_name }}
         run: |
           docker build \
             -t fpbpack-release \
