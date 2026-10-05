@@ -388,7 +388,7 @@ func (s *Service) validatePlanCatalogState(plan planning.Plan) error {
 		for _, operation := range change.Operations {
 			entry, exists := managed[change.CandidateKey]
 			switch operation.Action {
-			case "replace":
+			case "replace", "remove":
 				if !exists {
 					return fmt.Errorf("%s is no longer a managed artifact", change.Name)
 				}
@@ -399,13 +399,15 @@ func (s *Service) validatePlanCatalogState(plan planning.Plan) error {
 				if operation.CurrentPath != "" && !sourcesContainPath(entry.SourcePaths, operation.CurrentPath) {
 					return fmt.Errorf("%s accepted source path changed after the plan was created", change.Name)
 				}
-				if expected := inventory.Location(change.Artifact.Deployment); expected != "" && entry.Deployment != expected {
-					return fmt.Errorf(
-						"%s preferred placement changed from %s to %s after the plan was created",
-						change.Name,
-						expected,
-						entry.Deployment,
-					)
+				if operation.Action == "replace" {
+					if expected := inventory.Location(change.Artifact.Deployment); expected != "" && entry.Deployment != expected {
+						return fmt.Errorf(
+							"%s preferred placement changed from %s to %s after the plan was created",
+							change.Name,
+							expected,
+							entry.Deployment,
+						)
+					}
 				}
 			case "add":
 				if exists {
@@ -423,13 +425,20 @@ func (s *Service) validatePlanLiveState(plan planning.Plan) error {
 	cacheByHash := s.prefetchedByHash(plan)
 	for _, change := range plan.Changes {
 		for _, operation := range change.Operations {
+			if operation.Action == "remove" {
+				staged = append(staged, stagedPlanOperation{
+					ChangeName: change.Name,
+					Operation: operation,
+				})
+				continue
+			}
 			targetRel, err := safeRelativePath(operation.TargetPath)
 			if err != nil {
 				return err
 			}
 			target := filepath.Join(s.options.ServerRoot, targetRel)
 
-			if operation.Action == "replace" {
+			if operation.Action == "replace" || operation.Action == "remove" {
 				currentRel, err := safeRelativePath(operation.CurrentPath)
 				if err != nil {
 					return err
@@ -442,7 +451,7 @@ func (s *Service) validatePlanLiveState(plan planning.Plan) error {
 				if operation.CurrentSHA512 != "" && !strings.EqualFold(hash, operation.CurrentSHA512) {
 					return fmt.Errorf("%s current artifact changed: %s", change.Name, operation.CurrentPath)
 				}
-				if currentRel != targetRel {
+				if operation.Action == "replace" && currentRel != targetRel {
 					if _, err := os.Stat(target); err == nil {
 						return fmt.Errorf("%s target path is now occupied: %s", change.Name, operation.TargetPath)
 					} else if !os.IsNotExist(err) {
@@ -459,6 +468,9 @@ func (s *Service) validatePlanLiveState(plan planning.Plan) error {
 				return fmt.Errorf("unsupported plan operation %q", operation.Action)
 			}
 
+			if operation.Action == "remove" {
+				continue
+			}
 			cachePath, ok := cacheByHash[strings.ToLower(operation.TargetSHA512)]
 			if !ok {
 				return fmt.Errorf("%s verified cached artifact is missing from the plan", change.Name)
@@ -531,6 +543,12 @@ func commitStagedOperations(serverRoot string, staged []stagedPlanOperation) err
 			return err
 		}
 		target := filepath.Join(serverRoot, targetRel)
+		if item.Operation.Action == "remove" {
+			if err := os.Remove(target); err != nil {
+				return fmt.Errorf("%s: remove %s: %w", item.ChangeName, item.Operation.TargetPath, err)
+			}
+			continue
+		}
 		if err := os.Rename(item.StagedPath, target); err != nil {
 			return fmt.Errorf("%s: install %s: %w", item.ChangeName, item.Operation.TargetPath, err)
 		}
@@ -635,7 +653,16 @@ func (s *Service) validateAppliedStateForRestore(plan planning.Plan) error {
 			if err != nil {
 				return err
 			}
-			hash, err := sha512File(filepath.Join(s.options.ServerRoot, relative))
+			path := filepath.Join(s.options.ServerRoot, relative)
+			if operation.Action == "remove" {
+				if _, err := os.Stat(path); err == nil {
+					return fmt.Errorf("%s was recreated after the removal plan was applied", operation.TargetPath)
+				} else if !os.IsNotExist(err) {
+					return err
+				}
+				continue
+			}
+			hash, err := sha512File(path)
 			if err != nil {
 				return fmt.Errorf("%s: %w", operation.TargetPath, err)
 			}
@@ -726,6 +753,10 @@ func (s *Service) restoreAppliedTargets(plan planning.Plan) error {
 				return err
 			}
 			target := filepath.Join(s.options.ServerRoot, targetRel)
+			if operation.Action == "remove" {
+				_ = os.Remove(target)
+				continue
+			}
 			cache, ok := cacheByHash[strings.ToLower(operation.TargetSHA512)]
 			if !ok {
 				return fmt.Errorf("cached applied artifact is unavailable for %s", change.Name)
@@ -759,6 +790,20 @@ func catalogAfterPlan(current catalog.Report, plan planning.Plan) (catalog.Repor
 				found = index
 				break
 			}
+		}
+
+		isRemoval := false
+		for _, operation := range change.Operations {
+			if operation.Action == "remove" {
+				isRemoval = true
+				break
+			}
+		}
+		if isRemoval {
+			if found >= 0 {
+				next.Managed = append(next.Managed[:found], next.Managed[found+1:]...)
+			}
+			continue
 		}
 
 		entry := catalog.Entry{
