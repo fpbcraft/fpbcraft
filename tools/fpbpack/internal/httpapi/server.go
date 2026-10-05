@@ -41,6 +41,7 @@ type ServerOptions struct {
 	Rules        RulesLoader
 	SetRule      RuleSetter
 	ClearRule    RuleClearer
+	RefreshStatus RefreshStatusLoader
 	Providers    ProvidersLoader
 	Web          http.Handler
 }
@@ -59,6 +60,7 @@ type Server struct {
 	rulesLoader    RulesLoader
 	setRule        RuleSetter
 	clearRule      RuleClearer
+	refreshStatus  RefreshStatusLoader
 	providersLoader ProvidersLoader
 	version       string
 }
@@ -74,6 +76,7 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 		plansLoader: opts.Plans, planLoader: opts.Plan, historyLoader: opts.History,
 		retentionLoader: opts.Retention, updateRetention: opts.UpdateRetention,
 		rulesLoader: opts.Rules, setRule: opts.SetRule, clearRule: opts.ClearRule,
+		refreshStatus: opts.RefreshStatus,
 		providersLoader: opts.Providers,
 		version: version,
 	}
