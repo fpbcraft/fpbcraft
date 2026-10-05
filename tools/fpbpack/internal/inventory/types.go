@@ -2,7 +2,7 @@ package inventory
 
 import "time"
 
-const SchemaVersion = 1
+const SchemaVersion = 2
 
 type Location string
 
@@ -31,16 +31,27 @@ type ModrinthMatch struct {
 	Environment   string   `json:"environment,omitempty"`
 }
 
+type CurseForgeMatch struct {
+	ProjectID    uint32   `json:"project_id"`
+	FileID       uint32   `json:"file_id"`
+	DisplayName  string   `json:"display_name,omitempty"`
+	Filename     string   `json:"filename,omitempty"`
+	GameVersions []string `json:"game_versions,omitempty"`
+	ReleaseType  int      `json:"release_type,omitempty"`
+}
+
 type ModFile struct {
-	Location Location       `json:"location"`
-	Path     string         `json:"path"`
-	Filename string         `json:"filename"`
-	Size     int64          `json:"size"`
-	SHA1     string         `json:"sha1"`
-	SHA512   string         `json:"sha512"`
-	Metadata []ModMetadata  `json:"metadata,omitempty"`
-	Modrinth *ModrinthMatch `json:"modrinth,omitempty"`
-	Error    string         `json:"error,omitempty"`
+	Location              Location         `json:"location"`
+	Path                  string           `json:"path"`
+	Filename              string           `json:"filename"`
+	Size                  int64            `json:"size"`
+	SHA1                  string           `json:"sha1"`
+	SHA512                string           `json:"sha512"`
+	CurseForgeFingerprint uint32           `json:"curseforge_fingerprint,omitempty"`
+	Metadata              []ModMetadata    `json:"metadata,omitempty"`
+	Modrinth              *ModrinthMatch   `json:"modrinth,omitempty"`
+	CurseForge            *CurseForgeMatch `json:"curseforge,omitempty"`
+	Error                 string           `json:"error,omitempty"`
 }
 
 type Summary struct {
@@ -48,21 +59,24 @@ type Summary struct {
 	Server             int `json:"server"`
 	Client             int `json:"client"`
 	ModrinthExact      int `json:"modrinth_exact"`
+	CurseForgeExact    int `json:"curseforge_exact"`
 	Unmatched          int `json:"unmatched"`
 	MetadataUnreadable int `json:"metadata_unreadable"`
 }
 
 type Inventory struct {
-	SchemaVersion   int       `json:"schema_version"`
-	GeneratedAt     time.Time `json:"generated_at"`
-	ServerRoot      string    `json:"server_root"`
-	ServerModsPath  string    `json:"server_mods_path"`
-	ClientModsPath  string    `json:"client_mods_path"`
-	ModrinthChecked bool      `json:"modrinth_checked"`
-	ModrinthError   string    `json:"modrinth_error,omitempty"`
-	Warnings        []string  `json:"warnings,omitempty"`
-	Summary         Summary   `json:"summary"`
-	Mods            []ModFile `json:"mods"`
+	SchemaVersion      int       `json:"schema_version"`
+	GeneratedAt        time.Time `json:"generated_at"`
+	ServerRoot         string    `json:"server_root"`
+	ServerModsPath     string    `json:"server_mods_path"`
+	ClientModsPath     string    `json:"client_mods_path"`
+	ModrinthChecked    bool      `json:"modrinth_checked"`
+	ModrinthError      string    `json:"modrinth_error,omitempty"`
+	CurseForgeChecked  bool      `json:"curseforge_checked"`
+	CurseForgeError    string    `json:"curseforge_error,omitempty"`
+	Warnings           []string  `json:"warnings,omitempty"`
+	Summary            Summary   `json:"summary"`
+	Mods               []ModFile `json:"mods"`
 }
 
 func (i *Inventory) RecalculateSummary() {
@@ -78,7 +92,14 @@ func (i *Inventory) RecalculateSummary() {
 		if mod.Modrinth != nil {
 			summary.ModrinthExact++
 		}
-		if i.ModrinthChecked && mod.Modrinth == nil {
+		if mod.CurseForge != nil {
+			summary.CurseForgeExact++
+		}
+		if i.CurseForgeChecked {
+			if mod.Modrinth == nil && mod.CurseForge == nil {
+				summary.Unmatched++
+			}
+		} else if i.ModrinthChecked && mod.Modrinth == nil {
 			summary.Unmatched++
 		}
 		if mod.Error != "" {
