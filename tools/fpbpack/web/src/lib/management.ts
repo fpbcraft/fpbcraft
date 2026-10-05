@@ -55,8 +55,6 @@ export interface ManagementMod {
   management: 'managed' | 'unmanaged' | 'unresolved' | 'external' | string;
   path: string;
   sha512?: string;
-  manual_download?: boolean;
-  manual_url?: string;
 }
 
 export interface UpdateReason {
@@ -75,6 +73,8 @@ export interface UpdateRelease {
   sha1?: string;
   sha256?: string;
   sha512?: string;
+  manual_download?: boolean;
+  manual_url?: string;
 }
 
 export interface UpdateDependency {
