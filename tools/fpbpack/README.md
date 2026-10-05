@@ -110,7 +110,7 @@ Use `--strict` when the migration is expected to be complete. Strict mode exits 
 
 The generator refuses to replace a non-empty output directory unless `--force` is provided.
 
-## Diagnostics and read-only API
+## Diagnostics and web service
 
 Slice 1 adds a shared management-state layer used by both the CLI and the dashboard API.
 
@@ -136,28 +136,19 @@ Generate a read-only update report from the accepted catalog state:
 
 The first provider implementation performs Modrinth project/version discovery, rejects incompatible Minecraft/loader releases, classifies pre-releases and major-version jumps for review, preserves rejected newer candidates, and surfaces required/incompatible dependency relationships. CurseForge and GitHub update discovery are still reported as blocked/pending rather than guessed.
 
-To expose the same state to a dashboard running on the same machine:
+FPBPack serves the static GUI and the API from the same HTTP process and origin:
 
 ```bash
 ./fpbpack serve \
   --inventory fpbpack-inventory.json \
   --report modpack/migration-report.json \
   --updates fpbpack-updates.json \
-  --listen 127.0.0.1:8787
+  --listen 0.0.0.0:8787
 ```
 
-For a hosted GUI such as Vercel to connect directly from the user's browser to an Unraid server on the same LAN, bind FPBPack to the LAN interface and allow the exact GUI origin:
+Open the same address in a browser, for example `http://tower.local:8787/`. The GUI calls relative `/api/*` routes, so there is no runtime API URL, CORS policy, Local Network Access permission, Vercel proxy, or second frontend service.
 
-```bash
-./fpbpack serve \
-  --inventory fpbpack-inventory.json \
-  --report modpack/migration-report.json \
-  --updates fpbpack-updates.json \
-  --listen 0.0.0.0:8787 \
-  --cors-origin https://your-fpbcraft-gui.vercel.app
-```
-
-`--cors-origin` may be repeated for additional trusted production/preview origins. The API still does not need to be exposed to the public Internet: the browser connects to the Unraid LAN address directly. Do not add a router port-forward for FPBPack. Current Chrome versions may prompt the user to allow the Vercel site to access devices on the local network.
+Release binaries embed the static GUI. For local frontend development, build/export the GUI separately and point FPBPack at it with `--web-dir web/out`.
 
 The initial API is deliberately read-only:
 
@@ -169,6 +160,30 @@ The initial API is deliberately read-only:
 - `GET /api/updates` when `--updates` is configured
 
 The service reloads its input JSON for each request so newly generated inventory and update-report files are visible without restarting FPBPack. Provider discovery is performed by the explicit `fpbpack updates` command; the HTTP service only exposes the resulting cached decision data. Mutation endpoints remain intentionally absent.
+
+## Docker
+
+The production container is a single-process image. Node is used only in the build stage to produce the static export; the final image contains FPBPack and CA certificates, not a Node runtime.
+
+Build from the repository root:
+
+```bash
+docker build -f tools/fpbpack/Dockerfile -t fpbpack .
+```
+
+Run it with the management files mounted into the container:
+
+```bash
+docker run --rm \
+  -p 8787:8787 \
+  -v /path/to/fpbpack:/data \
+  fpbpack serve \
+    --inventory /data/fpbpack-inventory.json \
+    --report /data/modpack/migration-report.json \
+    --updates /data/fpbpack-updates.json
+```
+
+The same image is suitable for an eventual Unraid template. Future write-capable slices will mount only the server/state paths FPBPack actually needs.
 
 ## Unraid
 
@@ -183,7 +198,14 @@ chmod +x fpbpack-linux-amd64 packwiz-linux-amd64
 ## Development
 
 ```bash
-cd tools/fpbpack
+cd tools/fpbpack/web
+npm install
+npm run typecheck
+npm run build
+
+cd ..
+find internal/webui/dist -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+cp -a web/out/. internal/webui/dist/
 go test ./...
 go vet ./...
 go run ./cmd/fpbpack inventory --server-root /path/to/test/server --offline

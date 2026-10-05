@@ -14,6 +14,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: false
+
+      - name: Install GUI dependencies
+        working-directory: tools/fpbpack/web
+        run: npm install --no-audit --no-fund
+
+      - name: Typecheck GUI
+        working-directory: tools/fpbpack/web
+        run: npm run typecheck
+
+      - name: Build static GUI
+        working-directory: tools/fpbpack/web
+        run: npm run build
+
+      - name: Stage GUI for embedding
+        working-directory: tools/fpbpack
+        run: |
+          find internal/webui/dist -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+          cp -a web/out/. internal/webui/dist/
+
       - uses: actions/setup-go@v6
         with:
           go-version: "1.27.x"
@@ -52,6 +76,11 @@ jobs:
           mv dist/packwiz dist/packwiz-linux-amd64
           sha256sum dist/packwiz-linux-amd64 > dist/packwiz-linux-amd64.sha256
           file dist/packwiz-linux-amd64
+
+      - name: Build Docker image
+        env:
+          FPBPACK_VERSION: ${{ github.event.pull_request.head.sha }}
+        run: docker build --build-arg FPBPACK_VERSION="${FPBPACK_VERSION::12}" -f tools/fpbpack/Dockerfile .
 
       - name: Upload Unraid binaries
         uses: actions/upload-artifact@v7

@@ -9,29 +9,14 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/httpapi"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/webui"
 	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
-
-type originListFlag []string
-
-func (values *originListFlag) String() string {
-	return strings.Join(*values, ",")
-}
-
-func (values *originListFlag) Set(value string) error {
-	origin := strings.TrimSuffix(strings.TrimSpace(value), "/")
-	if origin == "" {
-		return errors.New("origin cannot be empty")
-	}
-	*values = append(*values, origin)
-	return nil
-}
 
 func runDoctor(args []string) int {
 	flags := flag.NewFlagSet("doctor", flag.ContinueOnError)
@@ -102,13 +87,8 @@ func runServe(args []string) int {
 	inventoryPath := flags.String("inventory", "", "current FPBPack inventory JSON")
 	reportPath := flags.String("report", "", "accepted migration report JSON")
 	updatesPath := flags.String("updates", "", "cached update report JSON (optional)")
-	listen := flags.String("listen", "127.0.0.1:8787", "HTTP listen address")
-	var corsOrigins originListFlag
-	flags.Var(
-		&corsOrigins,
-		"cors-origin",
-		"browser origin allowed to call the API (for example https://fpbcraft-gui.vercel.app); may be repeated",
-	)
+	listen := flags.String("listen", "0.0.0.0:8787", "HTTP listen address")
+	webDir := flags.String("web-dir", "", "serve GUI files from this directory instead of embedded assets")
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
@@ -139,11 +119,16 @@ func runServe(args []string) int {
 		}
 	}
 
+	webHandler := webui.Handler()
+	if *webDir != "" {
+		webHandler = http.FileServer(http.Dir(*webDir))
+	}
+
 	server := &http.Server{
 		Addr: *listen,
 		Handler: httpapi.NewHandlerWithOptions(source.Load, version, httpapi.ServerOptions{
-			Updates:        updatesLoader,
-			AllowedOrigins: []string(corsOrigins),
+			Updates: updatesLoader,
+			Web:     webHandler,
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
@@ -152,10 +137,7 @@ func runServe(args []string) int {
 	go func() {
 		errCh <- server.ListenAndServe()
 	}()
-	fmt.Printf("FPBPack API listening on http://%s (read-only)\n", *listen)
-	if len(corsOrigins) > 0 {
-		fmt.Printf("Browser API access allowed for: %s\n", strings.Join(corsOrigins, ", "))
-	}
+	fmt.Printf("FPBPack listening on http://%s (GUI + read-only API)\n", *listen)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
