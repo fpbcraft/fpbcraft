@@ -80,8 +80,6 @@ export interface UpdateDependency {
   deployment?: Location;
   target?: UpdateRelease;
   dependencies?: UpdateDependency[];
-  changelogs?: UpdateChangelogEntry[];
-  required_by?: string[];
 }
 
 export interface UpdateRule {
@@ -114,6 +112,8 @@ export interface UpdateCandidate {
   classification: UpdateClassification;
   reasons?: UpdateReason[];
   dependencies?: UpdateDependency[];
+  changelogs?: UpdateChangelogEntry[];
+  required_by?: string[];
 }
 
 export interface UpdateSummary {
