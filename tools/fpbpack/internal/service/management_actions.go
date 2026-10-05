@@ -56,25 +56,19 @@ func (s *Service) ManageMod(ctx context.Context, request ModManagementRequest) (
 		s.mu.Lock()
 		result, err := s.markModUnmanaged(request.Path)
 		s.mu.Unlock()
-		if err == nil {
-			s.logEvent("info", "mods", result.Message)
-		}
+		s.logModManagement(request.Action, result, err)
 		return result, err
 	case "forget_missing":
 		s.mu.Lock()
 		result, err := s.forgetMissingAcceptedEntry(request.Path)
 		s.mu.Unlock()
-		if err == nil {
-			s.logEvent("info", "mods", result.Message)
-		}
+		s.logModManagement(request.Action, result, err)
 		return result, err
 	case "set_placement":
 		s.mu.Lock()
 		result, err := s.setPreferredPlacement(request.Path, request.Placement)
 		s.mu.Unlock()
-		if err == nil {
-			s.logEvent("info", "mods", result.Message)
-		}
+		s.logModManagement(request.Action, result, err)
 		return result, err
 	case "assign_modrinth", "assign_curseforge", "assign_github", "adopt_current":
 		if !s.refreshMu.TryLock() {
@@ -83,18 +77,24 @@ func (s *Service) ManageMod(ctx context.Context, request ModManagementRequest) (
 			)
 		}
 		defer s.refreshMu.Unlock()
+		var result ModManagementResult
+		var err error
 		switch request.Action {
 		case "assign_modrinth":
-			return s.assignModrinthSource(ctx, request)
+			result, err = s.assignModrinthSource(ctx, request)
 		case "assign_curseforge":
-			return s.assignCurseForgeSource(ctx, request)
+			result, err = s.assignCurseForgeSource(ctx, request)
 		case "assign_github":
-			return s.assignGitHubSource(ctx, request)
+			result, err = s.assignGitHubSource(ctx, request)
 		default:
-			return s.adoptCurrentArtifact(ctx, request)
+			result, err = s.adoptCurrentArtifact(ctx, request)
 		}
+		s.logModManagement(request.Action, result, err)
+		return result, err
 	default:
-		return ModManagementResult{}, fmt.Errorf("unsupported mod management action %q", request.Action)
+		err := fmt.Errorf("unsupported mod management action %q", request.Action)
+		s.logModManagement(request.Action, ModManagementResult{}, err)
+		return ModManagementResult{}, err
 	}
 }
 
