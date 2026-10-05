@@ -25,6 +25,7 @@ type RetentionUpdater func(service.RuntimeSettings) (service.RuntimeSettings, er
 type RulesLoader func() map[string]service.UpdateRule
 type RuleSetter func(string, service.UpdateRule) (service.UpdateRule, error)
 type RuleClearer func(string) error
+type RefreshStatusLoader func() service.RefreshStatus
 type ProvidersLoader func() []service.ProviderStatus
 
 type ServerOptions struct {
@@ -110,10 +111,18 @@ func (s *Server) status(w http.ResponseWriter, _ *http.Request) {
 	if !ok {
 		return
 	}
-	writeJSON(w, http.StatusOK, struct {
+	response := struct {
 		management.Status
-		Version string `json:"version"`
-	}{Status: snapshot.Status, Version: s.version})
+		Version string                `json:"version"`
+		Refresh service.RefreshStatus `json:"refresh"`
+	}{
+		Status: snapshot.Status,
+		Version: s.version,
+	}
+	if s.refreshStatus != nil {
+		response.Refresh = s.refreshStatus()
+	}
+	writeJSON(w, http.StatusOK, response)
 }
 
 func (s *Server) inventory(w http.ResponseWriter, _ *http.Request) {
