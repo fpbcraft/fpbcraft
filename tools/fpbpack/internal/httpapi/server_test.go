@@ -244,3 +244,56 @@ func TestRetentionSettingsEndpointsReadAndUpdate(t *testing.T) {
 		t.Fatalf("retention = %d, want 12", current.RetentionCount)
 	}
 }
+
+func TestUpdateRuleEndpoints(t *testing.T) {
+	rules := map[string]service.UpdateRule{}
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			Rules: func() map[string]service.UpdateRule { return rules },
+			SetRule: func(key string, rule service.UpdateRule) (service.UpdateRule, error) {
+				rules[key] = rule
+				return rule, nil
+			},
+			ClearRule: func(key string) error {
+				delete(rules, key)
+				return nil
+			},
+		},
+	)
+
+	put := httptest.NewRecorder()
+	handler.ServeHTTP(
+		put,
+		httptest.NewRequest(
+			http.MethodPut,
+			"/api/update-rules",
+			strings.NewReader(`{"key":"modrinth:test","rule":{"ignore_mod":true}}`),
+		),
+	)
+	if put.Code != http.StatusOK {
+		t.Fatalf("PUT rule = %d: %s", put.Code, put.Body.String())
+	}
+	if !rules["modrinth:test"].IgnoreMod {
+		t.Fatal("rule was not stored")
+	}
+
+	get := httptest.NewRecorder()
+	handler.ServeHTTP(get, httptest.NewRequest(http.MethodGet, "/api/update-rules", nil))
+	if get.Code != http.StatusOK {
+		t.Fatalf("GET rules = %d", get.Code)
+	}
+
+	del := httptest.NewRecorder()
+	handler.ServeHTTP(
+		del,
+		httptest.NewRequest(http.MethodDelete, "/api/update-rules?key=modrinth%3Atest", nil),
+	)
+	if del.Code != http.StatusOK {
+		t.Fatalf("DELETE rule = %d: %s", del.Code, del.Body.String())
+	}
+	if _, ok := rules["modrinth:test"]; ok {
+		t.Fatal("rule was not cleared")
+	}
+}
