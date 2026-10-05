@@ -4,10 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -18,6 +16,7 @@ type ModrinthClient struct {
 	BaseURL    string
 	HTTPClient *http.Client
 	UserAgent  string
+	Mode       RefreshMode
 }
 
 type modrinthProject struct {
@@ -135,66 +134,20 @@ func (client *ModrinthClient) userAgent() string {
 }
 
 func (client *ModrinthClient) getJSON(ctx context.Context, endpoint string, target any) error {
-	const maxAttempts = 4
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
-		if err != nil {
-			return err
-		}
-		req.Header.Set("Accept", "application/json")
-		req.Header.Set("User-Agent", client.userAgent())
-
-		resp, err := client.httpClient().Do(req)
-		if err != nil {
-			return err
-		}
-		if resp.StatusCode == http.StatusTooManyRequests {
-			wait := retryAfter(resp.Header.Get("Retry-After"))
-			_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
-			_ = resp.Body.Close()
-			if attempt == maxAttempts {
-				return fmt.Errorf("GET %s returned HTTP 429 after %d attempts", endpoint, attempt)
+	return doJSONWithRetry(
+		ctx,
+		"modrinth",
+		client.Mode,
+		client.httpClient(),
+		func() (*http.Request, error) {
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+			if err != nil {
+				return nil, err
 			}
-			timer := time.NewTimer(wait)
-			select {
-			case <-ctx.Done():
-				timer.Stop()
-				return ctx.Err()
-			case <-timer.C:
-			}
-			continue
-		}
-		if resp.StatusCode != http.StatusOK {
-			message, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-			_ = resp.Body.Close()
-			return fmt.Errorf("GET %s returned HTTP %d: %s", endpoint, resp.StatusCode, strings.TrimSpace(string(message)))
-		}
-		decoder := json.NewDecoder(io.LimitReader(resp.Body, 32<<20))
-		err = decoder.Decode(target)
-		closeErr := resp.Body.Close()
-		if err != nil {
-			return err
-		}
-		return closeErr
-	}
-	return fmt.Errorf("GET %s failed", endpoint)
-}
-
-func retryAfter(value string) time.Duration {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return 2 * time.Second
-	}
-	seconds, err := strconv.Atoi(value)
-	if err == nil && seconds > 0 {
-		return time.Duration(seconds) * time.Second
-	}
-	when, err := http.ParseTime(value)
-	if err == nil {
-		wait := time.Until(when)
-		if wait > 0 {
-			return wait
-		}
-	}
-	return 2 * time.Second
+			req.Header.Set("Accept", "application/json")
+			req.Header.Set("User-Agent", client.userAgent())
+			return req, nil
+		},
+		target,
+	)
 }
