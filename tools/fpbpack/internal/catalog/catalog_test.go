@@ -117,6 +117,32 @@ func TestWriteCurseForgeMetafile(t *testing.T) {
 	}
 }
 
+
+func TestPlacementMismatchOnlyFlagsStrictSideViolations(t *testing.T) {
+	tests := []struct {
+		name        string
+		deployment  inventory.Location
+		environment string
+		want        bool
+	}{
+		{"client-only on server", inventory.LocationServer, "client_only", true},
+		{"server-only on client", inventory.LocationClient, "server_only", true},
+		{"client optional on server", inventory.LocationServer, "client_only_server_optional", false},
+		{"server optional on client", inventory.LocationClient, "server_only_client_optional", false},
+		{"both on server", inventory.LocationServer, "client_and_server", false},
+		{"both on client", inventory.LocationClient, "client_and_server", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := placementMismatch(tt.deployment, tt.environment); got != tt.want {
+				t.Fatalf("placementMismatch(%q, %q) = %v, want %v", tt.deployment, tt.environment, got, tt.want)
+			}
+		})
+	}
+}
+
+
 func mr(project, version, number, environment string) *inventory.ModrinthMatch {
 	return &inventory.ModrinthMatch{ProjectID: project, VersionID: version, VersionNumber: number, VersionName: project + " " + number, Filename: project + ".jar", URL: "https://cdn.example/" + project + ".jar", Environment: environment}
 }
