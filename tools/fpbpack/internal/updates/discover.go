@@ -20,6 +20,8 @@ type Options struct {
 	ModrinthBaseURL  string
 	CurseForgeBaseURL string
 	CurseForgeAPIKey string
+	GitHubBaseURL     string
+	GitHubToken       string
 	HTTPClient       *http.Client
 }
 
@@ -58,6 +60,11 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 	curseForgeClient := &CurseForgeClient{
 		BaseURL: opts.CurseForgeBaseURL,
 		APIKey: opts.CurseForgeAPIKey,
+		HTTPClient: opts.HTTPClient,
+	}
+	gitHubClient := &GitHubClient{
+		BaseURL: opts.GitHubBaseURL,
+		Token: opts.GitHubToken,
 		HTTPClient: opts.HTTPClient,
 	}
 
@@ -110,11 +117,15 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 					)
 				}
 			case "github":
-				candidates[index] = blockedProviderCandidate(
-					entry,
-					"github_discovery_pending",
-					"GitHub release discovery is only enabled for verified GitHub release sources.",
-				)
+				if strings.TrimSpace(entry.Repository) == "" && strings.TrimSpace(entry.ProjectID) == "" {
+					candidates[index] = blockedProviderCandidate(
+						entry,
+						"github_source_incomplete",
+						"GitHub release discovery requires a verified repository source.",
+					)
+				} else {
+					candidates[index] = discoverGitHubCandidate(ctx, gitHubClient, entry)
+				}
 			default:
 				candidates[index] = blockedProviderCandidate(
 					entry,
