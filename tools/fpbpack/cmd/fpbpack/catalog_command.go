@@ -22,6 +22,8 @@ func runCatalog(args []string) int {
 	packVersion := flags.String("pack-version", "migration", "pack version label")
 	force := flags.Bool("force", false, "replace a non-empty output directory")
 	strict := flags.Bool("strict", false, "exit non-zero when unresolved artifacts or version conflicts remain")
+	resolveCurseForge := flags.Bool("resolve-curseforge", false, "resolve unresolved JARs using an isolated Packwiz CurseForge detector")
+	packwizPath := flags.String("packwiz", "packwiz", "Packwiz executable used with --resolve-curseforge")
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
@@ -57,6 +59,15 @@ func runCatalog(args []string) int {
 		return 1
 	}
 
+	var curseForge catalog.CurseForgeDetectSummary
+	if *resolveCurseForge {
+		curseForge, err = catalog.ResolveCurseForgeWithPackwiz(inv, &result, *output, *packwizPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "resolve CurseForge: %v\n", err)
+			return 1
+		}
+	}
+
 	s := result.Report.Summary
 	fmt.Println("FPBPack catalog")
 	fmt.Printf("Inventory JARs:      %d\n", s.InventoryJARs)
@@ -66,6 +77,10 @@ func runCatalog(args []string) int {
 	fmt.Printf("Unresolved:          %d\n", s.Unresolved)
 	fmt.Printf("Version conflicts:   %d\n", s.ConflictProjects)
 	fmt.Printf("Placement warnings:  %d\n", s.PlacementWarnings)
+	if *resolveCurseForge {
+		fmt.Printf("CurseForge detected: %d\n", curseForge.Detected)
+		fmt.Printf("CF still unmatched:  %d\n", curseForge.Unmatched)
+	}
 	fmt.Printf("Output:              %s\n", *output)
 	fmt.Printf("Report:              %s/migration-report.json\n", *output)
 
