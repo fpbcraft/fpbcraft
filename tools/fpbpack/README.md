@@ -69,6 +69,8 @@ After provider detection, resolve known GitHub/custom artifacts with the checked
 
 Source registry entries are keyed by the installed JAR's exact SHA-512. A `github_release` entry is accepted only after FPBPack downloads the declared release asset and verifies that its SHA-512 is byte-identical to the installed JAR. A `pinned_local` entry explicitly accounts for a custom or historical artifact that should be preserved but does not yet have a verified update source. Neither mode mutates the live server.
 
+For the current FPBCraft migration, the six BlueMap/custom artifacts are intentionally configured as `pinned_local`. They remain visible in `migration-report.json`, but FPBPack generates no Packwiz metafiles for them, so `packwiz update` cannot update, replace, or remove them.
+
 
 The generator is conservative:
 
