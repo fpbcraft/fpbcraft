@@ -125,12 +125,25 @@ Run diagnostics against a fresh inventory and the accepted migration report:
 
 `doctor` reports blocking drift such as missing, moved or externally replaced managed JARs, as well as unresolved catalog entries and version conflicts. Explicitly unmanaged/pinned artifacts remain visible but are not treated as managed-file drift.
 
+Generate a read-only update report from the accepted catalog state:
+
+```bash
+./fpbpack updates \
+  --report modpack/migration-report.json \
+  --output fpbpack-updates.json \
+  --minecraft 1.21.1 \
+  --loader neoforge
+```
+
+The first provider implementation performs Modrinth project/version discovery, rejects incompatible Minecraft/loader releases, classifies pre-releases and major-version jumps for review, preserves rejected newer candidates, and surfaces required/incompatible dependency relationships. CurseForge and GitHub update discovery are still reported as blocked/pending rather than guessed.
+
 To expose the same state to the dashboard without permitting mutation:
 
 ```bash
 ./fpbpack serve \
   --inventory fpbpack-inventory.json \
   --report modpack/migration-report.json \
+  --updates fpbpack-updates.json \
   --listen 127.0.0.1:8787
 ```
 
@@ -141,8 +154,9 @@ The initial API is deliberately read-only:
 - `GET /api/inventory`
 - `GET /api/mods`
 - `GET /api/diagnostics`
+- `GET /api/updates` when `--updates` is configured
 
-The service reloads its input JSON for each request so a newly generated inventory is visible without restarting FPBPack. Update discovery and all mutation endpoints are intentionally deferred until the rest of Slice 1/2.
+The service reloads its input JSON for each request so newly generated inventory and update-report files are visible without restarting FPBPack. Provider discovery is performed by the explicit `fpbpack updates` command; the HTTP service only exposes the resulting cached decision data. Mutation endpoints remain intentionally absent.
 
 ## Unraid
 
