@@ -6,13 +6,15 @@ import {History as HistoryIcon, Play, RotateCcw, Square, X} from 'lucide-react';
 import {EmptyState, PageHeader, Pill, formatDate} from '@/components/ui';
 import {api} from '@/lib/api';
 import {useManagement} from '@/components/management-provider';
-import type {HistoryEvent} from '@/lib/management';
+import type {HistoryEvent, UpdatePlan} from '@/lib/management';
 
 export default function HistoryPage() {
   const {state, reload} = useManagement();
   const [events, setEvents] = useState<HistoryEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [confirmRestore, setConfirmRestore] = useState<HistoryEvent | null>(null);
+  const [restorePlan, setRestorePlan] = useState<UpdatePlan | null>(null);
+  const [restorePlanLoading, setRestorePlanLoading] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [serverBusy, setServerBusy] = useState(false);
 
@@ -26,6 +28,32 @@ export default function HistoryPage() {
       setError(value instanceof Error ? value.message : String(value)),
     );
   }, []);
+
+  const restoredBackups = new Set(
+    events
+      .filter((event) => event.type === 'restore' && event.status === 'success' && event.backup_id)
+      .map((event) => event.backup_id as string),
+  );
+
+  const beginRestore = async (event: HistoryEvent) => {
+    setConfirmRestore(event);
+    setRestorePlan(null);
+    setError(null);
+    if (!event.plan_id) {
+      setError('This restore point has no linked plan to review.');
+      return;
+    }
+    setRestorePlanLoading(true);
+    try {
+      setRestorePlan(
+        await api<UpdatePlan>('/api/plans/' + encodeURIComponent(event.plan_id)),
+      );
+    } catch (value: unknown) {
+      setError(value instanceof Error ? value.message : String(value));
+    } finally {
+      setRestorePlanLoading(false);
+    }
+  };
 
   const serverAction = async (action: 'start' | 'stop') => {
     setServerBusy(true);
@@ -98,11 +126,14 @@ export default function HistoryPage() {
                       Review
                     </Link>
                   ) : null}
-                  {event.type === 'apply' && event.status === 'success' && event.backup_id ? (
+                  {event.type === 'apply' &&
+                  event.status === 'success' &&
+                  event.backup_id &&
+                  !restoredBackups.has(event.backup_id) ? (
                     <button
                       className="btn btn-xs btn-outline"
                       type="button"
-                      onClick={() => setConfirmRestore(event)}
+                      onClick={() => void beginRestore(event)}
                     >
                       <RotateCcw size={12} /> Restore
                     </button>
@@ -131,7 +162,10 @@ export default function HistoryPage() {
               <button
                 className="btn btn-sm btn-ghost btn-square"
                 type="button"
-                onClick={() => setConfirmRestore(null)}
+                onClick={() => {
+                  setConfirmRestore(null);
+                  setRestorePlan(null);
+                }}
                 aria-label="Close"
               >
                 <X size={15} />
@@ -144,6 +178,40 @@ export default function HistoryPage() {
             </p>
             <div className="mt-4 rounded-box border border-base-300 bg-base-200/40 p-3 text-xs">
               Minecraft server: <strong>{state.status.server_state}</strong>
+            </div>
+            <div className="mt-3 rounded-box border border-base-300">
+              <div className="border-b border-base-300 px-3 py-2 text-xs font-semibold">
+                Exact managed changes to revert
+              </div>
+              {restorePlanLoading ? (
+                <div className="flex justify-center p-5">
+                  <span className="loading loading-spinner loading-sm" />
+                </div>
+              ) : restorePlan ? (
+                <div className="divide-y divide-base-300">
+                  {restorePlan.changes.map((change) => (
+                    <div className="px-3 py-2" key={change.candidate_key}>
+                      <div className="text-xs font-medium">{change.name}</div>
+                      <div className="mt-1 space-y-1">
+                        {change.operations.map((operation, index) => (
+                          <div
+                            className="mono break-all text-[0.68rem] text-base-content/50"
+                            key={index}
+                          >
+                            {operation.current_path
+                              ? operation.target_path + ' → ' + operation.current_path
+                              : 'remove ' + operation.target_path}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-3 text-xs text-error">
+                  The linked plan could not be loaded. Restore is disabled.
+                </div>
+              )}
             </div>
             <div className="modal-action">
               {state.status.server_state === 'running' ? (
@@ -161,7 +229,7 @@ export default function HistoryPage() {
                 <button
                   className="btn btn-sm btn-error"
                   type="button"
-                  disabled={restoring}
+                  disabled={restoring || !restorePlan || restorePlanLoading}
                   onClick={() => void restore()}
                 >
                   {restoring ? <span className="loading loading-spinner loading-xs" /> : <RotateCcw size={12} />}
