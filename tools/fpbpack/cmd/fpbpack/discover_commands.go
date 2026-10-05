@@ -145,6 +145,8 @@ func runServe(args []string) int {
 			Providers:     app.ProviderStatuses,
 			SetProviderCredential: app.SetProviderCredential,
 			ClearProviderCredential: app.ClearProviderCredential,
+			ManageMod:      app.ManageMod,
+			RefreshMod:     app.RefreshModMetadata,
 			BackgroundContext: ctx,
 			Web:          webHandler,
 		}),
