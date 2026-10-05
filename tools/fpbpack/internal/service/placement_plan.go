@@ -20,6 +20,8 @@ import (
 func (s *Service) CreatePlacementPlan(ctx context.Context, path string) (planning.Plan, error) {
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
+	s.catalogMu.Lock()
+	defer s.catalogMu.Unlock()
 
 	path = normalizeCatalogPath(path)
 	if path == "" {
