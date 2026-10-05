@@ -33,18 +33,33 @@ jobs:
           CGO_ENABLED: "0"
           GOOS: linux
           GOARCH: amd64
+          FPBPACK_VERSION: ${{ github.event.pull_request.head.sha }}
         run: |
           mkdir -p dist
-          go build -trimpath -ldflags "-s -w -X main.version=${GITHUB_SHA::12}" -o dist/fpbpack-linux-amd64 ./cmd/fpbpack
+          go build -trimpath -ldflags "-s -w -X main.version=${FPBPACK_VERSION::12}" -o dist/fpbpack-linux-amd64 ./cmd/fpbpack
           sha256sum dist/fpbpack-linux-amd64 > dist/fpbpack-linux-amd64.sha256
           file dist/fpbpack-linux-amd64
 
-      - name: Upload Unraid binary
+      - name: Build pinned Packwiz helper
+        working-directory: tools/fpbpack
+        env:
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: amd64
+        run: |
+          GOBIN="$PWD/dist" go install github.com/packwiz/packwiz@ef87d964f8cbd52b3b13ea42453ef322290e2b9e
+          mv dist/packwiz dist/packwiz-linux-amd64
+          sha256sum dist/packwiz-linux-amd64 > dist/packwiz-linux-amd64.sha256
+          file dist/packwiz-linux-amd64
+
+      - name: Upload Unraid binaries
         uses: actions/upload-artifact@v7
         with:
           name: fpbpack-linux-amd64
           path: |
             tools/fpbpack/dist/fpbpack-linux-amd64
             tools/fpbpack/dist/fpbpack-linux-amd64.sha256
+            tools/fpbpack/dist/packwiz-linux-amd64
+            tools/fpbpack/dist/packwiz-linux-amd64.sha256
           if-no-files-found: error
           retention-days: 30

@@ -11,7 +11,7 @@ It understands the current FPBCraft layout:
 
 `fpbpack inventory` is intentionally **read-only**. It inventories the live Crafty server without changing, deleting, moving, or downloading any mod JARs.
 
-For each JAR it records SHA-1/SHA-512 hashes, reads NeoForge/Forge metadata (and Fabric metadata as a fallback for Connector-hosted mods), and performs an exact SHA-512 lookup against Modrinth's version-file API.
+For each JAR it records SHA-1/SHA-512 hashes and the CurseForge Murmur2 fingerprint, reads NeoForge/Forge metadata (and Fabric metadata as a fallback for Connector-hosted mods), and performs an exact SHA-512 lookup against Modrinth's version-file API. CurseForge resolution is intentionally deferred to the catalog stage and delegated to upstream Packwiz.
 
 ```bash
 ./fpbpack inventory \
@@ -36,7 +36,7 @@ If your paths differ from the defaults:
 
 ## Catalog migration
 
-`fpbpack catalog` converts a verified inventory JSON into a Packwiz catalog without touching the live server.
+`fpbpack catalog` converts a verified inventory JSON into a Packwiz catalog without touching the live server. It can optionally use the bundled upstream Packwiz helper to identify CurseForge-only JARs.
 
 ```bash
 ./fpbpack catalog \
@@ -44,11 +44,24 @@ If your paths differ from the defaults:
   --output modpack
 ```
 
+To identify CurseForge-only JARs during migration:
+
+```bash
+./fpbpack catalog \
+  --inventory fpbpack-inventory.json \
+  --output modpack \
+  --resolve-curseforge \
+  --packwiz ./packwiz-linux-amd64
+```
+
+This does **not** run Packwiz against the live server directories. FPBPack copies only unresolved JARs into the generated catalog workspace, runs `packwiz curseforge detect` there, removes any unmatched temporary copies, refreshes the Packwiz index, and records successful CurseForge matches in `migration-report.json`. The original JARs remain untouched.
+
+
 The generator is conservative:
 
 - byte-identical JARs found in both locations are represented once;
 - if the same Modrinth project has multiple installed versions, all versions for that project are withheld from the generated Packwiz catalog and reported as a conflict;
-- JARs without an exact Modrinth match are reported as unresolved rather than guessed from filenames;
+- JARs without an exact Modrinth match are initially unresolved; optional Packwiz detection can convert exact CurseForge matches without filename guessing;
 - the original deployment location (`server` or `client`) is preserved separately from Packwiz `side` metadata;
 - Modrinth environment metadata that disagrees with the current deployment location is reported as a warning only; it never moves a live JAR;
 - generated output is deterministic and written separately from the Crafty server.
@@ -84,12 +97,12 @@ The generator refuses to replace a non-empty output directory unless `--force` i
 
 ## Unraid
 
-The Unraid host's Python installation is not used. CI builds a static Linux `amd64` executable with `CGO_ENABLED=0`, so the server only needs the resulting `fpbpack` binary.
+The Unraid host's Python installation is not used. CI builds static Linux `amd64` binaries for FPBPack and a pinned upstream Packwiz helper with `CGO_ENABLED=0`.
 
-Download the `fpbpack-linux-amd64` artifact from the **FPBPack** GitHub Actions workflow and copy the executable to the Unraid host:
+Download the `fpbpack-linux-amd64` artifact from the **FPBPack** GitHub Actions workflow. It contains both `fpbpack-linux-amd64` and `packwiz-linux-amd64` plus checksums. Copy both executables to the Unraid host:
 
 ```bash
-chmod +x fpbpack
+chmod +x fpbpack-linux-amd64 packwiz-linux-amd64
 ```
 
 ## Development
@@ -100,6 +113,7 @@ go test ./...
 go vet ./...
 go run ./cmd/fpbpack inventory --server-root /path/to/test/server --offline
 go run ./cmd/fpbpack catalog --inventory /path/to/fpbpack-inventory.json --output /tmp/fpbpack-modpack
+# Packwiz-backed CurseForge detection is integration-tested with a fake isolated helper.
 ```
 
-Future slices will resolve the remaining CurseForge/custom artifacts and add explicit plan/deploy commands. Deployment will only operate on files recorded as managed by fpbpack.
+Future slices will resolve explicit GitHub/custom artifacts and add explicit plan/deploy commands. Deployment will only operate on files recorded as managed by fpbpack. FPBPack does not embed or require a user-provided CurseForge API key.
