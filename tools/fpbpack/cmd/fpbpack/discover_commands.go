@@ -142,6 +142,7 @@ func runServe(args []string) int {
 			SetRule:      app.SetRule,
 			ClearRule:    app.ClearRule,
 			RefreshStatus: app.RefreshStatus,
+			Providers:     app.ProviderStatuses,
 			Web:          webHandler,
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
