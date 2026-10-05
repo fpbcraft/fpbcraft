@@ -76,6 +76,44 @@ type curseForgeStringResponse struct {
 	Data string `json:"data"`
 }
 
+type VerifiedCurseForgeSource struct {
+	ProjectID   string
+	FileID      uint32
+	DisplayName string
+	Filename    string
+}
+
+func (client *CurseForgeClient) VerifyInstalledFile(
+	ctx context.Context,
+	projectID string,
+	fileID uint32,
+	expectedSHA1 string,
+) (VerifiedCurseForgeSource, error) {
+	projectID = strings.TrimSpace(projectID)
+	expectedSHA1 = strings.ToLower(strings.TrimSpace(expectedSHA1))
+	if projectID == "" || fileID == 0 || expectedSHA1 == "" {
+		return VerifiedCurseForgeSource{}, fmt.Errorf("project ID, file ID, and current SHA-1 are required")
+	}
+
+	file, err := client.GetFile(ctx, projectID, fileID)
+	if err != nil {
+		return VerifiedCurseForgeSource{}, err
+	}
+	if strconv.Itoa(file.ModID) != projectID {
+		return VerifiedCurseForgeSource{}, fmt.Errorf("CurseForge file %d belongs to project %d, not %s", fileID, file.ModID, projectID)
+	}
+	if actual := curseForgeSHA1(file); !strings.EqualFold(actual, expectedSHA1) {
+		return VerifiedCurseForgeSource{}, fmt.Errorf("CurseForge file %d SHA-1 does not match the installed JAR", fileID)
+	}
+
+	return VerifiedCurseForgeSource{
+		ProjectID: projectID,
+		FileID: fileID,
+		DisplayName: file.DisplayName,
+		Filename: file.FileName,
+	}, nil
+}
+
 func (client *CurseForgeClient) Validate(ctx context.Context) error {
 	var response struct {
 		Data struct {
