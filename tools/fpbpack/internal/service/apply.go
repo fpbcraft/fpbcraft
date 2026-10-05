@@ -354,7 +354,7 @@ func (s *Service) validatePlanLiveState(plan planning.Plan) error {
 }
 
 func (s *Service) stagePlanTargets(plan planning.Plan) ([]stagedPlanOperation, error) {
-	cacheByHash := prefetchedByHash(plan)
+	cacheByHash := s.prefetchedByHash(plan)
 	staged := make([]stagedPlanOperation, 0)
 	for _, change := range plan.Changes {
 		for _, operation := range change.Operations {
