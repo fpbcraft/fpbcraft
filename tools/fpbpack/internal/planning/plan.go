@@ -43,6 +43,7 @@ type Artifact struct {
 	SHA256     string `json:"sha256,omitempty"`
 	SHA512     string `json:"sha512,omitempty"`
 	Deployment     string `json:"deployment"`
+	Environment    string `json:"environment,omitempty"`
 	ManualDownload bool   `json:"manual_download,omitempty"`
 	ManualProvided bool   `json:"manual_provided,omitempty"`
 	ManualURL      string `json:"manual_url,omitempty"`
@@ -259,7 +260,7 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 			Artifact: Artifact{
 				Provider: candidate.Provider, ProjectID: candidate.ProjectID,
 				VersionID: target.ID, Filename: target.Filename, URL: target.URL,
-				SHA1: target.SHA1, SHA256: target.SHA256, SHA512: target.SHA512, Deployment: string(candidate.Deployment),
+				SHA1: target.SHA1, SHA256: target.SHA256, SHA512: target.SHA512, Deployment: string(candidate.Deployment), Environment: candidate.Environment,
 				ManualDownload: target.ManualDownload, ManualURL: target.ManualURL,
 			},
 			Operations: []FileOperation{{
