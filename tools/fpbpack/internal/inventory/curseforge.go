@@ -94,7 +94,7 @@ func (client CurseForgeClient) matchBatch(ctx context.Context, fingerprints []ui
 		return nil, err
 	}
 
-	url := strings.TrimRight(client.BaseURL, "/") + "/v1/fingerprints/432"
+	url := strings.TrimRight(client.BaseURL, "/") + "/v1/fingerprints"
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
