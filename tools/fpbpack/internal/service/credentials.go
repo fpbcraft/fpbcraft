@@ -15,8 +15,9 @@ import (
 const ProviderSecretsSchemaVersion = 1
 
 type ProviderSecrets struct {
-	SchemaVersion      int    `json:"schema_version"`
-	CurseForgeAPIKey   string `json:"curseforge_api_key,omitempty"`
+	SchemaVersion    int    `json:"schema_version"`
+	CurseForgeAPIKey string `json:"curseforge_api_key,omitempty"`
+	CraftyAPIToken   string `json:"crafty_api_token,omitempty"`
 }
 
 func (s *Service) loadProviderSecrets() error {
