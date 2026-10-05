@@ -73,7 +73,7 @@ body {
   }
 
   .panel {
-    @apply surface rounded-box;
+    @apply rounded-box border border-base-300 bg-base-100;
   }
 
   .panel-header {
