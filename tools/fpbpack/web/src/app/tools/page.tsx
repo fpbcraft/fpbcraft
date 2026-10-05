@@ -3,6 +3,7 @@
 import {useState, type ReactNode} from 'react';
 import {
   Activity,
+  Boxes,
   Download,
   PackageSearch,
   RefreshCw,
@@ -11,14 +12,29 @@ import {
 } from 'lucide-react';
 import {useManagement} from '@/components/management-provider';
 import {PageHeader, Pill, formatDate} from '@/components/ui';
+import {api} from '@/lib/api';
 
-type ToolAction = 'inventory' | 'doctor' | 'updates' | 'full';
+type ToolAction = 'inventory' | 'doctor' | 'catalog' | 'updates' | 'full';
+
+interface CatalogPreview {
+  summary: {
+    inventory_jars: number;
+    unique_artifacts: number;
+    duplicate_artifacts: number;
+    generated_projects: number;
+    unresolved: number;
+    conflict_projects: number;
+    placement_warnings: number;
+    pinned_artifacts: number;
+  };
+}
 
 export default function ToolsPage() {
   const {state, refresh, checkUpdates, refreshInventory} = useManagement();
   const [running, setRunning] = useState<ToolAction | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [catalogPreview, setCatalogPreview] = useState<CatalogPreview | null>(null);
 
   const run = async (action: ToolAction) => {
     setRunning(action);
@@ -31,6 +47,16 @@ export default function ToolsPage() {
       } else if (action === 'full') {
         await refresh();
         setMessage('Full inventory + provider refresh requested.');
+      } else if (action === 'catalog') {
+        const report = await api<CatalogPreview>('/api/catalog/preview', {method: 'POST'});
+        setCatalogPreview(report);
+        setMessage(
+          'Catalog preview complete: ' +
+            report.summary.generated_projects +
+            ' managed project(s), ' +
+            report.summary.unresolved +
+            ' unresolved artifact(s).',
+        );
       } else {
         await refreshInventory();
         setMessage(
@@ -92,6 +118,14 @@ export default function ToolsPage() {
               onClick={() => void run('doctor')}
             />
             <ToolRow
+              icon={<Boxes size={16} />}
+              title="catalog preview"
+              description="Run the catalog analyzer against the current inventory without mutating accepted state or writing a Packwiz workspace."
+              disabled={running !== null}
+              busy={running === 'catalog'}
+              onClick={() => void run('catalog')}
+            />
+            <ToolRow
               icon={<PackageSearch size={16} />}
               title="updates"
               description="Query configured providers and rebuild the update report without rescanning the filesystem first."
@@ -134,6 +168,18 @@ export default function ToolsPage() {
               <dt className="text-base-content/45">Update candidates</dt>
               <dd>{state.updates.candidates.length}</dd>
             </div>
+            {catalogPreview ? (
+              <>
+                <div className="flex justify-between gap-4 px-4 py-3">
+                  <dt className="text-base-content/45">Preview managed projects</dt>
+                  <dd>{catalogPreview.summary.generated_projects}</dd>
+                </div>
+                <div className="flex justify-between gap-4 px-4 py-3">
+                  <dt className="text-base-content/45">Preview unresolved</dt>
+                  <dd>{catalogPreview.summary.unresolved}</dd>
+                </div>
+              </>
+            ) : null}
           </dl>
         </section>
       </div>
@@ -164,11 +210,10 @@ export default function ToolsPage() {
         <div className="flex items-start gap-3">
           <Terminal size={16} className="mt-0.5 shrink-0" />
           <p>
-            The legacy <span className="mono">catalog</span> migration command that writes a new
-            Packwiz workspace remains CLI-only because it accepts arbitrary output paths and an
-            external Packwiz helper. The running GUI exposes the accepted catalog directly instead.
-            <span className="mono"> serve</span> is this application itself, and
-            <span className="mono"> version</span> is shown above.
+            The GUI runs the read-only analysis portion of <span className="mono">catalog</span>.
+            Writing/replacing an arbitrary Packwiz workspace and invoking an external Packwiz helper
+            remain CLI-only. <span className="mono">serve</span> is this application itself, and
+            <span className="mono">version</span> is shown above.
           </p>
         </div>
       </section>
