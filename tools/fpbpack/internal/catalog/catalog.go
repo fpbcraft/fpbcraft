@@ -14,7 +14,7 @@ import (
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
 )
 
-const ReportSchemaVersion = 1
+const ReportSchemaVersion = 2
 
 type Options struct {
 	Name       string
@@ -44,14 +44,16 @@ type Unresolved struct {
 }
 
 type ConflictFile struct {
-	VersionID     string   `json:"version_id"`
-	VersionNumber string   `json:"version_number"`
+	VersionID     string   `json:"version_id,omitempty"`
+	VersionNumber string   `json:"version_number,omitempty"`
+	FileID        uint32   `json:"file_id,omitempty"`
 	Filename      string   `json:"filename"`
 	SHA512        string   `json:"sha512"`
 	Sources       []Source `json:"sources"`
 }
 
 type Conflict struct {
+	Provider  string         `json:"provider"`
 	ProjectID string         `json:"project_id"`
 	Files     []ConflictFile `json:"files"`
 }
@@ -85,12 +87,15 @@ type Report struct {
 }
 
 type Entry struct {
+	Provider    string             `json:"provider"`
 	ProjectID   string             `json:"project_id"`
-	VersionID   string             `json:"version_id"`
+	VersionID   string             `json:"version_id,omitempty"`
+	FileID      uint32             `json:"file_id,omitempty"`
 	Name        string             `json:"name"`
 	Filename    string             `json:"filename"`
+	SHA1        string             `json:"sha1,omitempty"`
 	SHA512      string             `json:"sha512"`
-	URL         string             `json:"url"`
+	URL         string             `json:"url,omitempty"`
 	Side        string             `json:"side"`
 	Deployment  inventory.Location `json:"deployment"`
 	Environment string             `json:"environment,omitempty"`
@@ -113,8 +118,8 @@ type indexFile struct {
 }
 
 func Build(inv inventory.Inventory) (Result, error) {
-	if inv.SchemaVersion != inventory.SchemaVersion {
-		return Result{}, fmt.Errorf("unsupported inventory schema %d (expected %d)", inv.SchemaVersion, inventory.SchemaVersion)
+	if inv.SchemaVersion < 1 || inv.SchemaVersion > inventory.SchemaVersion {
+		return Result{}, fmt.Errorf("unsupported inventory schema %d (supported: 1-%d)", inv.SchemaVersion, inventory.SchemaVersion)
 	}
 	if !inv.ModrinthChecked {
 		return Result{}, fmt.Errorf("inventory has no completed Modrinth exact-hash lookup")
@@ -161,33 +166,45 @@ func Build(inv inventory.Inventory) (Result, error) {
 
 	byProject := map[string][]artifact{}
 	for _, item := range artifacts {
-		if item.canonical.Modrinth == nil {
+		key := ""
+		switch {
+		case item.canonical.Modrinth != nil:
+			key = "modrinth:" + item.canonical.Modrinth.ProjectID
+		case item.canonical.CurseForge != nil:
+			key = fmt.Sprintf("curseforge:%d", item.canonical.CurseForge.ProjectID)
+		default:
 			report.Unresolved = append(report.Unresolved, Unresolved{
 				SHA512: item.canonical.SHA512, Filename: item.canonical.Filename,
 				Sources: item.sources, Metadata: item.canonical.Metadata,
 			})
 			continue
 		}
-		byProject[item.canonical.Modrinth.ProjectID] = append(byProject[item.canonical.Modrinth.ProjectID], item)
+		byProject[key] = append(byProject[key], item)
 	}
 
-	projectIDs := make([]string, 0, len(byProject))
-	for projectID := range byProject {
-		projectIDs = append(projectIDs, projectID)
+	projectKeys := make([]string, 0, len(byProject))
+	for key := range byProject {
+		projectKeys = append(projectKeys, key)
 	}
-	sort.Strings(projectIDs)
+	sort.Strings(projectKeys)
 
-	entries := make([]Entry, 0, len(projectIDs))
-	for _, projectID := range projectIDs {
-		items := byProject[projectID]
+	entries := make([]Entry, 0, len(projectKeys))
+	for _, projectKey := range projectKeys {
+		items := byProject[projectKey]
+		provider, projectID, _ := strings.Cut(projectKey, ":")
 		if len(items) != 1 {
-			conflict := Conflict{ProjectID: projectID}
+			conflict := Conflict{Provider: provider, ProjectID: projectID}
 			for _, item := range items {
-				match := item.canonical.Modrinth
-				conflict.Files = append(conflict.Files, ConflictFile{
-					VersionID: match.VersionID, VersionNumber: match.VersionNumber,
+				file := ConflictFile{
 					Filename: item.canonical.Filename, SHA512: item.canonical.SHA512, Sources: item.sources,
-				})
+				}
+				if item.canonical.Modrinth != nil {
+					file.VersionID = item.canonical.Modrinth.VersionID
+					file.VersionNumber = item.canonical.Modrinth.VersionNumber
+				} else if item.canonical.CurseForge != nil {
+					file.FileID = item.canonical.CurseForge.FileID
+				}
+				conflict.Files = append(conflict.Files, file)
 			}
 			sort.Slice(conflict.Files, func(i, j int) bool { return conflict.Files[i].Filename < conflict.Files[j].Filename })
 			report.Conflicts = append(report.Conflicts, conflict)
@@ -195,24 +212,44 @@ func Build(inv inventory.Inventory) (Result, error) {
 		}
 
 		item := items[0]
-		match := item.canonical.Modrinth
 		entry := Entry{
-			ProjectID: projectID, VersionID: match.VersionID,
+			Provider: provider, ProjectID: projectID,
 			Name: displayName(item.canonical), Filename: item.canonical.Filename,
-			SHA512: item.canonical.SHA512, URL: match.URL, Side: packwizSide(match.Environment, item.canonical.Location),
-			Deployment: item.canonical.Location, Environment: match.Environment, SourcePaths: item.sources,
+			SHA1: item.canonical.SHA1, SHA512: item.canonical.SHA512,
+			Deployment: item.canonical.Location, SourcePaths: item.sources,
 		}
-		if placementMismatch(entry.Deployment, entry.Environment) {
-			report.Placement = append(report.Placement, PlacementWarning{
-				ProjectID: projectID, Environment: entry.Environment, Deployment: entry.Deployment, Filename: entry.Filename,
-			})
-		}
-		if entry.URL == "" || entry.SHA512 == "" {
-			report.Unresolved = append(report.Unresolved, Unresolved{
-				SHA512: item.canonical.SHA512, Filename: item.canonical.Filename,
-				Sources: item.sources, Metadata: item.canonical.Metadata,
-			})
-			continue
+		switch provider {
+		case "modrinth":
+			match := item.canonical.Modrinth
+			entry.VersionID = match.VersionID
+			entry.URL = match.URL
+			entry.Environment = match.Environment
+			entry.Side = packwizSide(match.Environment, item.canonical.Location)
+			if placementMismatch(entry.Deployment, entry.Environment) {
+				report.Placement = append(report.Placement, PlacementWarning{
+					ProjectID: projectID, Environment: entry.Environment, Deployment: entry.Deployment, Filename: entry.Filename,
+				})
+			}
+			if entry.URL == "" || entry.SHA512 == "" {
+				report.Unresolved = append(report.Unresolved, Unresolved{
+					SHA512: item.canonical.SHA512, Filename: item.canonical.Filename,
+					Sources: item.sources, Metadata: item.canonical.Metadata,
+				})
+				continue
+			}
+		case "curseforge":
+			match := item.canonical.CurseForge
+			entry.FileID = match.FileID
+			entry.Side = packwizSide("", item.canonical.Location)
+			if entry.SHA1 == "" || entry.FileID == 0 {
+				report.Unresolved = append(report.Unresolved, Unresolved{
+					SHA512: item.canonical.SHA512, Filename: item.canonical.Filename,
+					Sources: item.sources, Metadata: item.canonical.Metadata,
+				})
+				continue
+			}
+		default:
+			return Result{}, fmt.Errorf("unsupported provider %q", provider)
 		}
 		entries = append(entries, entry)
 	}
@@ -278,7 +315,11 @@ func Write(result Result, opts Options) error {
 	indexFiles := make([]indexFile, 0, len(result.Entries))
 	for _, entry := range result.Entries {
 		content := renderMetafile(entry)
-		rel := filepath.ToSlash(filepath.Join("mods", entry.ProjectID+".pw.toml"))
+		metaName := entry.ProjectID + ".pw.toml"
+		if entry.Provider == "curseforge" {
+			metaName = "curseforge-" + entry.ProjectID + ".pw.toml"
+		}
+		rel := filepath.ToSlash(filepath.Join("mods", metaName))
 		path := filepath.Join(tmp, filepath.FromSlash(rel))
 		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 			return err
@@ -312,6 +353,9 @@ func displayName(mod inventory.ModFile) string {
 	if mod.Modrinth != nil && mod.Modrinth.VersionName != "" {
 		return mod.Modrinth.VersionName
 	}
+	if mod.CurseForge != nil && mod.CurseForge.DisplayName != "" {
+		return mod.CurseForge.DisplayName
+	}
 	return strings.TrimSuffix(mod.Filename, filepath.Ext(mod.Filename))
 }
 
@@ -338,8 +382,14 @@ func placementMismatch(deployment inventory.Location, environment string) bool {
 }
 
 func renderMetafile(entry Entry) string {
-	return fmt.Sprintf("name = %s\nfilename = %s\nside = %s\n\n[download]\nhash-format = \"sha512\"\nhash = %s\nmode = \"url\"\nurl = %s\n\n[update.modrinth]\nmod-id = %s\nversion = %s\n",
-		strconv.Quote(entry.Name), strconv.Quote(entry.Filename), strconv.Quote(entry.Side), strconv.Quote(entry.SHA512), strconv.Quote(entry.URL), strconv.Quote(entry.ProjectID), strconv.Quote(entry.VersionID))
+	switch entry.Provider {
+	case "curseforge":
+		return fmt.Sprintf("name = %s\nfilename = %s\nside = %s\n\n[download]\nhash-format = \"sha1\"\nhash = %s\nmode = \"metadata:curseforge\"\n\n[update.curseforge]\nfile-id = %d\nproject-id = %s\n",
+			strconv.Quote(entry.Name), strconv.Quote(entry.Filename), strconv.Quote(entry.Side), strconv.Quote(entry.SHA1), entry.FileID, entry.ProjectID)
+	default:
+		return fmt.Sprintf("name = %s\nfilename = %s\nside = %s\n\n[download]\nhash-format = \"sha512\"\nhash = %s\nmode = \"url\"\nurl = %s\n\n[update.modrinth]\nmod-id = %s\nversion = %s\n",
+			strconv.Quote(entry.Name), strconv.Quote(entry.Filename), strconv.Quote(entry.Side), strconv.Quote(entry.SHA512), strconv.Quote(entry.URL), strconv.Quote(entry.ProjectID), strconv.Quote(entry.VersionID))
+	}
 }
 
 func renderIndex(files []indexFile) string {
