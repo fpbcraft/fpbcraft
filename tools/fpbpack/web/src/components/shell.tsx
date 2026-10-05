@@ -23,7 +23,7 @@ const nav = [
 
 export function Shell({children}: {children: ReactNode}) {
   const pathname = usePathname();
-  const {connectionStatus} = useManagement();
+  const {state, connectionStatus} = useManagement();
 
   return (
     <div className="min-h-screen bg-base-200 lg:grid lg:grid-cols-[220px_minmax(0,1fr)]">
@@ -72,7 +72,9 @@ export function Shell({children}: {children: ReactNode}) {
               />
               <span>
                 {connectionStatus === 'connected'
-                  ? 'FPBPack connected'
+                  ? state.status.refresh?.refreshing
+                    ? 'Refreshing in background…'
+                    : 'FPBPack connected'
                   : connectionStatus === 'loading'
                     ? 'Connecting…'
                     : 'Service unavailable'}
