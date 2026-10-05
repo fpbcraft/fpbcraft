@@ -12,7 +12,7 @@ import (
 )
 
 func (s *Service) createRestorePoint(plan *planning.Plan) error {
-	if plan.Status != planning.StatusReady || !plan.Verified || !plan.RequiresBackup {
+	if plan.Status != planning.StatusReady || !plan.Verified {
 		return nil
 	}
 	backupID := "backup-" + strings.TrimPrefix(plan.ID, "plan-")
@@ -23,6 +23,12 @@ func (s *Service) createRestorePoint(plan *planning.Plan) error {
 	if err := readJSON(manifestPath, &existing); err == nil {
 		if existing.PlanID != plan.ID {
 			return fmt.Errorf("backup %s belongs to a different plan", backupID)
+		}
+		if existing.Catalog.SchemaVersion == 0 {
+			existing.Catalog = s.state.Catalog
+			if err := writeJSONAtomic(manifestPath, existing); err != nil {
+				return fmt.Errorf("upgrade restore point %s: %w", backupID, err)
+			}
 		}
 		plan.BackupID = backupID
 		return nil
@@ -35,6 +41,7 @@ func (s *Service) createRestorePoint(plan *planning.Plan) error {
 		ID: backupID,
 		PlanID: plan.ID,
 		CreatedAt: time.Now().UTC(),
+		Catalog: s.state.Catalog,
 	}
 	for _, change := range plan.Changes {
 		for _, operation := range change.Operations {
@@ -72,9 +79,6 @@ func (s *Service) createRestorePoint(plan *planning.Plan) error {
 				Bytes: bytes,
 			})
 		}
-	}
-	if len(manifest.Files) == 0 {
-		return fmt.Errorf("plan requires a restore point but has no replace operations to back up")
 	}
 	if err := writeJSONAtomic(manifestPath, manifest); err != nil {
 		return err
