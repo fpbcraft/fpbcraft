@@ -15,10 +15,12 @@ import (
 )
 
 type Options struct {
-	Minecraft       string
-	Loader          string
-	ModrinthBaseURL string
-	HTTPClient      *http.Client
+	Minecraft        string
+	Loader           string
+	ModrinthBaseURL  string
+	CurseForgeBaseURL string
+	CurseForgeAPIKey string
+	HTTPClient       *http.Client
 }
 
 func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
@@ -36,11 +38,15 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 	}
 
 	installedModrinth := map[string]catalog.Entry{}
+	installedCurseForge := map[string]catalog.Entry{}
 	projectIDs := make([]string, 0)
 	for _, entry := range cat.Managed {
-		if entry.Provider == "modrinth" {
+		switch entry.Provider {
+		case "modrinth":
 			installedModrinth[entry.ProjectID] = entry
 			projectIDs = append(projectIDs, entry.ProjectID)
+		case "curseforge":
+			installedCurseForge[entry.ProjectID] = entry
 		}
 	}
 
@@ -49,6 +55,11 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 		client.HTTPClient = opts.HTTPClient
 	}
 	projects, projectErr := client.ListProjects(ctx, projectIDs)
+	curseForgeClient := &CurseForgeClient{
+		BaseURL: opts.CurseForgeBaseURL,
+		APIKey: opts.CurseForgeAPIKey,
+		HTTPClient: opts.HTTPClient,
+	}
 
 	candidates := make([]Candidate, len(cat.Managed))
 	const providerConcurrency = 6
@@ -82,11 +93,27 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 					})
 				}
 				candidates[index] = candidate
-			case "curseforge", "github":
+			case "curseforge":
+				if strings.TrimSpace(opts.CurseForgeAPIKey) == "" {
+					candidates[index] = blockedProviderCandidate(
+						entry,
+						"curseforge_api_key_missing",
+						"CurseForge update discovery requires FPBPACK_CURSEFORGE_API_KEY.",
+					)
+				} else {
+					candidates[index] = discoverCurseForgeCandidate(
+						ctx,
+						curseForgeClient,
+						entry,
+						installedCurseForge,
+						opts,
+					)
+				}
+			case "github":
 				candidates[index] = blockedProviderCandidate(
 					entry,
-					"provider_discovery_pending",
-					"Update discovery for this provider is not implemented yet.",
+					"github_discovery_pending",
+					"GitHub release discovery is only enabled for verified GitHub release sources.",
 				)
 			default:
 				candidates[index] = blockedProviderCandidate(
