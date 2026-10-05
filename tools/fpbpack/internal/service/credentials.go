@@ -77,19 +77,18 @@ func (s *Service) SetProviderCredential(
 		return ProviderStatus{}, fmt.Errorf("validate CurseForge API key: %w", err)
 	}
 
-	s.mu.Lock()
-	previous := s.secrets
-	s.secrets.SchemaVersion = ProviderSecretsSchemaVersion
-	s.secrets.CurseForgeAPIKey = apiKey
+	s.mu.RLock()
 	next := s.secrets
-	s.mu.Unlock()
+	s.mu.RUnlock()
+	next.SchemaVersion = ProviderSecretsSchemaVersion
+	next.CurseForgeAPIKey = apiKey
 
 	if err := writeSecretJSONAtomic(filepath.Join(s.options.StateDir, "secrets.json"), next); err != nil {
-		s.mu.Lock()
-		s.secrets = previous
-		s.mu.Unlock()
 		return ProviderStatus{}, fmt.Errorf("persist provider credential: %w", err)
 	}
+	s.mu.Lock()
+	s.secrets = next
+	s.mu.Unlock()
 	return s.providerStatus("curseforge"), nil
 }
 
@@ -99,19 +98,18 @@ func (s *Service) ClearProviderCredential(provider string) (ProviderStatus, erro
 		return ProviderStatus{}, fmt.Errorf("provider %q does not support GUI credentials", provider)
 	}
 
-	s.mu.Lock()
-	previous := s.secrets
-	s.secrets.SchemaVersion = ProviderSecretsSchemaVersion
-	s.secrets.CurseForgeAPIKey = ""
+	s.mu.RLock()
 	next := s.secrets
-	s.mu.Unlock()
+	s.mu.RUnlock()
+	next.SchemaVersion = ProviderSecretsSchemaVersion
+	next.CurseForgeAPIKey = ""
 
 	if err := writeSecretJSONAtomic(filepath.Join(s.options.StateDir, "secrets.json"), next); err != nil {
-		s.mu.Lock()
-		s.secrets = previous
-		s.mu.Unlock()
 		return ProviderStatus{}, fmt.Errorf("persist provider credential: %w", err)
 	}
+	s.mu.Lock()
+	s.secrets = next
+	s.mu.Unlock()
 	return s.providerStatus("curseforge"), nil
 }
 
