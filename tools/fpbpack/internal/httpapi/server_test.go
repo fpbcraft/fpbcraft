@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -133,5 +134,35 @@ func TestWebHandlerIsServedWithoutShadowingAPI(t *testing.T) {
 	}
 	if apiRecorder.Header().Get("Content-Type") != "application/json; charset=utf-8" {
 		t.Fatalf("health endpoint was shadowed by web handler")
+	}
+}
+
+func TestRefreshEndpointsInvokeServiceCallbacks(t *testing.T) {
+	refreshCalls := 0
+	updateCalls := 0
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			Refresh: func(context.Context) error {
+				refreshCalls++
+				return nil
+			},
+			CheckUpdates: func(context.Context) error {
+				updateCalls++
+				return nil
+			},
+		},
+	)
+
+	for _, route := range []string{"/api/refresh", "/api/updates/check"} {
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, route, nil))
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("%s code = %d, want 200", route, recorder.Code)
+		}
+	}
+	if refreshCalls != 1 || updateCalls != 1 {
+		t.Fatalf("refresh calls = %d, update calls = %d", refreshCalls, updateCalls)
 	}
 }

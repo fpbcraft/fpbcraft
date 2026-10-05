@@ -136,17 +136,19 @@ Generate a read-only update report from the accepted catalog state:
 
 The first provider implementation performs Modrinth project/version discovery, rejects incompatible Minecraft/loader releases, classifies pre-releases and major-version jumps for review, preserves rejected newer candidates, and surfaces required/incompatible dependency relationships. CurseForge and GitHub update discovery are still reported as blocked/pending rather than guessed.
 
-FPBPack serves the static GUI and the API from the same HTTP process and origin:
+FPBPack serves the static GUI and API from one process. **Serve mode is self-contained**: the normal GUI path does not require running `inventory`, `catalog`, or `updates` first.
 
 ```bash
 ./fpbpack serve \
-  --inventory fpbpack-inventory.json \
-  --report modpack/migration-report.json \
-  --updates fpbpack-updates.json \
-  --listen 0.0.0.0:8787
+  --server-root /path/to/crafty/server \
+  --state-dir /path/to/fpbpack-state
 ```
 
-Open the same address in a browser, for example `http://tower.local:8787/`. The GUI calls relative `/api/*` routes, so there is no runtime API URL, CORS policy, Local Network Access permission, Vercel proxy, or second frontend service.
+On startup FPBPack scans the live server, reconciles it with durable FPBPack state, refreshes provider/update information, and writes its own inventory/update cache files under the state directory.
+
+The legacy `migration-report.json` is a one-time bootstrap source only. If no FPBPack state exists yet, `serve` can import an existing migration report and then persists its own `state.json`; subsequent starts no longer require the migration report.
+
+Open the same address in a browser, for example `http://tower.local:8787/`. The GUI calls relative `/api/*` routes.
 
 Release binaries embed the static GUI. For local frontend development, build/export the GUI separately and point FPBPack at it with `--web-dir web/out`.
 
@@ -157,9 +159,11 @@ The initial API is deliberately read-only:
 - `GET /api/inventory`
 - `GET /api/mods`
 - `GET /api/diagnostics`
-- `GET /api/updates` when `--updates` is configured
+- `GET /api/updates`
+- `POST /api/refresh`
+- `POST /api/updates/check`
 
-The service reloads its input JSON for each request so newly generated inventory and update-report files are visible without restarting FPBPack. Provider discovery is performed by the explicit `fpbpack updates` command; the HTTP service only exposes the resulting cached decision data. Mutation endpoints remain intentionally absent.
+The service owns inventory/reconciliation/update refreshes and persists generated cache snapshots under its state directory. The standalone `inventory`, `doctor`, and `updates` commands remain available for scripting and debugging, but are not required for GUI operation. Live-JAR mutation endpoints remain intentionally absent in Slice 1.
 
 ## Docker
 
@@ -171,17 +175,17 @@ Build from the repository root:
 docker build -f tools/fpbpack/Dockerfile -t fpbpack .
 ```
 
-Run it with the management files mounted into the container:
+Run it with the Minecraft server and FPBPack state mounted:
 
 ```bash
 docker run --rm \
   -p 8787:8787 \
-  -v /path/to/fpbpack:/data \
-  fpbpack serve \
-    --inventory /data/fpbpack-inventory.json \
-    --report /data/modpack/migration-report.json \
-    --updates /data/fpbpack-updates.json
+  -v /path/to/crafty/server:/server \
+  -v /mnt/user/appdata/fpbpack:/data \
+  fpbpack serve
 ```
+
+The container defaults to `/server` and `/data`. No separate inventory/update generation job is required.
 
 The same image is suitable for an eventual Unraid template. Future write-capable slices will mount only the server/state paths FPBPack actually needs.
 

@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -11,15 +12,20 @@ import (
 
 type Loader func() (management.Snapshot, error)
 type UpdatesLoader func() (updatecheck.Report, error)
+type RefreshFunc func(context.Context) error
 
 type ServerOptions struct {
-	Updates UpdatesLoader
-	Web     http.Handler
+	Updates      UpdatesLoader
+	Refresh      RefreshFunc
+	CheckUpdates RefreshFunc
+	Web          http.Handler
 }
 
 type Server struct {
 	loader        Loader
 	updatesLoader UpdatesLoader
+	refresh       RefreshFunc
+	checkUpdates  RefreshFunc
 	version       string
 }
 
@@ -28,7 +34,10 @@ func NewHandler(loader Loader, version string) http.Handler {
 }
 
 func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) http.Handler {
-	server := &Server{loader: loader, updatesLoader: opts.Updates, version: version}
+	server := &Server{
+		loader: loader, updatesLoader: opts.Updates, refresh: opts.Refresh,
+		checkUpdates: opts.CheckUpdates, version: version,
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", server.health)
 	mux.HandleFunc("GET /api/status", server.status)
@@ -36,6 +45,8 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("GET /api/mods", server.mods)
 	mux.HandleFunc("GET /api/diagnostics", server.diagnostics)
 	mux.HandleFunc("GET /api/updates", server.updates)
+	mux.HandleFunc("POST /api/refresh", server.refreshAll)
+	mux.HandleFunc("POST /api/updates/check", server.checkForUpdates)
 	if opts.Web != nil {
 		mux.Handle("/", opts.Web)
 	}
@@ -103,7 +114,7 @@ func (s *Server) diagnostics(w http.ResponseWriter, _ *http.Request) {
 
 func (s *Server) updates(w http.ResponseWriter, _ *http.Request) {
 	if s.updatesLoader == nil {
-		writeError(w, http.StatusServiceUnavailable, "update report is not configured")
+		writeError(w, http.StatusServiceUnavailable, "update discovery is not configured")
 		return
 	}
 	report, err := s.updatesLoader()
@@ -112,6 +123,30 @@ func (s *Server) updates(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, report)
+}
+
+func (s *Server) refreshAll(w http.ResponseWriter, r *http.Request) {
+	if s.refresh == nil {
+		writeError(w, http.StatusServiceUnavailable, "refresh is not configured")
+		return
+	}
+	if err := s.refresh(r.Context()); err != nil {
+		writeError(w, http.StatusServiceUnavailable, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "refreshed"})
+}
+
+func (s *Server) checkForUpdates(w http.ResponseWriter, r *http.Request) {
+	if s.checkUpdates == nil {
+		writeError(w, http.StatusServiceUnavailable, "update refresh is not configured")
+		return
+	}
+	if err := s.checkUpdates(r.Context()); err != nil {
+		writeError(w, http.StatusServiceUnavailable, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "refreshed"})
 }
 
 func (s *Server) load(w http.ResponseWriter) (management.Snapshot, bool) {

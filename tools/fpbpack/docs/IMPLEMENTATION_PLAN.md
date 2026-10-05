@@ -72,8 +72,15 @@ At the end of this slice, the app should answer:
 
 Implement the reusable application/service layer needed by both CLI and GUI.
 
-### Inventory and diagnostics
+### Application runtime, inventory, and diagnostics
 
+- make `fpbpack serve` the self-contained application mode;
+- require only the server root and FPBPack state directory for normal GUI operation;
+- load/persist durable FPBPack state under the state directory;
+- import the legacy migration report only as a one-time bootstrap when needed;
+- automatically scan the live server at startup and on GUI refresh;
+- automatically refresh/update internal inventory and update caches;
+- keep standalone CLI commands optional rather than prerequisites;
 - add `doctor`-style diagnostics;
 - detect managed files changed outside FPBPack;
 - distinguish actionable problems from informational metadata;
@@ -141,7 +148,9 @@ A simple durable JSON/state file is acceptable initially. Avoid adding a databas
 
 ### Local API
 
-Introduce the FPBPack local HTTP service with the minimum useful read/update-discovery API.
+The FPBPack HTTP service owns current application state instead of reading user-supplied inventory/report/update files on every request.
+
+Introduce the minimum useful read/update-discovery API.
 
 Expected capabilities, not necessarily exact routes:
 
@@ -149,6 +158,7 @@ Expected capabilities, not necessarily exact routes:
 - inventory/mod list;
 - mod details;
 - diagnostics;
+- refresh inventory/reconciliation;
 - refresh/check updates;
 - current update candidates;
 - pin/ignore mutations.
@@ -256,6 +266,7 @@ Slice 1 is complete when, on the real FPBCraft inventory:
 - changelogs can be read in-app;
 - mod icons and provider links work;
 - pins/ignores persist;
+- starting the GUI does not require separately generated inventory, migration-report, or updates JSON files;
 - the six unmanaged custom artifacts appear normally but have no update action;
 - no live mod JAR can yet be changed.
 
@@ -617,8 +628,8 @@ The user merges PRs manually.
 
 To keep delivery fast:
 
-- target at most **one FPBPack PR and one GUI PR per slice**;
-- stack GUI/backend PRs when necessary, but do not fragment features into micro-PRs;
+- target at most **one combined FPBPack PR per slice**;
+- keep GUI/backend changes together when they share a contract; do not fragment features into micro-PRs;
 - keep commits internally reviewable even when the PR is substantial;
 - do not merge on the user's behalf;
 - CI must pass before calling a slice complete.

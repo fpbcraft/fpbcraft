@@ -67,6 +67,10 @@ func (s Source) Load() (Snapshot, error) {
 		return Snapshot{}, fmt.Errorf("load migration report: %w", err)
 	}
 
+	return BuildSnapshot(inv, cat), nil
+}
+
+func BuildSnapshot(inv inventory.Inventory, cat catalog.Report) Snapshot {
 	diagnostics := doctor.Analyze(inv, cat)
 	mods := BuildMods(inv, cat)
 	status := Status{
@@ -79,13 +83,12 @@ func (s Source) Load() (Snapshot, error) {
 		Unmanaged:            len(cat.Pinned),
 		Diagnostics:          diagnostics.Summary,
 	}
-
 	return Snapshot{
 		Inventory:   inv,
 		Diagnostics: diagnostics,
 		Mods:        mods,
 		Status:      status,
-	}, nil
+	}
 }
 
 func BuildMods(inv inventory.Inventory, cat catalog.Report) []Mod {
