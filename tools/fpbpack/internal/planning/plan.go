@@ -83,6 +83,7 @@ type Plan struct {
 	Prefetched           []PrefetchedArtifact `json:"prefetched,omitempty"`
 	Verified             bool                 `json:"verified"`
 	VerifiedAt           *time.Time            `json:"verified_at,omitempty"`
+	BackupID             string                `json:"backup_id,omitempty"`
 	RequiresServerStop   bool                 `json:"requires_server_stop"`
 	RequiresBackup       bool                 `json:"requires_backup"`
 }

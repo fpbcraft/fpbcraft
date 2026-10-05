@@ -28,9 +28,11 @@ func (s *Service) CreatePlan(ctx context.Context, candidateKeys []string) (plann
 	}
 	planPath := filepath.Join(s.options.StateDir, "plans", plan.ID+".json")
 	var existing planning.Plan
-	if err := readJSON(planPath, &existing); err == nil && existing.Verified {
-		return existing, nil
-	} else if err != nil && !os.IsNotExist(err) {
+	if err := readJSON(planPath, &existing); err == nil {
+		if s.persistedPlanReady(existing) {
+			return existing, nil
+		}
+	} else if !os.IsNotExist(err) {
 		return planning.Plan{}, fmt.Errorf("read existing plan: %w", err)
 	}
 
@@ -129,4 +131,21 @@ func validPlanID(id string) bool {
 		}
 	}
 	return true
+}
+
+func (s *Service) persistedPlanReady(plan planning.Plan) bool {
+	if plan.Status != planning.StatusReady || !plan.Verified {
+		return false
+	}
+	if !plan.RequiresBackup {
+		return true
+	}
+	if plan.BackupID == "" {
+		return false
+	}
+	var manifest planning.BackupManifest
+	if err := readJSON(filepath.Join(s.options.StateDir, "backups", plan.BackupID, "manifest.json"), &manifest); err != nil {
+		return false
+	}
+	return manifest.PlanID == plan.ID && len(manifest.Files) > 0
 }

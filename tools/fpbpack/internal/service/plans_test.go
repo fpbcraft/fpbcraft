@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/planning"
 )
 
 func TestValidPlanID(t *testing.T) {
@@ -35,5 +37,31 @@ func TestPlansAndHistoryReturnEmptyForFreshState(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(service.options.StateDir, "plans")); !os.IsNotExist(err) {
 		t.Fatalf("reading plans should not create directories")
+	}
+}
+
+func TestPersistedPlanReadyRequiresRestorePoint(t *testing.T) {
+	stateDir := t.TempDir()
+	s := &Service{options: Options{StateDir: stateDir}}
+	plan := planning.Plan{
+		ID: "plan-0123456789abcdef",
+		Status: planning.StatusReady,
+		Verified: true,
+		RequiresBackup: true,
+		BackupID: "backup-0123456789abcdef",
+	}
+	if s.persistedPlanReady(plan) {
+		t.Fatal("plan without backup manifest must not be reusable")
+	}
+	manifest := planning.BackupManifest{
+		ID: plan.BackupID,
+		PlanID: plan.ID,
+		Files: []planning.BackupFile{{SourcePath: "mods/a.jar", BackupPath: "files/mods/a.jar"}},
+	}
+	if err := writeJSONAtomic(filepath.Join(stateDir, "backups", plan.BackupID, "manifest.json"), manifest); err != nil {
+		t.Fatal(err)
+	}
+	if !s.persistedPlanReady(plan) {
+		t.Fatal("verified plan with restore point should be reusable")
 	}
 }
