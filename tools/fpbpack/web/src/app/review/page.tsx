@@ -8,15 +8,23 @@ import {
   ExternalLink,
   FileArchive,
   HardDriveDownload,
+  Play,
   ShieldCheck,
+  Square,
 } from 'lucide-react';
 import {PageHeader, Pill, formatDate} from '@/components/ui';
 import {api} from '@/lib/api';
+import {useManagement} from '@/components/management-provider';
 import type {UpdatePlan} from '@/lib/management';
 
 export default function ReviewPage() {
+  const {state, reload} = useManagement();
   const [plan, setPlan] = useState<UpdatePlan | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [operationError, setOperationError] = useState<string | null>(null);
+  const [applying, setApplying] = useState(false);
+  const [stopping, setStopping] = useState(false);
+  const [starting, setStarting] = useState(false);
 
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get('id');
@@ -28,6 +36,54 @@ export default function ReviewPage() {
       .then(setPlan)
       .catch((value: unknown) => setError(value instanceof Error ? value.message : String(value)));
   }, []);
+
+  const reloadPlan = async (id: string) => {
+    const updated = await api<UpdatePlan>('/api/plans/' + encodeURIComponent(id));
+    setPlan(updated);
+    return updated;
+  };
+
+  const stopServer = async () => {
+    setStopping(true);
+    setOperationError(null);
+    try {
+      await api('/api/server/stop', {method: 'POST'});
+      await reload({silent: true});
+    } catch (value: unknown) {
+      setOperationError(value instanceof Error ? value.message : String(value));
+    } finally {
+      setStopping(false);
+    }
+  };
+
+  const startServer = async () => {
+    setStarting(true);
+    setOperationError(null);
+    try {
+      await api('/api/server/start', {method: 'POST'});
+      await reload({silent: true});
+    } catch (value: unknown) {
+      setOperationError(value instanceof Error ? value.message : String(value));
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const applyPlan = async () => {
+    if (!plan) return;
+    setApplying(true);
+    setOperationError(null);
+    try {
+      await api('/api/plans/' + encodeURIComponent(plan.id) + '/apply', {
+        method: 'POST',
+      });
+      await Promise.all([reloadPlan(plan.id), reload({silent: true})]);
+    } catch (value: unknown) {
+      setOperationError(value instanceof Error ? value.message : String(value));
+    } finally {
+      setApplying(false);
+    }
+  };
 
   if (error) {
     return (
@@ -63,6 +119,16 @@ export default function ReviewPage() {
         action={<Pill tone={ready ? 'good' : 'bad'}>{plan.status}</Pill>}
       />
 
+      {operationError ? (
+        <div className="alert alert-error mb-4 rounded-box py-3 text-sm">{operationError}</div>
+      ) : null}
+
+      {plan.applied_at ? (
+        <div className="alert alert-success mb-4 rounded-box py-3 text-sm">
+          Applied {formatDate(plan.applied_at)}. The server was intentionally left stopped.
+        </div>
+      ) : null}
+
       <section className="mb-4 grid gap-3 sm:grid-cols-3">
         <div className="surface rounded-box px-4 py-3">
           <div className="section-label">Changes</div>
@@ -80,7 +146,13 @@ export default function ReviewPage() {
           <div className="section-label">Server</div>
           <div className="mt-2 flex items-center gap-2 text-sm">
             <ShieldCheck size={15} className="text-base-content/40" />
-            {plan.requires_server_stop ? 'Must be stopped before Apply' : 'No stop required'}
+            {plan.requires_server_stop
+              ? state.status.server_state === 'stopped'
+                ? 'Stopped · ready for Apply'
+                : state.status.server_state === 'running'
+                  ? 'Running · stop before Apply'
+                  : 'State unknown · Apply blocked'
+              : 'No stop required'}
           </div>
         </div>
       </section>
@@ -216,15 +288,57 @@ export default function ReviewPage() {
         </div>
       </section>
 
-      <div className="sticky bottom-0 mt-4 flex items-center justify-between gap-4 border-t border-base-300 bg-base-200/95 py-3 backdrop-blur">
+      <div className="sticky bottom-0 mt-4 flex flex-col gap-3 border-t border-base-300 bg-base-200/95 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
         <div className="text-xs text-base-content/45">
-          {ready && plan.verified && plan.backup_id
-            ? 'Targets are hash-verified and the current files have a restore point.'
-            : 'This plan cannot proceed while verification, backup, or blockers remain.'}
+          {plan.applied_at
+            ? 'Apply completed. Start the server manually when you are ready.'
+            : ready && plan.verified && plan.backup_id
+              ? state.status.server_state === 'stopped'
+                ? 'Targets and restore point are verified; live state is rechecked again before mutation.'
+                : 'The reviewed plan is protected, but the Minecraft server must be stopped first.'
+              : 'This plan cannot proceed while verification, restore protection, or blockers remain.'}
         </div>
-        <button className="btn btn-sm btn-primary" type="button" disabled>
-          Apply unavailable until Slice 3
-        </button>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {state.status.server_state === 'running' && !plan.applied_at ? (
+            <button
+              className="btn btn-sm btn-warning"
+              type="button"
+              disabled={stopping}
+              onClick={() => void stopServer()}
+            >
+              {stopping ? <span className="loading loading-spinner loading-xs" /> : <Square size={13} />}
+              Stop server
+            </button>
+          ) : null}
+          {plan.applied_at && state.status.server_state === 'stopped' ? (
+            <button
+              className="btn btn-sm btn-success"
+              type="button"
+              disabled={starting}
+              onClick={() => void startServer()}
+            >
+              {starting ? <span className="loading loading-spinner loading-xs" /> : <Play size={13} />}
+              Start server
+            </button>
+          ) : null}
+          {!plan.applied_at ? (
+            <button
+              className="btn btn-sm btn-primary"
+              type="button"
+              disabled={
+                applying ||
+                !ready ||
+                !plan.verified ||
+                !plan.backup_id ||
+                (plan.requires_server_stop && state.status.server_state !== 'stopped')
+              }
+              onClick={() => void applyPlan()}
+            >
+              {applying ? <span className="loading loading-spinner loading-xs" /> : null}
+              Apply reviewed plan
+            </button>
+          ) : null}
+        </div>
       </div>
     </>
   );
