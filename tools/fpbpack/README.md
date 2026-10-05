@@ -71,7 +71,6 @@ Source registry entries are keyed by the installed JAR's exact SHA-512. A `githu
 
 For the current FPBCraft migration, the six BlueMap/custom artifacts are intentionally configured as `pinned_local`. They remain visible in `migration-report.json`, but FPBPack generates no Packwiz metafiles for them, so `packwiz update` cannot update, replace, or remove them.
 
-
 The generator is conservative:
 
 - byte-identical JARs found in both locations are represented once;
@@ -137,7 +136,7 @@ Generate a read-only update report from the accepted catalog state:
 
 The first provider implementation performs Modrinth project/version discovery, rejects incompatible Minecraft/loader releases, classifies pre-releases and major-version jumps for review, preserves rejected newer candidates, and surfaces required/incompatible dependency relationships. CurseForge and GitHub update discovery are still reported as blocked/pending rather than guessed.
 
-To expose the same state to the dashboard without permitting mutation:
+To expose the same state to a dashboard running on the same machine:
 
 ```bash
 ./fpbpack serve \
@@ -146,6 +145,19 @@ To expose the same state to the dashboard without permitting mutation:
   --updates fpbpack-updates.json \
   --listen 127.0.0.1:8787
 ```
+
+For a hosted GUI such as Vercel to connect directly from the user's browser to an Unraid server on the same LAN, bind FPBPack to the LAN interface and allow the exact GUI origin:
+
+```bash
+./fpbpack serve \
+  --inventory fpbpack-inventory.json \
+  --report modpack/migration-report.json \
+  --updates fpbpack-updates.json \
+  --listen 0.0.0.0:8787 \
+  --cors-origin https://your-fpbcraft-gui.vercel.app
+```
+
+`--cors-origin` may be repeated for additional trusted production/preview origins. The API still does not need to be exposed to the public Internet: the browser connects to the Unraid LAN address directly. Do not add a router port-forward for FPBPack. Current Chrome versions may prompt the user to allow the Vercel site to access devices on the local network.
 
 The initial API is deliberately read-only:
 
