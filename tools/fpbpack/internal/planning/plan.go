@@ -62,19 +62,29 @@ type Change struct {
 	Operations       []FileOperation            `json:"operations"`
 }
 
+type PrefetchedArtifact struct {
+	Filename  string `json:"filename"`
+	SHA512    string `json:"sha512"`
+	CachePath string `json:"cache_path"`
+	Bytes     int64  `json:"bytes"`
+}
+
 type Plan struct {
-	SchemaVersion        int       `json:"schema_version"`
-	ID                   string    `json:"id"`
-	CreatedAt            time.Time `json:"created_at"`
-	Status               Status    `json:"status"`
-	InventoryGeneratedAt time.Time `json:"inventory_generated_at"`
-	UpdatesGeneratedAt   time.Time `json:"updates_generated_at"`
-	Selected             []string  `json:"selected"`
-	Changes              []Change  `json:"changes"`
-	Warnings             []Finding `json:"warnings,omitempty"`
-	Blockers             []Finding `json:"blockers,omitempty"`
-	RequiresServerStop   bool      `json:"requires_server_stop"`
-	RequiresBackup       bool      `json:"requires_backup"`
+	SchemaVersion        int                  `json:"schema_version"`
+	ID                   string               `json:"id"`
+	CreatedAt            time.Time            `json:"created_at"`
+	Status               Status               `json:"status"`
+	InventoryGeneratedAt time.Time            `json:"inventory_generated_at"`
+	UpdatesGeneratedAt   time.Time            `json:"updates_generated_at"`
+	Selected             []string             `json:"selected"`
+	Changes              []Change             `json:"changes"`
+	Warnings             []Finding            `json:"warnings,omitempty"`
+	Blockers             []Finding            `json:"blockers,omitempty"`
+	Prefetched           []PrefetchedArtifact `json:"prefetched,omitempty"`
+	Verified             bool                 `json:"verified"`
+	VerifiedAt           *time.Time            `json:"verified_at,omitempty"`
+	RequiresServerStop   bool                 `json:"requires_server_stop"`
+	RequiresBackup       bool                 `json:"requires_backup"`
 }
 
 type Summary struct {
@@ -84,6 +94,7 @@ type Summary struct {
 	Changes   int       `json:"changes"`
 	Blockers  int       `json:"blockers"`
 	Warnings  int       `json:"warnings"`
+	Verified  bool      `json:"verified"`
 }
 
 type HistoryEvent struct {
@@ -243,7 +254,7 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 func (p Plan) Summary() Summary {
 	return Summary{
 		ID: p.ID, CreatedAt: p.CreatedAt, Status: p.Status, Changes: len(p.Changes),
-		Blockers: len(p.Blockers), Warnings: len(p.Warnings),
+		Blockers: len(p.Blockers), Warnings: len(p.Warnings), Verified: p.Verified,
 	}
 }
 

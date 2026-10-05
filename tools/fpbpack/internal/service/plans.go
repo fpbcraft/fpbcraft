@@ -12,7 +12,7 @@ import (
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/planning"
 )
 
-func (s *Service) CreatePlan(_ context.Context, candidateKeys []string) (planning.Plan, error) {
+func (s *Service) CreatePlan(ctx context.Context, candidateKeys []string) (planning.Plan, error) {
 	s.mu.RLock()
 	snapshot := s.snapshot
 	report := s.updates
@@ -28,12 +28,13 @@ func (s *Service) CreatePlan(_ context.Context, candidateKeys []string) (plannin
 	}
 	planPath := filepath.Join(s.options.StateDir, "plans", plan.ID+".json")
 	var existing planning.Plan
-	if err := readJSON(planPath, &existing); err == nil {
+	if err := readJSON(planPath, &existing); err == nil && existing.Verified {
 		return existing, nil
-	} else if !os.IsNotExist(err) {
+	} else if err != nil && !os.IsNotExist(err) {
 		return planning.Plan{}, fmt.Errorf("read existing plan: %w", err)
 	}
 
+	s.verifyPlanArtifacts(ctx, &plan)
 	if err := writeJSONAtomic(planPath, plan); err != nil {
 		return planning.Plan{}, fmt.Errorf("persist plan: %w", err)
 	}
