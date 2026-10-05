@@ -16,9 +16,7 @@ type Options struct {
 	Minecraft       string
 	Loader          string
 	ModrinthBaseURL string
-	HTTPClient      interface {
-		Do(*http.Request) (*http.Response, error)
-	}
+	HTTPClient      *http.Client
 }
 
 func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
