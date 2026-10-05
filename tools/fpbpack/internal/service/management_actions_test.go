@@ -1,6 +1,8 @@
 package service
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -208,5 +210,102 @@ func TestSetPreferredPlacementDoesNotMoveLiveArtifact(t *testing.T) {
 	}
 	if got := s.snapshot.Mods[0].PreferredDeployment; got != inventory.LocationClient {
 		t.Fatalf("preferred deployment in snapshot = %q", got)
+	}
+}
+
+
+func TestForgetMissingAcceptedEntryClearsAbsentUnresolvedArtifact(t *testing.T) {
+	now := time.Now().UTC()
+	serverRoot := t.TempDir()
+	cat := catalog.Report{
+		SchemaVersion: catalog.ReportSchemaVersion,
+		InventorySchema: inventory.SchemaVersion,
+		Unresolved: []catalog.Unresolved{{
+			SHA512: "stale",
+			Filename: "bluemap3d-bundle-4.0.0-1.21.1.jar",
+			Sources: []catalog.Source{{
+				Location: inventory.LocationServer,
+				Path: "mods/bluemap3d-bundle-4.0.0-1.21.1.jar",
+			}},
+		}},
+	}
+	cat.RecalculateSummary()
+	inv := inventory.Inventory{
+		SchemaVersion: inventory.SchemaVersion,
+		GeneratedAt: now,
+		ModrinthChecked: true,
+	}
+	s := &Service{
+		options: Options{StateDir: t.TempDir(), ServerRoot: serverRoot},
+		state: State{
+			SchemaVersion: StateSchemaVersion,
+			CreatedAt: now,
+			UpdatedAt: now,
+			Settings: RuntimeSettings{RetentionCount: DefaultRetentionCount},
+			Catalog: cat,
+		},
+		snapshot: management.BuildSnapshot(inv, cat),
+	}
+
+	if s.snapshot.Diagnostics.Summary.Blocking != 1 {
+		t.Fatalf("fixture blocking = %d", s.snapshot.Diagnostics.Summary.Blocking)
+	}
+	result, err := s.forgetMissingAcceptedEntry("mods/bluemap3d-bundle-4.0.0-1.21.1.jar")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s.state.Catalog.Unresolved) != 0 {
+		t.Fatalf("unresolved entry still exists: %+v", s.state.Catalog.Unresolved)
+	}
+	if s.snapshot.Diagnostics.Summary.Blocking != 0 {
+		t.Fatalf("blocking diagnostic remains: %+v", s.snapshot.Diagnostics.Findings)
+	}
+	if result.Message == "" {
+		t.Fatal("expected confirmation message")
+	}
+}
+
+func TestForgetMissingAcceptedEntryRefusesLiveFile(t *testing.T) {
+	now := time.Now().UTC()
+	serverRoot := t.TempDir()
+	path := "mods/still-here.jar"
+	fullPath := filepath.Join(serverRoot, filepath.FromSlash(path))
+	if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(fullPath, []byte("present"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cat := catalog.Report{
+		SchemaVersion: catalog.ReportSchemaVersion,
+		InventorySchema: inventory.SchemaVersion,
+		Unresolved: []catalog.Unresolved{{
+			SHA512: "stale",
+			Filename: "still-here.jar",
+			Sources: []catalog.Source{{Location: inventory.LocationServer, Path: path}},
+		}},
+	}
+	cat.RecalculateSummary()
+	s := &Service{
+		options: Options{StateDir: t.TempDir(), ServerRoot: serverRoot},
+		state: State{
+			SchemaVersion: StateSchemaVersion,
+			CreatedAt: now,
+			UpdatedAt: now,
+			Settings: RuntimeSettings{RetentionCount: DefaultRetentionCount},
+			Catalog: cat,
+		},
+		snapshot: management.BuildSnapshot(inventory.Inventory{
+			SchemaVersion: inventory.SchemaVersion,
+			GeneratedAt: now,
+			ModrinthChecked: true,
+		}, cat),
+	}
+
+	if _, err := s.forgetMissingAcceptedEntry(path); err == nil {
+		t.Fatal("live file should prevent forgetting catalog state")
+	}
+	if len(s.state.Catalog.Unresolved) != 1 {
+		t.Fatal("catalog changed despite live-file guard")
 	}
 }
