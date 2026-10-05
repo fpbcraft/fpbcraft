@@ -71,8 +71,10 @@ func runInventory(args []string) int {
 	serverMods := flags.String("server-mods", inventory.DefaultServerModsPath, "server/common mods path relative to server root")
 	clientMods := flags.String("client-mods", inventory.DefaultClientModsPath, "AutoModpack client-only mods path relative to server root")
 	jsonPath := flags.String("json", "", "also write complete inventory JSON to this path")
-	offline := flags.Bool("offline", false, "skip Modrinth exact-hash lookup")
+	offline := flags.Bool("offline", false, "skip all remote exact-source lookups")
 	modrinthAPI := flags.String("modrinth-api", inventory.DefaultModrinthAPI, "Modrinth API base URL")
+	curseForgeAPI := flags.String("curseforge-api", inventory.DefaultCurseForgeAPI, "CurseForge API base URL")
+	curseForgeAPIKey := flags.String("curseforge-api-key", os.Getenv("CURSEFORGE_API_KEY"), "CurseForge API key (defaults to CURSEFORGE_API_KEY)")
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
