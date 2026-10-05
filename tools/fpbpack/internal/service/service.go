@@ -100,6 +100,7 @@ func (s *Service) loadRuntimeCaches() {
 
 	var report updatecheck.Report
 	if err := readJSON(filepath.Join(s.options.StateDir, "updates.json"), &report); err == nil {
+		s.applyUpdateRules(&report)
 		s.updates = report
 		s.hasUpdate = true
 	}
