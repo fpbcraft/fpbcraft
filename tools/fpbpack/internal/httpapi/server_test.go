@@ -13,6 +13,7 @@ import (
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/planning"
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/service"
 	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
 
@@ -211,5 +212,35 @@ func TestPlanEndpointsCreateAndReadPlans(t *testing.T) {
 		if recorder.Code != http.StatusOK {
 			t.Fatalf("%s code = %d, want 200", route, recorder.Code)
 		}
+	}
+}
+
+func TestRetentionSettingsEndpointsReadAndUpdate(t *testing.T) {
+	current := service.RuntimeSettings{RetentionCount: 20}
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			Retention: func() service.RuntimeSettings { return current },
+			UpdateRetention: func(value service.RuntimeSettings) (service.RuntimeSettings, error) {
+				current = value
+				return current, nil
+			},
+		},
+	)
+
+	get := httptest.NewRecorder()
+	handler.ServeHTTP(get, httptest.NewRequest(http.MethodGet, "/api/settings", nil))
+	if get.Code != http.StatusOK {
+		t.Fatalf("GET settings = %d", get.Code)
+	}
+
+	put := httptest.NewRecorder()
+	handler.ServeHTTP(put, httptest.NewRequest(http.MethodPut, "/api/settings", strings.NewReader(`{"retention_count":12}`)))
+	if put.Code != http.StatusOK {
+		t.Fatalf("PUT settings = %d: %s", put.Code, put.Body.String())
+	}
+	if current.RetentionCount != 12 {
+		t.Fatalf("retention = %d, want 12", current.RetentionCount)
 	}
 }
