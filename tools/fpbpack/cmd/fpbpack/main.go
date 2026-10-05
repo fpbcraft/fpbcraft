@@ -33,6 +33,8 @@ func run(args []string) int {
 		return runCatalog(args[1:])
 	case "doctor":
 		return runDoctor(args[1:])
+	case "updates":
+		return runUpdates(args[1:])
 	case "serve":
 		return runServe(args[1:])
 	case "version", "--version", "-version":
@@ -55,6 +57,7 @@ Usage:
   fpbpack inventory --server-root PATH [options]
   fpbpack catalog --inventory FILE [options]
   fpbpack doctor --inventory FILE --report FILE [options]
+  fpbpack updates --report FILE [options]
   fpbpack serve --inventory FILE --report FILE [options]
   fpbpack version
 
@@ -73,6 +76,7 @@ Options are available with:
   fpbpack inventory --help
   fpbpack catalog --help
   fpbpack doctor --help
+  fpbpack updates --help
   fpbpack serve --help`)
 }
 
