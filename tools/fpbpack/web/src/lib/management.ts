@@ -55,6 +55,8 @@ export interface ManagementMod {
   management: 'managed' | 'unmanaged' | 'unresolved' | 'external' | string;
   path: string;
   sha512?: string;
+  manual_download?: boolean;
+  manual_url?: string;
 }
 
 export interface UpdateReason {
@@ -121,6 +123,8 @@ export interface UpdateCandidate {
   dependencies?: UpdateDependency[];
   changelogs?: UpdateChangelogEntry[];
   required_by?: string[];
+  metadata_stale?: boolean;
+  refresh_error?: string;
 }
 
 export interface UpdateSummary {
@@ -203,6 +207,8 @@ export interface PlanArtifact {
   sha256?: string;
   sha512: string;
   deployment: string;
+  manual_download?: boolean;
+  manual_url?: string;
 }
 
 export interface PlanFileOperation {
