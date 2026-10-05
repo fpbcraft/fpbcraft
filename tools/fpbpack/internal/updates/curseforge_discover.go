@@ -2,6 +2,7 @@ package updates
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -77,18 +78,27 @@ func discoverCurseForgeCandidate(
 	sort.Slice(valid, func(i, j int) bool { return valid[i].FileDate.After(valid[j].FileDate) })
 
 	targetFile := valid[0]
-	targetURL, err := client.DownloadURL(ctx, entry.ProjectID, targetFile)
-	if err != nil {
-		candidate.Classification = ClassificationBlocked
-		candidate.Reasons = []Reason{{
-			Code: "target_download_unavailable",
-			Message: "CurseForge target download is unavailable: " + err.Error(),
-		}}
-		return candidate
-	}
+	targetURL, downloadErr := client.DownloadURL(ctx, entry.ProjectID, targetFile)
 	target := releaseFromCurseForge(targetFile, targetURL)
-	candidate.Target = &target
 	candidate.Classification = ClassificationSafe
+	if downloadErr != nil {
+		if isCurseForgeManualDownload(downloadErr) {
+			target.ManualDownload = true
+			target.ManualURL = curseForgeManualURL(candidate.ProjectURL, targetFile.ID)
+			promote(&candidate, ClassificationReview, Reason{
+				Code: "manual_download_required",
+				Message: "CurseForge does not permit third-party direct download for this file. Download it manually from CurseForge before Apply.",
+			})
+		} else {
+			candidate.Classification = ClassificationBlocked
+			candidate.Reasons = []Reason{{
+				Code: "target_download_unavailable",
+				Message: "CurseForge target download lookup failed: " + downloadErr.Error(),
+			}}
+			return candidate
+		}
+	}
+	candidate.Target = &target
 	if target.SHA1 == "" {
 		promote(&candidate, ClassificationBlocked, Reason{
 			Code: "target_checksum_missing",
@@ -175,6 +185,13 @@ func (r curseForgeDependencyResolver) resolve(
 		if projectErr == nil && project.Name != "" {
 			result.Name = project.Name
 		}
+		projectURL := ""
+		if projectErr == nil {
+			projectURL = project.Links.WebsiteURL
+			if projectURL == "" && project.Slug != "" {
+				projectURL = "https://www.curseforge.com/minecraft/mc-mods/" + project.Slug
+			}
+		}
 		if result.Name == "" {
 			result.Name = projectID
 		}
@@ -206,16 +223,25 @@ func (r curseForgeDependencyResolver) resolve(
 			return compatible[i].FileDate.After(compatible[j].FileDate)
 		})
 		targetFile := compatible[0]
-		downloadURL, err := r.client.DownloadURL(r.ctx, projectID, targetFile)
-		if err != nil {
-			result.Action = "unresolved"
-			promote(candidate, ClassificationBlocked, Reason{
-				Code: "required_dependency_download_unavailable",
-				Message: "Required dependency " + result.Name + " has no downloadable compatible file.",
-			})
-			return result
-		}
+		downloadURL, downloadErr := r.client.DownloadURL(r.ctx, projectID, targetFile)
 		release := releaseFromCurseForge(targetFile, downloadURL)
+		if downloadErr != nil {
+			if isCurseForgeManualDownload(downloadErr) {
+				release.ManualDownload = true
+				release.ManualURL = curseForgeManualURL(projectURL, targetFile.ID)
+				promote(candidate, ClassificationReview, Reason{
+					Code: "required_dependency_manual_download",
+					Message: "Required dependency " + result.Name + " must be downloaded manually from CurseForge before Apply.",
+				})
+			} else {
+				result.Action = "unresolved"
+				promote(candidate, ClassificationBlocked, Reason{
+					Code: "required_dependency_download_unavailable",
+					Message: "Required dependency " + result.Name + " download lookup failed: " + downloadErr.Error(),
+				})
+				return result
+			}
+		}
 		if release.SHA1 == "" {
 			result.Action = "unresolved"
 			promote(candidate, ClassificationBlocked, Reason{
@@ -261,6 +287,22 @@ func (r curseForgeDependencyResolver) resolve(
 		result.Action = "none"
 	}
 	return result
+}
+
+func isCurseForgeManualDownload(err error) bool {
+	var providerErr *ProviderHTTPError
+	if errors.As(err, &providerErr) {
+		return providerErr.Status == 403 || providerErr.Status == 404
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "did not provide a download url")
+}
+
+func curseForgeManualURL(projectURL string, fileID int) string {
+	projectURL = strings.TrimRight(strings.TrimSpace(projectURL), "/")
+	if projectURL == "" {
+		return ""
+	}
+	return projectURL + "/files/" + strconv.Itoa(fileID)
 }
 
 func releaseFromCurseForge(file curseForgeFile, downloadURL string) Release {
