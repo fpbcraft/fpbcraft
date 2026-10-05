@@ -1,5 +1,6 @@
 'use client';
 
+import {RefreshCw} from 'lucide-react';
 import {PageHeader, Pill} from '@/components/ui';
 import {useManagement} from '@/components/management-provider';
 
@@ -12,72 +13,66 @@ export default function SettingsPage() {
       <PageHeader
         eyebrow="System"
         title="Settings"
-        description="FPBPack serves this interface and its API from the same process."
-        action={
-          <Pill tone={connected ? 'good' : connectionStatus === 'error' ? 'warn' : 'blue'}>
-            {connectionStatus === 'loading'
-              ? 'Loading…'
-              : connected
-                ? 'Connected'
-                : 'Connection failed'}
-          </Pill>
-        }
+        description="Runtime status and FPBPack service configuration."
+        action={<Pill tone={connected ? 'good' : connectionStatus === 'error' ? 'warn' : 'blue'}>
+          {connectionStatus === 'loading' ? 'Loading…' : connected ? 'Connected' : 'Connection failed'}
+        </Pill>}
       />
 
-      {connectionError ? (
-        <section className="notice notice-warn">
-          <strong>Service warning</strong>
-          <p>{connectionError}</p>
+      {connectionError ? <div className="alert alert-warning mb-4 rounded-box py-3 text-sm">{connectionError}</div> : null}
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <div className="section-label">FPBPack service</div>
+              <h2 className="mt-0.5 text-sm font-semibold">Connection</h2>
+            </div>
+            <Pill tone={connected ? 'good' : 'neutral'}>{connected ? 'Live' : 'Unavailable'}</Pill>
+          </div>
+          <dl className="divide-y divide-base-300 text-sm">
+            {[
+              ['Transport', 'Same origin'],
+              ['API base', '/api'],
+              ['GUI delivery', 'Embedded static assets'],
+              ['FPBPack version', state.status.version ?? 'Unavailable'],
+            ].map(([label, value]) => (
+              <div className="flex items-center justify-between gap-4 px-4 py-3" key={label}>
+                <dt className="text-base-content/45">{label}</dt>
+                <dd className={label === 'API base' ? 'mono' : 'font-medium'}>{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <div className="border-t border-base-300 p-3">
+            <button className="btn btn-sm btn-ghost" type="button" onClick={() => void refresh()} disabled={connectionStatus === 'loading'}>
+              <RefreshCw size={14} /> Refresh state
+            </button>
+          </div>
         </section>
-      ) : null}
 
-      <section className="panel">
-        <div className="panel-heading">
-          <div>
-            <span className="eyebrow">FPBPack service</span>
-            <h2>Same-origin GUI + API</h2>
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <div className="section-label">Runtime</div>
+              <h2 className="mt-0.5 text-sm font-semibold">Current backend</h2>
+            </div>
+            <Pill tone={state.status.read_only ? 'blue' : 'warn'}>{state.status.read_only ? 'Read only' : state.status.mode}</Pill>
           </div>
-          <Pill tone={connected ? 'good' : 'neutral'}>
-            {connected ? 'Live backend' : 'Unavailable'}
-          </Pill>
-        </div>
-
-        <div className="connection-meta">
-          <div><span>Transport</span><strong>Same origin</strong></div>
-          <div><span>API base</span><strong className="mono">/api</strong></div>
-          <div><span>GUI delivery</span><strong>Embedded static assets</strong></div>
-        </div>
-
-        <div className="connection-actions">
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={() => void refresh()}
-            disabled={connectionStatus === 'loading'}
-          >
-            Refresh service state
-          </button>
-        </div>
-      </section>
-
-      <section className="panel">
-        <div className="panel-heading">
-          <div>
-            <span className="eyebrow">Status</span>
-            <h2>Current backend</h2>
-          </div>
-          <Pill tone={state.status.read_only ? 'blue' : 'warn'}>
-            {state.status.read_only ? 'Read only' : state.status.mode}
-          </Pill>
-        </div>
-        <dl className="detail-list">
-          <div><dt>FPBPack version</dt><dd>{state.status.version ?? 'Unavailable'}</dd></div>
-          <div><dt>Server state</dt><dd>{state.status.server_state}</dd></div>
-          <div><dt>Installed JARs</dt><dd>{state.status.mods}</dd></div>
-          <div><dt>Managed</dt><dd>{state.status.managed}</dd></div>
-          <div><dt>Explicitly unmanaged</dt><dd>{state.status.unmanaged}</dd></div>
-        </dl>
-      </section>
+          <dl className="divide-y divide-base-300 text-sm">
+            {[
+              ['Server state', state.status.server_state],
+              ['Installed JARs', String(state.status.mods)],
+              ['Managed', String(state.status.managed)],
+              ['Explicitly unmanaged', String(state.status.unmanaged)],
+            ].map(([label, value]) => (
+              <div className="flex items-center justify-between gap-4 px-4 py-3" key={label}>
+                <dt className="text-base-content/45">{label}</dt>
+                <dd className="font-medium">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      </div>
     </>
   );
 }

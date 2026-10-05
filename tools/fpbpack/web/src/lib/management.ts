@@ -1,5 +1,6 @@
 export type DiagnosticLevel = 'info' | 'warning' | 'blocking';
 export type Location = 'server' | 'client';
+export type UpdateClassification = 'safe' | 'review' | 'blocked' | 'ignored' | 'up_to_date';
 
 export interface DiagnosticFinding {
   code: string;
@@ -49,10 +50,69 @@ export interface ManagementMod {
   sha512?: string;
 }
 
+export interface UpdateReason {
+  code: string;
+  message: string;
+}
+
+export interface UpdateRelease {
+  id: string;
+  number: string;
+  name?: string;
+  published_at?: string;
+  channel?: string;
+  filename?: string;
+  url?: string;
+  sha512?: string;
+}
+
+export interface UpdateDependency {
+  provider: string;
+  project_id?: string;
+  version_id?: string;
+  type: string;
+  action: string;
+  installed_version?: string;
+  target_version?: string;
+}
+
+export interface UpdateCandidate {
+  key: string;
+  provider: string;
+  project_id: string;
+  name: string;
+  project_url?: string;
+  icon_url?: string;
+  side: string;
+  deployment: Location;
+  installed: UpdateRelease;
+  target?: UpdateRelease;
+  classification: UpdateClassification;
+  reasons?: UpdateReason[];
+  dependencies?: UpdateDependency[];
+}
+
+export interface UpdateSummary {
+  safe: number;
+  review: number;
+  blocked: number;
+  ignored: number;
+  up_to_date: number;
+}
+
+export interface UpdateReport {
+  generated_at: string;
+  minecraft: string;
+  loader: string;
+  summary: UpdateSummary;
+  candidates: UpdateCandidate[];
+}
+
 export interface ManagementState {
   status: ManagementStatus;
   diagnostics: DiagnosticReport;
   mods: ManagementMod[];
+  updates: UpdateReport;
   source: 'api' | 'unavailable';
   errors: string[];
 }
@@ -63,6 +123,16 @@ const emptySummary = (): DiagnosticSummary => ({
   info: 0,
   actionable: 0,
 });
+
+export function emptyUpdateReport(): UpdateReport {
+  return {
+    generated_at: '',
+    minecraft: '',
+    loader: '',
+    summary: {safe: 0, review: 0, blocked: 0, ignored: 0, up_to_date: 0},
+    candidates: [],
+  };
+}
 
 export function emptyManagementState(): ManagementState {
   const diagnostics = {summary: emptySummary(), findings: []};
@@ -79,6 +149,7 @@ export function emptyManagementState(): ManagementState {
     },
     diagnostics,
     mods: [],
+    updates: emptyUpdateReport(),
     source: 'unavailable',
     errors: [],
   };
