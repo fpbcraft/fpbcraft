@@ -36,7 +36,7 @@ If your paths differ from the defaults:
 
 ## Catalog migration
 
-`fpbpack catalog` converts a verified inventory JSON into a Packwiz catalog without touching the live server. It can optionally use the bundled upstream Packwiz helper to identify CurseForge-only JARs.
+`fpbpack catalog` converts a verified inventory JSON into a Packwiz catalog without touching the live server. It can optionally use the bundled upstream Packwiz helper to identify CurseForge-only JARs and an explicit SHA-512 source registry for GitHub/custom artifacts.
 
 ```bash
 ./fpbpack catalog \
@@ -56,12 +56,26 @@ To identify CurseForge-only JARs during migration:
 
 This does **not** run Packwiz against the live server directories. FPBPack copies only unresolved JARs into the generated catalog workspace, runs `packwiz curseforge detect` there, removes any unmatched temporary copies, refreshes the Packwiz index, and records successful CurseForge matches in `migration-report.json`. The original JARs remain untouched.
 
+After provider detection, resolve known GitHub/custom artifacts with the checked-in source registry:
+
+```bash
+./fpbpack catalog \
+  --inventory fpbpack-inventory.json \
+  --output modpack \
+  --resolve-curseforge \
+  --packwiz ./packwiz-linux-amd64 \
+  --sources ./fpbpack-sources.json
+```
+
+Source registry entries are keyed by the installed JAR's exact SHA-512. A `github_release` entry is accepted only after FPBPack downloads the declared release asset and verifies that its SHA-512 is byte-identical to the installed JAR. A `pinned_local` entry explicitly accounts for a custom or historical artifact that should be preserved but does not yet have a verified update source. Neither mode mutates the live server.
+
 
 The generator is conservative:
 
 - byte-identical JARs found in both locations are represented once;
 - if the same Modrinth project has multiple installed versions, all versions for that project are withheld from the generated Packwiz catalog and reported as a conflict;
 - JARs without an exact Modrinth match are initially unresolved; optional Packwiz detection can convert exact CurseForge matches without filename guessing;
+- remaining custom artifacts can only be resolved by an explicit SHA-512 registry rule; GitHub release rules are re-hashed before acceptance and pinned-local rules remain intentionally non-updatable;
 - the original deployment location (`server` or `client`) is preserved separately from Packwiz `side` metadata;
 - Modrinth environment metadata that disagrees with the current deployment location is reported as a warning only; it never moves a live JAR;
 - generated output is deterministic and written separately from the Crafty server.
@@ -77,7 +91,7 @@ modpack/
     └── <modrinth-project-id>.pw.toml
 ```
 
-`migration-report.json` is also the machine-readable deployment map for later plan/deploy work. It contains the managed projects, original source paths, exact duplicates, unresolved artifacts, version conflicts, and placement warnings.
+`migration-report.json` is also the machine-readable deployment map for later plan/deploy work. It contains the managed projects, original source paths, exact duplicates, unresolved artifacts, explicit pinned artifacts, version conflicts, and placement warnings.
 
 During migration, a NeoForge version may be supplied explicitly:
 
@@ -99,7 +113,7 @@ The generator refuses to replace a non-empty output directory unless `--force` i
 
 The Unraid host's Python installation is not used. CI builds static Linux `amd64` binaries for FPBPack and a pinned upstream Packwiz helper with `CGO_ENABLED=0`.
 
-Download the `fpbpack-linux-amd64` artifact from the **FPBPack** GitHub Actions workflow. It contains both `fpbpack-linux-amd64` and `packwiz-linux-amd64` plus checksums. Copy both executables to the Unraid host:
+Download the `fpbpack-linux-amd64` artifact from the **FPBPack** GitHub Actions workflow. It contains `fpbpack-linux-amd64`, `packwiz-linux-amd64`, their checksums, and `fpbpack-sources.json`. Copy the binaries and source registry to the Unraid host:
 
 ```bash
 chmod +x fpbpack-linux-amd64 packwiz-linux-amd64
@@ -116,4 +130,4 @@ go run ./cmd/fpbpack catalog --inventory /path/to/fpbpack-inventory.json --outpu
 # Packwiz-backed CurseForge detection is integration-tested with a fake isolated helper.
 ```
 
-Future slices will resolve explicit GitHub/custom artifacts and add explicit plan/deploy commands. Deployment will only operate on files recorded as managed by fpbpack. FPBPack does not embed or require a user-provided CurseForge API key.
+Future slices will add explicit update-plan and deploy commands. Deployment will only operate on files recorded as managed or explicitly pinned by fpbpack. FPBPack does not embed or require a user-provided CurseForge API key.
