@@ -118,7 +118,7 @@ The remaining Slice 1 decision/review work is intentionally being completed in P
 
 ## Remaining before Slice 2 can be called complete
 
-- [ ] Latest PR #10 head must pass GUI build, Go test/vet, static binary build, and artifact upload.
+- [x] PR #10 passes GUI build, Go test/vet, static binary build, and artifact upload.
 - [ ] Exercise the revised fast-start/background-refresh behavior on the real FPBCraft server.
 - [ ] Exercise Modrinth changelog/rule/detail flows against the real inventory.
 - [ ] Configure/test CurseForge discovery on the real pack if a CurseForge API key is available.
