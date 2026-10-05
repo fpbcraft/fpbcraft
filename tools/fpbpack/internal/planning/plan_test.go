@@ -78,11 +78,138 @@ func TestBuildBlocksUnresolvedDependencyClosure(t *testing.T) {
 	}
 	found := false
 	for _, blocker := range plan.Blockers {
-		if blocker.Code == "dependency_artifact_not_resolved" {
+		if blocker.Code == "dependency_target_not_resolved" {
 			found = true
 		}
 	}
 	if !found {
 		t.Fatalf("expected dependency blocker: %+v", plan.Blockers)
+	}
+}
+
+func TestBuildAddsResolvedDependencyChanges(t *testing.T) {
+	invTime := time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: invTime.Add(time.Minute),
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:main",
+			Provider: "modrinth",
+			ProjectID: "main",
+			Name: "Main",
+			Deployment: inventory.LocationServer,
+			Classification: updatecheck.ClassificationReview,
+			Installed: updatecheck.Release{ID: "main-old", Number: "1.0"},
+			Target: &updatecheck.Release{
+				ID: "main-new", Number: "1.1", Filename: "main-new.jar",
+				URL: "https://cdn.example/main.jar", SHA512: "main-target",
+			},
+			Dependencies: []updatecheck.Dependency{{
+				Provider: "modrinth",
+				ProjectID: "dep",
+				Name: "Dependency",
+				Type: "required",
+				Action: "add",
+				Deployment: inventory.LocationClient,
+				TargetVersion: "dep-v1",
+				Target: &updatecheck.Release{
+					ID: "dep-v1", Number: "2.0", Filename: "dep.jar",
+					URL: "https://cdn.example/dep.jar", SHA512: "dep-target",
+				},
+			}},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{
+			GeneratedAt: invTime,
+			ServerModsPath: "mods",
+			ClientModsPath: "automodpack/host-modpack/main/mods",
+		},
+		Mods: []management.Mod{{
+			Provider: "modrinth", ProjectID: "main", Path: "mods/main-old.jar",
+			SHA512: "main-current",
+		}},
+	}
+
+	plan, err := Build([]string{"modrinth:main"}, report, snapshot, invTime.Add(2*time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Status != StatusReady {
+		t.Fatalf("status = %s, blockers=%+v", plan.Status, plan.Blockers)
+	}
+	if len(plan.Changes) != 2 {
+		t.Fatalf("changes = %d, want 2: %+v", len(plan.Changes), plan.Changes)
+	}
+	var dependency Change
+	for _, change := range plan.Changes {
+		if change.CandidateKey == "modrinth:dep" {
+			dependency = change
+		}
+	}
+	if !dependency.DependencyDriven || dependency.Requested {
+		t.Fatalf("dependency flags are wrong: %+v", dependency)
+	}
+	if len(dependency.Operations) != 1 || dependency.Operations[0].Action != "add" {
+		t.Fatalf("unexpected dependency operation: %+v", dependency.Operations)
+	}
+	if got := dependency.Operations[0].TargetPath; got != "automodpack/host-modpack/main/mods/dep.jar" {
+		t.Fatalf("target path = %q", got)
+	}
+	if !plan.RequiresBackup {
+		t.Fatal("main replacement should require a restore point")
+	}
+}
+
+func TestBuildBlocksConflictingDependencyTargets(t *testing.T) {
+	invTime := time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
+	makeCandidate := func(project, target, dependencyTarget string) updatecheck.Candidate {
+		return updatecheck.Candidate{
+			Key: "modrinth:" + project, Provider: "modrinth", ProjectID: project,
+			Name: project, Deployment: inventory.LocationServer,
+			Classification: updatecheck.ClassificationReview,
+			Target: &updatecheck.Release{
+				ID: target, Filename: project + ".jar", URL: "https://cdn.example/" + project,
+				SHA512: target + "-hash",
+			},
+			Dependencies: []updatecheck.Dependency{{
+				Provider: "modrinth", ProjectID: "shared", Type: "required", Action: "add",
+				Deployment: inventory.LocationServer, TargetVersion: dependencyTarget,
+				Target: &updatecheck.Release{
+					ID: dependencyTarget, Filename: "shared.jar",
+					URL: "https://cdn.example/shared-" + dependencyTarget,
+					SHA512: dependencyTarget + "-hash",
+				},
+			}},
+		}
+	}
+	report := updatecheck.Report{
+		GeneratedAt: invTime.Add(time.Minute),
+		Candidates: []updatecheck.Candidate{
+			makeCandidate("one", "one-new", "shared-a"),
+			makeCandidate("two", "two-new", "shared-b"),
+		},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{GeneratedAt: invTime, ServerModsPath: "mods"},
+		Mods: []management.Mod{
+			{Provider: "modrinth", ProjectID: "one", Path: "mods/one-old.jar"},
+			{Provider: "modrinth", ProjectID: "two", Path: "mods/two-old.jar"},
+		},
+	}
+	plan, err := Build([]string{"modrinth:one", "modrinth:two"}, report, snapshot, invTime.Add(2*time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Status != StatusBlocked {
+		t.Fatalf("expected conflicting targets to block: %+v", plan)
+	}
+	found := false
+	for _, blocker := range plan.Blockers {
+		if blocker.Code == "dependency_target_conflict" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("missing dependency target conflict: %+v", plan.Blockers)
 	}
 }
