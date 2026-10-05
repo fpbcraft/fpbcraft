@@ -33,6 +33,15 @@ interface ModManagementResult {
   message: string;
 }
 
+type ModTableRow =
+  | {kind: 'mod'; mod: ManagementMod}
+  | {
+      kind: 'diagnostic';
+      finding: DiagnosticFinding;
+      deployment: 'server' | 'client';
+      management: 'unresolved' | 'external';
+    };
+
 function normalizePath(value?: string) {
   return (value ?? '').replaceAll('\\', '/').replace(/^\.\//, '');
 }
@@ -102,6 +111,59 @@ export default function ModsPage() {
     });
     return rank;
   }, [blockers]);
+
+  const livePaths = useMemo(
+    () => new Set(state.mods.map((mod) => normalizePath(mod.path))),
+    [state.mods],
+  );
+
+  const diagnosticRows = useMemo<ModTableRow[]>(() => {
+    const needle = q.trim().toLowerCase();
+    return blockers
+      .filter((finding) => {
+        const path = normalizePath(finding.path);
+        if (!path || livePaths.has(path)) return false;
+
+        const inferredDeployment: 'server' | 'client' = path.startsWith(
+          'automodpack/host-modpack/main/mods/',
+        )
+          ? 'client'
+          : 'server';
+        const inferredManagement: 'unresolved' | 'external' =
+          finding.code === 'unresolved_artifact' ? 'unresolved' : 'external';
+        const text = [finding.mod ?? '', finding.message, finding.code, path]
+          .join(' ')
+          .toLowerCase();
+
+        return (
+          (!needle || text.includes(needle)) &&
+          (deployment === 'all' || deployment === inferredDeployment) &&
+          (management === 'all' || management === inferredManagement) &&
+          provider === 'all' &&
+          (updateStatus === 'all' || updateStatus === 'blocked')
+        );
+      })
+      .map((finding) => {
+        const path = normalizePath(finding.path);
+        return {
+          kind: 'diagnostic' as const,
+          finding,
+          deployment: path.startsWith('automodpack/host-modpack/main/mods/')
+            ? 'client'
+            : 'server',
+          management:
+            finding.code === 'unresolved_artifact' ? ('unresolved' as const) : ('external' as const),
+        };
+      });
+  }, [
+    blockers,
+    livePaths,
+    q,
+    deployment,
+    management,
+    provider,
+    updateStatus,
+  ]);
 
   useEffect(() => {
     api<{rules: Record<string, UpdateRule>}>('/api/update-rules')
@@ -242,9 +304,36 @@ export default function ModsPage() {
     attentionOnly,
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const tableRows = useMemo<ModTableRow[]>(() => {
+    const combined: ModTableRow[] = [
+      ...filtered.map((mod) => ({kind: 'mod' as const, mod})),
+      ...diagnosticRows,
+    ];
+    return combined.sort((a, b) => {
+      const aPath =
+        a.kind === 'mod' ? normalizePath(a.mod.path) : normalizePath(a.finding.path);
+      const bPath =
+        b.kind === 'mod' ? normalizePath(b.mod.path) : normalizePath(b.finding.path);
+      if (attentionOnly) {
+        const aRank = blockerRank.get(aPath) ?? Number.MAX_SAFE_INTEGER;
+        const bRank = blockerRank.get(bPath) ?? Number.MAX_SAFE_INTEGER;
+        if (aRank !== bRank) return aRank - bRank;
+      }
+      const aName =
+        a.kind === 'mod'
+          ? a.mod.name
+          : a.finding.mod || a.finding.path?.split('/').at(-1) || a.finding.code;
+      const bName =
+        b.kind === 'mod'
+          ? b.mod.name
+          : b.finding.mod || b.finding.path?.split('/').at(-1) || b.finding.code;
+      return aName.localeCompare(bName);
+    });
+  }, [filtered, diagnosticRows, attentionOnly, blockerRank]);
+
+  const totalPages = Math.max(1, Math.ceil(tableRows.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  const rows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const rows = tableRows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const updateFilter = (setter: (value: string) => void, value: string) => {
     setter(value);
@@ -582,7 +671,7 @@ export default function ModsPage() {
 
       <section className="panel overflow-hidden">
         <div className="flex items-center justify-between border-b border-base-300 px-4 py-2 text-xs text-base-content/45">
-          <span>{filtered.length} matching JARs</span>
+          <span>{tableRows.length} matching entries</span>
           <span>
             Page {safePage} / {totalPages}
           </span>
@@ -600,7 +689,41 @@ export default function ModsPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((mod) => {
+              {rows.map((row) => {
+                if (row.kind === 'diagnostic') {
+                  const path = normalizePath(row.finding.path);
+                  const name =
+                    row.finding.mod || row.finding.path?.split('/').at(-1) || row.finding.code;
+                  return (
+                    <tr
+                      key={'diagnostic:' + row.finding.code + ':' + path}
+                      className="border-base-300 bg-error/5"
+                    >
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <Wrench size={13} className="shrink-0 text-error" />
+                          <div>
+                            <div className="font-medium">{name}</div>
+                            <div className="mono mt-0.5 text-base-content/35">{path}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap text-base-content/45">missing</td>
+                      <td className="whitespace-nowrap">—</td>
+                      <td>
+                        <Pill tone="bad">{row.management}</Pill>
+                      </td>
+                      <td className="whitespace-nowrap">
+                        <Pill tone={row.deployment === 'client' ? 'blue' : 'neutral'}>
+                          {row.deployment === 'client' ? 'client-only' : 'server/common'}
+                        </Pill>
+                      </td>
+                      <td className="text-base-content/45">unknown</td>
+                    </tr>
+                  );
+                }
+
+                const mod = row.mod;
                 const candidate = candidatesByKey.get(mod.id);
                 const needsAttention =
                   blockerPaths.has(normalizePath(mod.path)) ||
