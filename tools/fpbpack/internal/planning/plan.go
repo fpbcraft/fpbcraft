@@ -181,8 +181,8 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 			addBlocker(&plan, "installed_artifact_missing", key, "The currently managed artifact could not be matched to the live inventory.")
 		}
 
-		targetPath := target.Filename
-		if installed && mod.Path != "" {
+		targetPath := filepath.ToSlash(filepath.Join(modsPath(snapshot.Inventory, candidate.Deployment), target.Filename))
+		if installed && mod.Path != "" && mod.Deployment == candidate.Deployment {
 			targetPath = filepath.ToSlash(filepath.Join(filepath.Dir(mod.Path), target.Filename))
 		}
 		change := Change{
@@ -306,7 +306,9 @@ func appendDependencyClosure(
 				} else {
 					operation.Action = "replace"
 					operation.CurrentPath = mod.Path
-					operation.TargetPath = filepath.ToSlash(filepath.Join(filepath.Dir(mod.Path), target.Filename))
+					if mod.Deployment == deployment {
+						operation.TargetPath = filepath.ToSlash(filepath.Join(filepath.Dir(mod.Path), target.Filename))
+					}
 					operation.CurrentSHA512 = mod.SHA512
 					installedRelease = updatecheck.Release{
 						ID: dependency.InstalledVersion,
