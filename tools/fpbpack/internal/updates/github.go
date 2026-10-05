@@ -80,6 +80,63 @@ func (client *GitHubClient) Releases(ctx context.Context, repository string) ([]
 	return releases, nil
 }
 
+type VerifiedGitHubSource struct {
+	Repository  string
+	Tag         string
+	Asset       string
+	DownloadURL string
+	Name        string
+}
+
+func (client *GitHubClient) VerifyInstalledAsset(
+	ctx context.Context,
+	repository string,
+	tag string,
+	assetName string,
+	expectedSHA256 string,
+) (VerifiedGitHubSource, error) {
+	repository = strings.TrimSpace(repository)
+	tag = strings.TrimSpace(tag)
+	assetName = strings.TrimSpace(assetName)
+	expectedSHA256 = strings.ToLower(strings.TrimSpace(expectedSHA256))
+	if repository == "" || tag == "" || expectedSHA256 == "" {
+		return VerifiedGitHubSource{}, fmt.Errorf("repository, installed tag, and current SHA-256 are required")
+	}
+
+	releases, err := client.Releases(ctx, repository)
+	if err != nil {
+		return VerifiedGitHubSource{}, err
+	}
+	for _, release := range releases {
+		if release.TagName != tag {
+			continue
+		}
+		asset, ok := selectGitHubAsset(release, assetName)
+		if !ok {
+			return VerifiedGitHubSource{}, fmt.Errorf("GitHub release %s does not contain an unambiguous matching JAR asset", tag)
+		}
+		digest := strings.ToLower(githubSHA256Digest(asset.Digest))
+		if digest == "" {
+			return VerifiedGitHubSource{}, fmt.Errorf("GitHub asset %s does not expose a SHA-256 digest", asset.Name)
+		}
+		if digest != expectedSHA256 {
+			return VerifiedGitHubSource{}, fmt.Errorf("GitHub asset digest does not match the installed JAR")
+		}
+		name := release.Name
+		if name == "" {
+			name = repository
+		}
+		return VerifiedGitHubSource{
+			Repository: repository,
+			Tag: tag,
+			Asset: asset.Name,
+			DownloadURL: asset.BrowserDownloadURL,
+			Name: name,
+		}, nil
+	}
+	return VerifiedGitHubSource{}, fmt.Errorf("GitHub release tag %s was not found in %s", tag, repository)
+}
+
 func discoverGitHubCandidate(
 	ctx context.Context,
 	client *GitHubClient,
