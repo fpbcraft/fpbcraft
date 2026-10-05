@@ -73,6 +73,7 @@ type Service struct {
 	updates       updatecheck.Report
 	hasUpdate     bool
 	refreshStatus RefreshStatus
+	secrets       ProviderSecrets
 }
 
 func New(ctx context.Context, options Options) (*Service, error) {
@@ -89,6 +90,9 @@ func New(ctx context.Context, options Options) (*Service, error) {
 
 	service := &Service{options: options}
 	if err := service.loadOrBootstrapState(ctx); err != nil {
+		return nil, err
+	}
+	if err := service.loadProviderSecrets(); err != nil {
 		return nil, err
 	}
 	if service.state.Settings.RetentionCount == 0 {
@@ -198,7 +202,10 @@ func (s *Service) Refresh(ctx context.Context) (err error) {
 		Loader:          s.options.Loader,
 		ModrinthBaseURL: s.options.ModrinthBaseURL,
 		CurseForgeBaseURL: s.options.CurseForgeBaseURL,
-		CurseForgeAPIKey: s.options.CurseForgeAPIKey,
+		CurseForgeAPIKey: func() string {
+			key, _ := s.effectiveCurseForgeAPIKey()
+			return key
+		}(),
 		GitHubBaseURL: s.options.GitHubBaseURL,
 		GitHubToken: s.options.GitHubToken,
 	})
@@ -251,7 +258,10 @@ func (s *Service) CheckUpdates(ctx context.Context) (err error) {
 		Loader:          s.options.Loader,
 		ModrinthBaseURL: s.options.ModrinthBaseURL,
 		CurseForgeBaseURL: s.options.CurseForgeBaseURL,
-		CurseForgeAPIKey: s.options.CurseForgeAPIKey,
+		CurseForgeAPIKey: func() string {
+			key, _ := s.effectiveCurseForgeAPIKey()
+			return key
+		}(),
 		GitHubBaseURL: s.options.GitHubBaseURL,
 		GitHubToken: s.options.GitHubToken,
 	})
