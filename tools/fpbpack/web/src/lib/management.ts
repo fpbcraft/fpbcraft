@@ -154,3 +154,73 @@ export function emptyManagementState(): ManagementState {
     errors: [],
   };
 }
+
+export interface PlanFinding {
+  code: string;
+  message: string;
+  candidate_key?: string;
+}
+
+export interface PlanArtifact {
+  provider: string;
+  project_id: string;
+  version_id: string;
+  filename: string;
+  url: string;
+  sha512: string;
+  deployment: string;
+}
+
+export interface PlanFileOperation {
+  action: string;
+  current_path?: string;
+  target_path: string;
+  current_sha512?: string;
+  target_sha512: string;
+}
+
+export interface PlanChange {
+  candidate_key: string;
+  name: string;
+  requested: boolean;
+  dependency_driven: boolean;
+  classification: UpdateClassification;
+  installed: UpdateRelease;
+  target: UpdateRelease;
+  artifact: PlanArtifact;
+  operations: PlanFileOperation[];
+}
+
+export interface UpdatePlan {
+  schema_version: number;
+  id: string;
+  created_at: string;
+  status: 'ready' | 'blocked';
+  inventory_generated_at: string;
+  updates_generated_at: string;
+  selected: string[];
+  changes: PlanChange[];
+  warnings?: PlanFinding[];
+  blockers?: PlanFinding[];
+  requires_server_stop: boolean;
+  requires_backup: boolean;
+}
+
+export interface PlanSummary {
+  id: string;
+  created_at: string;
+  status: 'ready' | 'blocked';
+  changes: number;
+  blockers: number;
+  warnings: number;
+}
+
+export interface HistoryEvent {
+  id: string;
+  created_at: string;
+  type: string;
+  status: string;
+  plan_id?: string;
+  mods: number;
+  summary: string;
+}

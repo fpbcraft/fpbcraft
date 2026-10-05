@@ -1,10 +1,12 @@
 'use client';
 
 import {useMemo, useState} from 'react';
+import {useRouter} from 'next/navigation';
 import {RefreshCw} from 'lucide-react';
 import {PageHeader, Pill, formatDate} from '@/components/ui';
 import {useManagement} from '@/components/management-provider';
-import type {UpdateCandidate, UpdateClassification} from '@/lib/management';
+import type {UpdateCandidate, UpdateClassification, UpdatePlan} from '@/lib/management';
+import {api} from '@/lib/api';
 
 const groups: Array<{
   classification: UpdateClassification;
@@ -62,8 +64,11 @@ function CandidateRow({
 
 export default function UpdatesPage() {
   const {state, checkUpdates} = useManagement();
+  const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [checking, setChecking] = useState(false);
+  const [creatingPlan, setCreatingPlan] = useState(false);
+  const [planError, setPlanError] = useState<string | null>(null);
 
   const selectableSafe = useMemo(
     () => state.updates.candidates.filter((candidate) => candidate.classification === 'safe'),
@@ -86,6 +91,23 @@ export default function UpdatesPage() {
       setSelected(new Set());
     } finally {
       setChecking(false);
+    }
+  };
+
+  const createPlan = async () => {
+    if (selected.size === 0) return;
+    setCreatingPlan(true);
+    setPlanError(null);
+    try {
+      const plan = await api<UpdatePlan>('/api/plans', {
+        method: 'POST',
+        body: JSON.stringify({candidate_keys: [...selected]}),
+      });
+      router.push('/review?id=' + encodeURIComponent(plan.id));
+    } catch (error: unknown) {
+      setPlanError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setCreatingPlan(false);
     }
   };
 
@@ -122,12 +144,20 @@ export default function UpdatesPage() {
         </div>
       ) : null}
 
+      {planError ? <div className="alert alert-error mb-4 rounded-box py-3 text-sm">{planError}</div> : null}
+
       <div className="mb-4 flex items-center justify-between rounded-box border border-base-300 bg-base-100 px-4 py-3">
         <div>
           <div className="text-sm font-medium">{selected.size} selected</div>
           <div className="text-xs text-base-content/45">Safe and review candidates can be included in a plan.</div>
         </div>
-        <button className="btn btn-sm btn-primary" type="button" disabled={selected.size === 0}>
+        <button
+          className="btn btn-sm btn-primary"
+          type="button"
+          disabled={selected.size === 0 || creatingPlan}
+          onClick={() => void createPlan()}
+        >
+          {creatingPlan ? <span className="loading loading-spinner loading-xs" /> : null}
           Review plan
         </button>
       </div>
