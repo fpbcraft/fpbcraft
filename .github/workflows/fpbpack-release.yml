@@ -7,12 +7,13 @@ on:
   workflow_call:
     inputs:
       tag:
-        description: Release tag to build and smoke-test
+        description: Stable release tag to build, smoke-test, and publish
         required: true
         type: string
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   docker:
@@ -23,13 +24,23 @@ jobs:
         with:
           ref: ${{ github.event_name == 'workflow_call' && inputs.tag || github.event.release.tag_name }}
 
-      - name: Build Docker image
+      - name: Resolve image metadata
         env:
-          FPBPACK_VERSION: ${{ github.event_name == 'workflow_call' && inputs.tag || github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_call' && inputs.tag || github.event.release.tag_name }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/fpbpack"
+          echo "FPBPACK_VERSION=$version" >> "$GITHUB_ENV"
+          echo "FPBPACK_IMAGE=$image" >> "$GITHUB_ENV"
+
+      - name: Build Docker image
         run: |
           docker build \
             -t fpbpack-release \
             --build-arg FPBPACK_VERSION="${FPBPACK_VERSION}" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.version=${FPBPACK_VERSION}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
             -f tools/fpbpack/Dockerfile \
             .
 
@@ -41,6 +52,7 @@ jobs:
             -v "${RUNNER_TEMP}/fpbpack-server:/server" \
             -v "${RUNNER_TEMP}/fpbpack-state:/data" \
             fpbpack-release
+          trap 'docker rm -f fpbpack-release >/dev/null 2>&1 || true' EXIT
           for attempt in {1..30}; do
             if curl --fail --silent http://127.0.0.1:18787/healthz >/dev/null; then
               break
@@ -54,4 +66,17 @@ jobs:
           test -f "${RUNNER_TEMP}/fpbpack-state/state.json"
           test -f "${RUNNER_TEMP}/fpbpack-state/inventory.json"
           test -f "${RUNNER_TEMP}/fpbpack-state/updates.json"
-          docker rm -f fpbpack-release
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Docker image
+        run: |
+          docker tag fpbpack-release "${FPBPACK_IMAGE}:${FPBPACK_VERSION}"
+          docker tag fpbpack-release "${FPBPACK_IMAGE}:latest"
+          docker push "${FPBPACK_IMAGE}:${FPBPACK_VERSION}"
+          docker push "${FPBPACK_IMAGE}:latest"
