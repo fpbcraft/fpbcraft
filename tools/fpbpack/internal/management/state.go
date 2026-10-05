@@ -209,7 +209,7 @@ func displayVersion(file inventory.ModFile) string {
 
 func modID(file inventory.ModFile, managed catalog.Entry, isManaged bool) string {
 	if isManaged && managed.Provider != "" && managed.ProjectID != "" {
-		return managed.Provider + ":" + managed.ProjectID
+		return catalog.EntryKey(managed)
 	}
 	if file.SHA512 != "" {
 		hash := strings.ToLower(file.SHA512)
