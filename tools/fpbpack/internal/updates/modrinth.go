@@ -94,6 +94,15 @@ func (client *ModrinthClient) ListProjects(ctx context.Context, ids []string) (m
 	return result, nil
 }
 
+func (client *ModrinthClient) GetVersion(ctx context.Context, versionID string) (modrinthVersion, error) {
+	endpoint := client.baseURL() + "/version/" + url.PathEscape(versionID)
+	var version modrinthVersion
+	if err := client.getJSON(ctx, endpoint, &version); err != nil {
+		return modrinthVersion{}, fmt.Errorf("Modrinth version %s: %w", versionID, err)
+	}
+	return version, nil
+}
+
 func (client *ModrinthClient) ListVersions(ctx context.Context, projectID string) ([]modrinthVersion, error) {
 	endpoint := client.baseURL() + "/project/" + url.PathEscape(projectID) + "/version?include_changelog=false"
 	var versions []modrinthVersion
