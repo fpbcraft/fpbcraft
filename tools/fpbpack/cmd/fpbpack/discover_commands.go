@@ -143,6 +143,8 @@ func runServe(args []string) int {
 			ClearRule:    app.ClearRule,
 			RefreshStatus: app.RefreshStatus,
 			Providers:     app.ProviderStatuses,
+			SetProviderCredential: app.SetProviderCredential,
+			ClearProviderCredential: app.ClearProviderCredential,
 			Web:          webHandler,
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
