@@ -91,6 +91,13 @@ func New(ctx context.Context, options Options) (*Service, error) {
 	if err := service.loadOrBootstrapState(ctx); err != nil {
 		return nil, err
 	}
+	if catalog.EnsureManagedArtifactIDs(service.state.Catalog.Managed) {
+		service.state.Catalog.RecalculateSummary()
+		service.state.UpdatedAt = time.Now().UTC()
+		if err := service.persistState(); err != nil {
+			return nil, fmt.Errorf("persist managed artifact identity migration: %w", err)
+		}
+	}
 	if err := service.loadProviderSecrets(); err != nil {
 		return nil, err
 	}
