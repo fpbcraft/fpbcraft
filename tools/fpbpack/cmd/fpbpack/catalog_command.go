@@ -1,11 +1,12 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
-	"context"
+	"time"
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/catalog"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
@@ -72,7 +73,7 @@ func runCatalog(args []string) int {
 
 	var sourceSummary catalog.SourceResolutionSummary
 	if *sourcesPath != "" {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*60*1000000000)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		sourceSummary, err = catalog.ResolveSourceRegistry(ctx, inv, &result, catalog.SourceResolveOptions{
 			RegistryPath: *sourcesPath,
 			OutputPath: *output,
