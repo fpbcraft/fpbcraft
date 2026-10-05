@@ -6,9 +6,9 @@ Last updated: **2026-10-05**
 
 **Slice 2 — Plan & Protect: in progress**
 
-Working branch: `fpbcraft/fpbcraft:feat/plan-protect` → PR #10.
+Working branch: `fpbcraft/fpbcraft:feat/plan-protect` → PR #10 against `main`.
 
-PR #10 is stacked on `feat/self-contained-serve` / PR #9. Merge PR #9 first, then retarget #10 to `main`.
+PR #9 (`feat/self-contained-serve`) has been merged; PR #10 is now independently reviewable against `main`.
 
 The user merges PRs manually. Do not merge these branches automatically.
 
