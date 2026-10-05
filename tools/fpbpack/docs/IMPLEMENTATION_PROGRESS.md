@@ -21,7 +21,7 @@ The user merges PRs manually. Do not merge this branch automatically.
 - [x] Remove the CORS / Local Network Access requirement from the new architecture.
 - [x] Add a multi-stage Docker build with no Node runtime in the final image.
 - [x] Extend CI to typecheck/build the GUI, embed it, test/vet Go, build the static binary, and build the Docker image.
-- [ ] Confirm the combined CI is green.
+- [x] Confirm the combined CI is green (GUI export, Go test/vet, embedded binary, Docker build, artifact upload).
 - [ ] Mark the separate GUI repository/PR as superseded after the combined branch has been accepted.
 
 ## Backend / FPBPack completed

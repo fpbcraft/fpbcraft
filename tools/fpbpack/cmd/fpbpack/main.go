@@ -69,8 +69,8 @@ Catalog converts a verified inventory into a safe partial Packwiz catalog,
 deduplicating identical artifacts and withholding ambiguous project versions.
 
 Doctor compares current inventory with the accepted catalog state and reports
-management drift without mutating files. Serve exposes the same read-only
-state and diagnostics over a local HTTP API.
+management drift without mutating files. Serve hosts the embedded web GUI and
+the same read-only management API from one HTTP process and origin.
 
 Options are available with:
   fpbpack inventory --help
