@@ -18,35 +18,40 @@ The user merges PRs manually. Do not merge these branches automatically.
 - [x] `serve` is self-contained; inventory/update JSON are generated caches, not required inputs.
 - [x] Durable `state.json` under `--state-dir`.
 - [x] Legacy migration report is a one-time bootstrap/import source.
-- [x] Automatic inventory/update refresh on startup plus API/manual refresh.
+- [x] Serve starts immediately from durable state/caches; inventory/provider refresh runs in the background.
+- [x] Cached GUI/API state remains available while a background refresh is running.
+- [x] Provider discovery uses bounded concurrency instead of serial per-project requests.
 - [x] Multi-stage production Dockerfile with no Node runtime.
 - [x] PR/dev CI does not build Docker images.
 - [x] Stable published releases build and smoke-test the Docker image.
 - [x] Separate GUI repository/PR is superseded by `tools/fpbpack/web`.
 
-## Discover & Decide completed foundations
+## Discover, Decide & Review capabilities included in Slice 2
+
+The remaining Slice 1 decision/review work is intentionally being completed in PR #10 instead of being carried into a later slice.
 
 - [x] Diagnostics and managed-file drift detection.
-- [x] Read-only status, inventory, mods, diagnostics, update, and health endpoints.
-- [x] Modrinth update discovery with Minecraft/NeoForge compatibility filtering.
 - [x] Safe / Review / Blocked / Ignored update model and real GUI update data.
+- [x] Modrinth discovery with Minecraft/NeoForge compatibility filtering.
+- [x] CurseForge candidate discovery through the official API when `FPBPACK_CURSEFORGE_API_KEY` is configured.
+- [x] Verified GitHub release discovery for artifacts already mapped to an explicit GitHub release source.
 - [x] Recursive required Modrinth dependency resolution with explicit target artifacts.
-- [x] Required dependency additions/updates can flow into update planning.
+- [x] Required CurseForge dependency additions can be resolved conservatively.
 - [x] Incompatible dependencies and unsafe unresolved requirements block candidates.
-- [x] Rejected incompatible newer versions remain available for diagnostics.
+- [x] Reverse-dependency metadata is exposed where provider dependency metadata is available.
+- [x] Target + intermediate changelogs are aggregated for Modrinth, CurseForge, and verified GitHub release sources.
+- [x] Modrinth/CurseForge/GitHub project links are exposed directly in the GUI.
+- [x] Persistent pin-current / ignore-version / ignore-mod / review-later rules live in `state.json`.
+- [x] Updates rows expose changelogs, provider links, project icons, and decision actions.
+- [x] Mods page shows installed/latest/status and opens a responsive detail surface.
+- [x] Mod detail shows provider link, changelogs, dependencies, reverse dependencies, update preference controls, path and provider identifiers.
+- [x] The six custom BlueMap/FPBCraft artifacts remain explicitly pinned/unmanaged and are never guessed into an update source.
 
-### Discover & Decide carry-over
+### Provider caveats
 
-These remain product work, but do not block the Plan & Protect architecture:
-
-- [ ] CurseForge update candidate discovery.
-- [ ] GitHub update-source discovery where applicable.
-- [ ] Reverse-dependency metadata.
-- [ ] Full/intermediate changelog aggregation.
-- [ ] Complete mod project metadata/icons across providers.
-- [ ] Durable pin / ignore-version / ignore-mod / review-later rules.
-- [ ] Full mod-detail modal/sheet.
-- [ ] Final mobile parity for the remaining detail flows.
+- CurseForge update discovery requires a CurseForge API key. Without one, CurseForge-managed artifacts remain explicitly Blocked with a configuration reason rather than being guessed.
+- GitHub release updates are only considered for artifacts that FPBPack already verified against an explicit GitHub release source. GitHub candidates require an unambiguous JAR asset and provider SHA-256 digest, and remain Review because GitHub releases do not declare Minecraft/loader compatibility.
+- GitHub authentication is optional via `FPBPACK_GITHUB_TOKEN` and is useful for rate limits/private verified sources.
 
 ## Slice 2 — Plan & Protect completed
 
@@ -55,7 +60,7 @@ These remain product work, but do not block the Plan & Protect architecture:
 - [x] Select Safe/Review candidates from the real Updates page.
 - [x] Persist deterministic plans under `/data/plans`.
 - [x] Include requested changes and dependency-driven changes.
-- [x] Record old/new versions, provider IDs, exact target filenames, URLs, and SHA-512 hashes.
+- [x] Record old/new versions, provider IDs, exact target filenames, URLs, and provider checksums; normalize prefetched artifacts to SHA-512.
 - [x] Record exact add/replace filesystem operations and deployment location.
 - [x] Coalesce duplicate dependency requirements.
 - [x] Block conflicting dependency target versions.
@@ -65,7 +70,7 @@ These remain product work, but do not block the Plan & Protect architecture:
 ### Prefetch and verification
 
 - [x] Prefetch every ready-plan target into `/data/cache/artifacts`.
-- [x] Verify target SHA-512 during download before accepting the cache artifact.
+- [x] Verify Modrinth SHA-512, CurseForge SHA-1, or GitHub SHA-256 during prefetch, then compute/persist FPBPack SHA-512.
 - [x] Reuse cached artifacts only after re-verifying their hash.
 - [x] Block the plan when an artifact cannot be downloaded or verified.
 - [x] Bound individual artifact downloads with a 2 GiB safety limit.
@@ -114,8 +119,10 @@ These remain product work, but do not block the Plan & Protect architecture:
 ## Remaining before Slice 2 can be called complete
 
 - [ ] Latest PR #10 head must pass GUI build, Go test/vet, static binary build, and artifact upload.
-- [ ] Exercise the flow against the real FPBCraft inventory after PR #9/#10 are merged or locally tested.
-- [ ] Resolve any real-pack dependency/provider edge cases exposed by that test.
+- [ ] Exercise the revised fast-start/background-refresh behavior on the real FPBCraft server.
+- [ ] Exercise Modrinth changelog/rule/detail flows against the real inventory.
+- [ ] Configure/test CurseForge discovery on the real pack if a CurseForge API key is available.
+- [ ] Resolve any real-pack dependency/provider edge cases exposed by those tests.
 
 ## Safety checkpoint
 
