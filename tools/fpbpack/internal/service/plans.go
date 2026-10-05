@@ -35,6 +35,13 @@ func (s *Service) CreatePlan(ctx context.Context, candidateKeys []string) (plann
 	}
 
 	s.verifyPlanArtifacts(ctx, &plan)
+	if err := s.createRestorePoint(&plan); err != nil {
+		plan.Status = planning.StatusBlocked
+		plan.Blockers = append(plan.Blockers, planning.Finding{
+			Code: "backup_creation_failed",
+			Message: err.Error(),
+		})
+	}
 	if err := writeJSONAtomic(planPath, plan); err != nil {
 		return planning.Plan{}, fmt.Errorf("persist plan: %w", err)
 	}

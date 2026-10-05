@@ -103,6 +103,7 @@ type HistoryEvent struct {
 	Type      string    `json:"type"`
 	Status    string    `json:"status"`
 	PlanID    string    `json:"plan_id,omitempty"`
+	BackupID  string    `json:"backup_id,omitempty"`
 	Mods      int       `json:"mods"`
 	Summary   string    `json:"summary"`
 }
@@ -265,6 +266,7 @@ func (p Plan) HistoryEvent() HistoryEvent {
 		Type: "plan",
 		Status: string(p.Status),
 		PlanID: p.ID,
+		BackupID: p.BackupID,
 		Mods: len(p.Changes),
 		Summary: fmt.Sprintf("Update plan with %d mod change(s)", len(p.Changes)),
 	}
