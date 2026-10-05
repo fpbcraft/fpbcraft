@@ -52,6 +52,7 @@ export interface ManagementMod {
   project_url?: string;
   side: string;
   deployment: Location;
+  preferred_deployment: Location;
   management: 'managed' | 'unmanaged' | 'unresolved' | 'external' | string;
   path: string;
   sha512?: string;
