@@ -474,3 +474,161 @@ func TestBuildStillBlocksDifferentManagedArtifactAtDependencyTarget(t *testing.T
 		t.Fatalf("missing occupied-target blocker: %+v", plan.Blockers)
 	}
 }
+
+
+func TestBuildCatalogInstallCreatesAddOperation(t *testing.T) {
+	now := time.Date(2026, 10, 5, 18, 0, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: now,
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:new-mod",
+			Provider: "modrinth",
+			ProjectID: "new-mod",
+			Name: "New Mod",
+			Deployment: inventory.LocationServer,
+			Classification: updatecheck.ClassificationReview,
+			Intent: "install",
+			Target: &updatecheck.Release{
+				ID: "version-1",
+				Number: "1.0.0",
+				Filename: "new-mod-1.0.0.jar",
+				URL: "https://cdn.example/new-mod.jar",
+				SHA512: "target-sha",
+			},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{
+			GeneratedAt: now,
+			ServerModsPath: "mods",
+			ClientModsPath: inventory.DefaultClientModsPath,
+		},
+		Mods: []management.Mod{},
+	}
+
+	plan, err := Build([]string{"modrinth:new-mod"}, report, snapshot, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Status != StatusReady {
+		t.Fatalf("install plan blocked: %+v", plan.Blockers)
+	}
+	if len(plan.Changes) != 1 || len(plan.Changes[0].Operations) != 1 {
+		t.Fatalf("unexpected install plan: %+v", plan.Changes)
+	}
+	op := plan.Changes[0].Operations[0]
+	if op.Action != "add" || op.CurrentPath != "" || op.TargetPath != "mods/new-mod-1.0.0.jar" {
+		t.Fatalf("install operation = %+v", op)
+	}
+	if plan.RequiresBackup {
+		t.Fatal("pure install should not require backing up an existing JAR")
+	}
+	if !plan.RequiresServerStop {
+		t.Fatal("install still requires the server stopped")
+	}
+}
+
+func TestBuildCatalogRemoveBlocksRequiredDependency(t *testing.T) {
+	now := time.Date(2026, 10, 5, 18, 0, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: now,
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:library",
+			Provider: "modrinth",
+			ProjectID: "library",
+			Name: "Library",
+			Deployment: inventory.LocationServer,
+			Classification: updatecheck.ClassificationReview,
+			Intent: "remove",
+			RequiredBy: []string{"Dependent Mod"},
+			Installed: updatecheck.Release{
+				ID: "lib-v1",
+				Number: "1.0.0",
+				Filename: "library.jar",
+				SHA512: "library-sha",
+			},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{GeneratedAt: now, ServerModsPath: "mods"},
+		Mods: []management.Mod{{
+			ID: "modrinth:library",
+			Provider: "modrinth",
+			ProjectID: "library",
+			Name: "Library",
+			Filename: "library.jar",
+			Management: "managed",
+			Deployment: inventory.LocationServer,
+			Path: "mods/library.jar",
+			SHA512: "library-sha",
+		}},
+	}
+
+	plan, err := Build([]string{"modrinth:library"}, report, snapshot, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Status != StatusBlocked {
+		t.Fatalf("required dependency removal should block: %+v", plan)
+	}
+	found := false
+	for _, blocker := range plan.Blockers {
+		if blocker.Code == "required_dependency_remove" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("missing required dependency blocker: %+v", plan.Blockers)
+	}
+}
+
+func TestBuildCatalogRemoveCreatesRestorableRemoveOperation(t *testing.T) {
+	now := time.Date(2026, 10, 5, 18, 0, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: now,
+		Candidates: []updatecheck.Candidate{{
+			Key: "curseforge:123",
+			Provider: "curseforge",
+			ProjectID: "123",
+			Name: "Optional Mod",
+			Deployment: inventory.LocationServer,
+			Classification: updatecheck.ClassificationReview,
+			Intent: "remove",
+			Installed: updatecheck.Release{
+				ID: "456",
+				Number: "1.0.0",
+				Filename: "optional.jar",
+				SHA512: "optional-sha",
+			},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{GeneratedAt: now, ServerModsPath: "mods"},
+		Mods: []management.Mod{{
+			ID: "curseforge:123",
+			Provider: "curseforge",
+			ProjectID: "123",
+			Name: "Optional Mod",
+			Filename: "optional.jar",
+			Management: "managed",
+			Deployment: inventory.LocationServer,
+			Path: "mods/optional.jar",
+			SHA512: "optional-sha",
+		}},
+	}
+
+	plan, err := Build([]string{"curseforge:123"}, report, snapshot, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Status != StatusReady {
+		t.Fatalf("remove plan blocked: %+v", plan.Blockers)
+	}
+	op := plan.Changes[0].Operations[0]
+	if op.Action != "remove" || op.CurrentPath != "mods/optional.jar" || op.TargetPath != "mods/optional.jar" {
+		t.Fatalf("remove operation = %+v", op)
+	}
+	if !plan.RequiresBackup || !plan.RequiresServerStop {
+		t.Fatalf("remove protections backup=%v stop=%v", plan.RequiresBackup, plan.RequiresServerStop)
+	}
+}
