@@ -134,6 +134,8 @@ func runServe(args []string) int {
 			Plans:        app.Plans,
 			Plan:         app.Plan,
 			History:      app.History,
+			Retention:    app.Settings,
+			UpdateRetention: app.UpdateSettings,
 			Web:          webHandler,
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
