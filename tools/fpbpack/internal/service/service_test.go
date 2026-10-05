@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -155,5 +156,54 @@ func TestNewLoadsRuntimeCachesWithoutRefreshing(t *testing.T) {
 	}
 	if !gotUpdates.GeneratedAt.Equal(now) {
 		t.Fatalf("cached updates were not loaded")
+	}
+}
+
+func TestCancelledUpdateDiscoveryDoesNotReplaceLastGoodCache(t *testing.T) {
+	stateDir := t.TempDir()
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "mods"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	now := time.Now().UTC()
+	lastGood := updates.Report{
+		GeneratedAt: now,
+		Minecraft: "1.21.1",
+		Loader: "neoforge",
+	}
+	if err := writeJSONAtomic(filepath.Join(stateDir, "updates.json"), lastGood); err != nil {
+		t.Fatal(err)
+	}
+
+	svc := &Service{
+		options: Options{
+			ServerRoot: root,
+			StateDir: stateDir,
+			Minecraft: "1.21.1",
+			Loader: "neoforge",
+		},
+		state: State{
+			SchemaVersion: StateSchemaVersion,
+			Settings: RuntimeSettings{RetentionCount: DefaultRetentionCount},
+			Catalog: catalog.Report{SchemaVersion: catalog.ReportSchemaVersion},
+		},
+		updates: lastGood,
+		hasUpdate: true,
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := svc.CheckUpdates(ctx)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("CheckUpdates error = %v, want context.Canceled", err)
+	}
+
+	var persisted updates.Report
+	if err := readJSON(filepath.Join(stateDir, "updates.json"), &persisted); err != nil {
+		t.Fatal(err)
+	}
+	if !persisted.GeneratedAt.Equal(lastGood.GeneratedAt) {
+		t.Fatalf("cancelled discovery replaced last good cache")
 	}
 }
