@@ -76,12 +76,20 @@ func ResolveSourceRegistry(ctx context.Context, inv inventory.Inventory, result 
 		baseURL = "https://github.com"
 	}
 
-	remaining := make([]Unresolved, 0, len(result.Report.Unresolved))
-	addedGitHub := false
+	type preparedResolution struct {
+		sha512 string
+		entry  *Entry
+		pinned *PinnedArtifact
+	}
+	prepared := make([]preparedResolution, 0)
+	resolved := make(map[string]struct{})
+
+	// Verification phase: perform every network/hash check before mutating the
+	// generated catalog or the in-memory report.
 	for _, unresolved := range result.Report.Unresolved {
-		rule, ok := rules[strings.ToLower(unresolved.SHA512)]
+		key := strings.ToLower(unresolved.SHA512)
+		rule, ok := rules[key]
 		if !ok {
-			remaining = append(remaining, unresolved)
 			continue
 		}
 
@@ -90,11 +98,13 @@ func ResolveSourceRegistry(ctx context.Context, inv inventory.Inventory, result 
 			if strings.TrimSpace(rule.Reason) == "" {
 				return summary, fmt.Errorf("pinned_local source for %s requires a reason", unresolved.Filename)
 			}
-			result.Report.Pinned = append(result.Report.Pinned, PinnedArtifact{
-				SHA512: unresolved.SHA512, Filename: unresolved.Filename,
-				Reason: rule.Reason, Sources: unresolved.Sources,
-			})
-			summary.Pinned++
+			pinned := &PinnedArtifact{
+				SHA512: unresolved.SHA512,
+				Filename: unresolved.Filename,
+				Reason: rule.Reason,
+				Sources: unresolved.Sources,
+			}
+			prepared = append(prepared, preparedResolution{sha512: key, pinned: pinned})
 
 		case "github_release":
 			if err := validateGitHubRule(rule); err != nil {
@@ -108,12 +118,13 @@ func ResolveSourceRegistry(ctx context.Context, inv inventory.Inventory, result 
 			if !strings.EqualFold(remoteHash, unresolved.SHA512) {
 				return summary, fmt.Errorf("GitHub source hash mismatch for %s: installed=%s remote=%s (%s)", unresolved.Filename, unresolved.SHA512, remoteHash, downloadURL)
 			}
+
 			mod := findInventoryArtifact(inv, unresolved.SHA512, unresolved.Filename)
 			deployment := inventory.LocationServer
 			if len(unresolved.Sources) > 0 {
 				deployment = unresolved.Sources[0].Location
 			}
-			entry := Entry{
+			entry := &Entry{
 				Provider: "github",
 				ProjectID: rule.Repository,
 				Name: displayName(mod),
@@ -128,21 +139,39 @@ func ResolveSourceRegistry(ctx context.Context, inv inventory.Inventory, result 
 				Asset: rule.Asset,
 				SourcePaths: unresolved.Sources,
 			}
-			result.Entries = append(result.Entries, entry)
-			result.Report.Managed = append(result.Report.Managed, entry)
-			metaPath := filepath.Join(opts.OutputPath, "mods", metafileName(entry))
-			if err := os.WriteFile(metaPath, []byte(renderMetafile(entry)), 0o644); err != nil {
-				return summary, fmt.Errorf("write GitHub metafile for %s: %w", unresolved.Filename, err)
-			}
-			summary.GitHubVerified++
-			addedGitHub = true
+			prepared = append(prepared, preparedResolution{sha512: key, entry: entry})
 
 		default:
 			return summary, fmt.Errorf("unsupported source registry type %q for %s", rule.Type, unresolved.Filename)
 		}
+		resolved[key] = struct{}{}
 	}
 
+	// Mutation phase: all GitHub sources are verified at this point.
+	for _, item := range prepared {
+		if item.pinned != nil {
+			result.Report.Pinned = append(result.Report.Pinned, *item.pinned)
+			summary.Pinned++
+			continue
+		}
+		entry := *item.entry
+		result.Entries = append(result.Entries, entry)
+		result.Report.Managed = append(result.Report.Managed, entry)
+		metaPath := filepath.Join(opts.OutputPath, "mods", metafileName(entry))
+		if err := os.WriteFile(metaPath, []byte(renderMetafile(entry)), 0o644); err != nil {
+			return summary, fmt.Errorf("write GitHub metafile for %s: %w", entry.Filename, err)
+		}
+		summary.GitHubVerified++
+	}
+
+	remaining := make([]Unresolved, 0, len(result.Report.Unresolved))
+	for _, unresolved := range result.Report.Unresolved {
+		if _, ok := resolved[strings.ToLower(unresolved.SHA512)]; !ok {
+			remaining = append(remaining, unresolved)
+		}
+	}
 	result.Report.Unresolved = remaining
+
 	sort.Slice(result.Report.Pinned, func(i, j int) bool {
 		return result.Report.Pinned[i].Filename < result.Report.Pinned[j].Filename
 	})
@@ -169,7 +198,7 @@ func ResolveSourceRegistry(ctx context.Context, inv inventory.Inventory, result 
 	result.Report.Summary.PinnedArtifacts = len(result.Report.Pinned)
 	summary.Remaining = len(result.Report.Unresolved)
 
-	if addedGitHub {
+	if summary.GitHubVerified > 0 {
 		executable, err := resolveExecutable(opts.PackwizPath)
 		if err != nil {
 			return summary, err
