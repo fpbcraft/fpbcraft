@@ -58,14 +58,21 @@ type State struct {
 	Catalog       catalog.Report        `json:"catalog"`
 }
 
+type RefreshStatus struct {
+	Refreshing  bool       `json:"refreshing"`
+	LastSuccess *time.Time `json:"last_success,omitempty"`
+	LastError   string     `json:"last_error,omitempty"`
+}
+
 type Service struct {
-	mu        sync.RWMutex
-	refreshMu sync.Mutex
-	options   Options
-	state     State
-	snapshot  management.Snapshot
-	updates   updatecheck.Report
-	hasUpdate bool
+	mu            sync.RWMutex
+	refreshMu     sync.Mutex
+	options       Options
+	state         State
+	snapshot      management.Snapshot
+	updates       updatecheck.Report
+	hasUpdate     bool
+	refreshStatus RefreshStatus
 }
 
 func New(ctx context.Context, options Options) (*Service, error) {
@@ -134,6 +141,32 @@ func (s *Service) Snapshot() (management.Snapshot, error) {
 	return s.snapshot, nil
 }
 
+func (s *Service) RefreshStatus() RefreshStatus {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.refreshStatus
+}
+
+func (s *Service) beginRefresh() {
+	s.mu.Lock()
+	s.refreshStatus.Refreshing = true
+	s.refreshStatus.LastError = ""
+	s.mu.Unlock()
+}
+
+func (s *Service) finishRefresh(err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.refreshStatus.Refreshing = false
+	if err != nil {
+		s.refreshStatus.LastError = err.Error()
+		return
+	}
+	now := time.Now().UTC()
+	s.refreshStatus.LastSuccess = &now
+	s.refreshStatus.LastError = ""
+}
+
 func (s *Service) Updates() (updatecheck.Report, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -143,9 +176,11 @@ func (s *Service) Updates() (updatecheck.Report, error) {
 	return s.updates, nil
 }
 
-func (s *Service) Refresh(ctx context.Context) error {
+func (s *Service) Refresh(ctx context.Context) (err error) {
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
+	s.beginRefresh()
+	defer func() { s.finishRefresh(err) }()
 
 	inv, err := s.scanInventory(ctx)
 	if err != nil {
@@ -183,9 +218,11 @@ func (s *Service) Refresh(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) RefreshInventory(ctx context.Context) error {
+func (s *Service) RefreshInventory(ctx context.Context) (err error) {
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
+	s.beginRefresh()
+	defer func() { s.finishRefresh(err) }()
 
 	inv, err := s.scanInventory(ctx)
 	if err != nil {
@@ -201,9 +238,11 @@ func (s *Service) RefreshInventory(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) CheckUpdates(ctx context.Context) error {
+func (s *Service) CheckUpdates(ctx context.Context) (err error) {
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
+	s.beginRefresh()
+	defer func() { s.finishRefresh(err) }()
 
 	updateCtx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
