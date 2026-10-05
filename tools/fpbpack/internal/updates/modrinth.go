@@ -56,6 +56,81 @@ type modrinthVersion struct {
 	} `json:"files"`
 }
 
+type VerifiedModrinthSource struct {
+	ProjectID     string
+	VersionID     string
+	VersionNumber string
+	VersionName   string
+	Filename      string
+	DownloadURL   string
+	Environment   string
+}
+
+func (client *ModrinthClient) VerifyInstalledVersion(
+	ctx context.Context,
+	projectID string,
+	versionID string,
+	filename string,
+	expectedSHA512 string,
+) (VerifiedModrinthSource, error) {
+	projectID = strings.TrimSpace(projectID)
+	versionID = strings.TrimSpace(versionID)
+	filename = strings.TrimSpace(filename)
+	expectedSHA512 = strings.ToLower(strings.TrimSpace(expectedSHA512))
+	if projectID == "" || versionID == "" || expectedSHA512 == "" {
+		return VerifiedModrinthSource{}, fmt.Errorf("project ID, version ID, and current SHA-512 are required")
+	}
+
+	version, err := client.GetVersion(ctx, versionID)
+	if err != nil {
+		return VerifiedModrinthSource{}, err
+	}
+	if version.ProjectID != projectID {
+		return VerifiedModrinthSource{}, fmt.Errorf("Modrinth version %s belongs to project %s, not %s", versionID, version.ProjectID, projectID)
+	}
+
+	var matched *struct {
+		Hashes struct {
+			SHA512 string `json:"sha512"`
+		} `json:"hashes"`
+		URL      string `json:"url"`
+		Filename string `json:"filename"`
+		Primary  bool   `json:"primary"`
+	}
+	for index := range version.Files {
+		file := &version.Files[index]
+		if filename != "" && file.Filename != filename {
+			continue
+		}
+		if strings.EqualFold(strings.TrimSpace(file.Hashes.SHA512), expectedSHA512) {
+			matched = file
+			break
+		}
+	}
+	if matched == nil && filename == "" {
+		for index := range version.Files {
+			file := &version.Files[index]
+			if strings.EqualFold(strings.TrimSpace(file.Hashes.SHA512), expectedSHA512) {
+				matched = file
+				break
+			}
+		}
+	}
+	if matched == nil {
+		return VerifiedModrinthSource{}, fmt.Errorf("Modrinth version %s does not contain an artifact matching the installed JAR SHA-512", versionID)
+	}
+
+	return VerifiedModrinthSource{
+		ProjectID: projectID,
+		VersionID: version.ID,
+		VersionNumber: version.VersionNumber,
+		VersionName: version.Name,
+		Filename: matched.Filename,
+		DownloadURL: matched.URL,
+		Environment: version.Environment,
+	}, nil
+}
+
 func (client *ModrinthClient) ListProjects(ctx context.Context, ids []string) (map[string]modrinthProject, error) {
 	result := make(map[string]modrinthProject, len(ids))
 	seen := map[string]struct{}{}
