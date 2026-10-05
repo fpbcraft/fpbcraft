@@ -1,6 +1,10 @@
 package planning
 
-import "time"
+import (
+	"time"
+
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/catalog"
+)
 
 type BackupFile struct {
 	SourcePath string `json:"source_path"`
@@ -10,9 +14,10 @@ type BackupFile struct {
 }
 
 type BackupManifest struct {
-	SchemaVersion int          `json:"schema_version"`
-	ID            string       `json:"id"`
-	PlanID        string       `json:"plan_id"`
-	CreatedAt     time.Time    `json:"created_at"`
-	Files         []BackupFile `json:"files"`
+	SchemaVersion int            `json:"schema_version"`
+	ID            string         `json:"id"`
+	PlanID        string         `json:"plan_id"`
+	CreatedAt     time.Time      `json:"created_at"`
+	Files         []BackupFile   `json:"files"`
+	Catalog       catalog.Report `json:"catalog"`
 }
