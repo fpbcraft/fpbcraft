@@ -70,10 +70,14 @@ export interface UpdateDependency {
   provider: string;
   project_id?: string;
   version_id?: string;
+  name?: string;
   type: string;
   action: string;
   installed_version?: string;
   target_version?: string;
+  deployment?: Location;
+  target?: UpdateRelease;
+  dependencies?: UpdateDependency[];
 }
 
 export interface UpdateCandidate {
