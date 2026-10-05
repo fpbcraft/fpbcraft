@@ -297,3 +297,47 @@ func TestUpdateRuleEndpoints(t *testing.T) {
 		t.Fatal("rule was not cleared")
 	}
 }
+
+func TestStatusIncludesRefreshStatus(t *testing.T) {
+	now := time.Date(2026, 10, 5, 14, 0, 0, 0, time.UTC)
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			RefreshStatus: func() service.RefreshStatus {
+				return service.RefreshStatus{Refreshing: true, LastSuccess: &now}
+			},
+		},
+	)
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/status", nil))
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d", recorder.Code)
+	}
+	var payload struct {
+		Refresh service.RefreshStatus `json:"refresh"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if !payload.Refresh.Refreshing || payload.Refresh.LastSuccess == nil {
+		t.Fatalf("unexpected refresh payload: %+v", payload.Refresh)
+	}
+}
+
+func TestProvidersEndpoint(t *testing.T) {
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			Providers: func() []service.ProviderStatus {
+				return []service.ProviderStatus{{ID: "modrinth", Label: "Modrinth", Status: "ready"}}
+			},
+		},
+	)
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/providers", nil))
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("providers = %d: %s", recorder.Code, recorder.Body.String())
+	}
+}
