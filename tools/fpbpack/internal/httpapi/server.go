@@ -232,6 +232,9 @@ func (s *Server) checkForUpdates(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) startBackgroundRefresh(refresh RefreshFunc) bool {
+	if s.refreshStatus != nil && s.refreshStatus().Refreshing {
+		return false
+	}
 	s.backgroundMu.Lock()
 	if s.backgroundRefresh {
 		s.backgroundMu.Unlock()
