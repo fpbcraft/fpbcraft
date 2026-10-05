@@ -140,34 +140,95 @@ func TestWebHandlerIsServedWithoutShadowingAPI(t *testing.T) {
 	}
 }
 
-func TestRefreshEndpointsInvokeServiceCallbacks(t *testing.T) {
-	refreshCalls := 0
-	updateCalls := 0
+func TestRefreshEndpointsRunOnServerContext(t *testing.T) {
+	refreshCalled := make(chan struct{}, 1)
+	updateCalled := make(chan struct{}, 1)
+	serverCtx, cancelServer := context.WithCancel(context.Background())
+	defer cancelServer()
+
 	handler := NewHandlerWithOptions(
 		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
 		"dev",
 		ServerOptions{
-			Refresh: func(context.Context) error {
-				refreshCalls++
+			BackgroundContext: serverCtx,
+			Refresh: func(ctx context.Context) error {
+				if ctx.Err() != nil {
+					t.Fatalf("refresh received cancelled server context: %v", ctx.Err())
+				}
+				refreshCalled <- struct{}{}
 				return nil
 			},
-			CheckUpdates: func(context.Context) error {
-				updateCalls++
+			CheckUpdates: func(ctx context.Context) error {
+				if ctx.Err() != nil {
+					t.Fatalf("update refresh received cancelled server context: %v", ctx.Err())
+				}
+				updateCalled <- struct{}{}
 				return nil
 			},
 		},
 	)
 
-	for _, route := range []string{"/api/refresh", "/api/updates/check"} {
+	tests := []struct {
+		route string
+		called <-chan struct{}
+	}{
+		{route: "/api/refresh", called: refreshCalled},
+		{route: "/api/updates/check", called: updateCalled},
+	}
+	for _, test := range tests {
+		requestCtx, cancelRequest := context.WithCancel(context.Background())
+		cancelRequest()
 		recorder := httptest.NewRecorder()
-		handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, route, nil))
-		if recorder.Code != http.StatusOK {
-			t.Fatalf("%s code = %d, want 200", route, recorder.Code)
+		handler.ServeHTTP(
+			recorder,
+			httptest.NewRequest(http.MethodPost, test.route, nil).WithContext(requestCtx),
+		)
+		if recorder.Code != http.StatusAccepted {
+			t.Fatalf("%s code = %d, want 202", test.route, recorder.Code)
+		}
+		select {
+		case <-test.called:
+		case <-time.After(time.Second):
+			t.Fatalf("%s background refresh did not run", test.route)
 		}
 	}
-	if refreshCalls != 1 || updateCalls != 1 {
-		t.Fatalf("refresh calls = %d, update calls = %d", refreshCalls, updateCalls)
+}
+
+func TestRefreshEndpointsDeduplicateRunningJob(t *testing.T) {
+	started := make(chan struct{}, 1)
+	release := make(chan struct{})
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			Refresh: func(context.Context) error {
+				started <- struct{}{}
+				<-release
+				return nil
+			},
+		},
+	)
+
+	first := httptest.NewRecorder()
+	handler.ServeHTTP(first, httptest.NewRequest(http.MethodPost, "/api/refresh", nil))
+	if first.Code != http.StatusAccepted {
+		t.Fatalf("first refresh = %d", first.Code)
 	}
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("first refresh did not start")
+	}
+
+	second := httptest.NewRecorder()
+	handler.ServeHTTP(second, httptest.NewRequest(http.MethodPost, "/api/refresh", nil))
+	if second.Code != http.StatusAccepted {
+		t.Fatalf("second refresh = %d", second.Code)
+	}
+	if !strings.Contains(second.Body.String(), "already_refreshing") {
+		t.Fatalf("second response = %s", second.Body.String())
+	}
+	close(release)
 }
 
 func TestPlanEndpointsCreateAndReadPlans(t *testing.T) {
