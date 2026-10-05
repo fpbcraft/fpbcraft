@@ -2,7 +2,7 @@
 
 import {useMemo, useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {RefreshCw} from 'lucide-react';
+import {ExternalLink, RefreshCw} from 'lucide-react';
 import {PageHeader, Pill, formatDate} from '@/components/ui';
 import {useManagement} from '@/components/management-provider';
 import type {UpdateCandidate, UpdateClassification, UpdatePlan} from '@/lib/management';
@@ -29,34 +29,128 @@ function CandidateRow({
   onToggle: () => void;
 }) {
   const selectable = candidate.classification === 'safe' || candidate.classification === 'review';
+  const changelogs = candidate.changelogs ?? [];
+
   return (
-    <div className="data-row">
-      <input
-        type="checkbox"
-        className="checkbox checkbox-sm"
-        checked={selected}
-        disabled={!selectable}
-        onChange={onToggle}
-        aria-label={'Select ' + candidate.name}
-      />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="truncate text-sm font-medium">{candidate.name}</span>
-          {candidate.target?.channel && candidate.target.channel !== 'release' ? (
-            <Pill tone="warn">{candidate.target.channel}</Pill>
+    <div className="border-t border-base-300 first:border-t-0">
+      <div className="flex min-h-14 items-center gap-3 px-4 py-3">
+        <input
+          type="checkbox"
+          className="checkbox checkbox-sm"
+          checked={selected}
+          disabled={!selectable}
+          onChange={onToggle}
+          aria-label={'Select ' + candidate.name}
+        />
+
+        {candidate.icon_url ? (
+          <img
+            src={candidate.icon_url}
+            alt=""
+            className="size-8 shrink-0 rounded-md border border-base-300 bg-base-200 object-cover"
+          />
+        ) : (
+          <div className="grid size-8 shrink-0 place-items-center rounded-md border border-base-300 bg-base-200 text-xs font-semibold text-base-content/45">
+            {candidate.name.slice(0, 1).toUpperCase()}
+          </div>
+        )}
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="truncate text-sm font-medium">{candidate.name}</span>
+            {candidate.target?.channel && candidate.target.channel !== 'release' ? (
+              <Pill tone="warn">{candidate.target.channel}</Pill>
+            ) : null}
+          </div>
+
+          <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-base-content/45">
+            <span>
+              {candidate.installed.number || candidate.installed.name || 'installed'} →{' '}
+              {candidate.target?.number ?? '—'}
+            </span>
+            <span>{candidate.provider}</span>
+            {candidate.target?.published_at ? <span>{formatDate(candidate.target.published_at)}</span> : null}
+          </div>
+
+          {candidate.reasons?.length ? (
+            <div className="mt-1 text-xs text-base-content/50">{candidate.reasons[0].message}</div>
           ) : null}
         </div>
-        <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-base-content/45">
-          <span>{candidate.installed.number || candidate.installed.name || 'installed'} → {candidate.target?.number ?? '—'}</span>
-          <span>{candidate.provider}</span>
-          {candidate.target?.published_at ? <span>{formatDate(candidate.target.published_at)}</span> : null}
+
+        <div className="flex shrink-0 items-center gap-1">
+          {candidate.dependencies?.some(
+            (dependency) => dependency.action !== 'none' && dependency.action !== 'satisfied',
+          ) ? (
+            <Pill tone="blue">dependency</Pill>
+          ) : null}
+
+          {candidate.project_url ? (
+            <a
+              className="btn btn-xs btn-ghost"
+              href={candidate.project_url}
+              target="_blank"
+              rel="noreferrer"
+              title={'Open ' + candidate.name + ' on ' + candidate.provider}
+            >
+              {candidate.provider === 'modrinth'
+                ? 'Modrinth'
+                : candidate.provider === 'curseforge'
+                  ? 'CurseForge'
+                  : 'Project'}
+              <ExternalLink size={12} />
+            </a>
+          ) : null}
         </div>
-        {candidate.reasons?.length ? (
-          <div className="mt-1 text-xs text-base-content/50">{candidate.reasons[0].message}</div>
-        ) : null}
       </div>
-      {candidate.dependencies?.some((dependency) => dependency.action !== 'none' && dependency.action !== 'satisfied') ? (
-        <Pill tone="blue">dependency</Pill>
+
+      {candidate.target ? (
+        <details className="group border-t border-base-300/60 bg-base-200/25">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 text-xs font-medium text-base-content/60 hover:text-base-content">
+            <span>
+              What changed
+              {changelogs.length > 1 ? ' · ' + changelogs.length + ' releases' : ''}
+            </span>
+            <span className="text-[0.68rem] font-normal text-base-content/35 group-open:hidden">Show</span>
+            <span className="hidden text-[0.68rem] font-normal text-base-content/35 group-open:inline">Hide</span>
+          </summary>
+
+          <div className="border-t border-base-300/60 px-4 py-3">
+            {changelogs.length ? (
+              <div className="space-y-4">
+                {changelogs.map((entry) => (
+                  <section key={entry.id}>
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      <h3 className="text-xs font-semibold">
+                        {entry.number || entry.name || entry.id}
+                      </h3>
+                      {entry.name && entry.name !== entry.number ? (
+                        <span className="text-xs text-base-content/45">{entry.name}</span>
+                      ) : null}
+                      {entry.published_at ? (
+                        <span className="text-[0.68rem] text-base-content/35">
+                          {formatDate(entry.published_at)}
+                        </span>
+                      ) : null}
+                    </div>
+                    {entry.body ? (
+                      <div className="mt-1 whitespace-pre-wrap text-xs leading-5 text-base-content/65">
+                        {entry.body}
+                      </div>
+                    ) : (
+                      <div className="mt-1 text-xs italic text-base-content/35">
+                        No changelog was provided for this release.
+                      </div>
+                    )}
+                  </section>
+                ))}
+              </div>
+            ) : (
+              <div className="text-xs text-base-content/40">
+                No changelog data is available from {candidate.provider} for this update.
+              </div>
+            )}
+          </div>
+        </details>
       ) : null}
     </div>
   );
