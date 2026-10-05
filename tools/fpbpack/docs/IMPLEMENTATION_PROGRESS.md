@@ -20,8 +20,8 @@ The user merges PRs manually. Do not merge this branch automatically.
 - [x] Add a `--web-dir` development override.
 - [x] Remove the CORS / Local Network Access requirement from the new architecture.
 - [x] Add a multi-stage Docker build with no Node runtime in the final image.
-- [x] Extend CI to typecheck/build the GUI, embed it, test/vet Go, build the static binary, and build the Docker image.
-- [x] Confirm the combined CI is green (GUI export, Go test/vet, embedded binary, Docker build, artifact upload).
+- [x] Keep PR/dev CI focused on GUI typecheck/export, Go test/vet, and static Linux binary artifacts.
+- [x] Add a release-only Docker workflow triggered by published GitHub releases.
 - [x] Mark the separate GUI repository/PR as superseded after the combined branch has been accepted.
 
 ## Self-contained serve mode
@@ -56,4 +56,4 @@ The user merges PRs manually. Do not merge this branch automatically.
 
 ## Safety checkpoint
 
-The current service remains read-only. Serve-mode refreshes scan/reconcile live files and update FPBPack-owned state/cache data, but do not mutate live mod JARs. Docker CI also smoke-tests first-run state generation and `/healthz` with no pre-generated JSON inputs.
+The current service remains read-only. Serve-mode refreshes scan/reconcile live files and update FPBPack-owned state/cache data, but do not mutate live mod JARs. Docker images are built and smoke-tested only for published releases, not PR/dev builds.

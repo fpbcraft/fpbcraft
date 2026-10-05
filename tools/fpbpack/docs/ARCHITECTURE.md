@@ -98,7 +98,7 @@ The frontend fetches relative routes such as `/api/mods`. Release builds copy `w
 
 ## Docker / Unraid
 
-The Dockerfile is multi-stage:
+The Dockerfile is multi-stage and is built by automation only for published full releases:
 
 1. Node builds/typechecks the static GUI.
 2. Go compiles FPBPack with those files embedded.
@@ -110,6 +110,8 @@ The target container mounts:
 - `/data` — FPBPack durable state/cache/history/backups.
 
 The container exposes port 8787 and runs one process. The image defaults to `fpbpack serve`, so normal container startup needs no command override and no pre-start inventory/update job.
+
+PR/dev CI does not build Docker images. The release workflow builds and smoke-tests the image only when a GitHub release is published.
 
 ## Development
 

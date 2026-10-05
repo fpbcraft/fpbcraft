@@ -169,6 +169,8 @@ The service owns inventory/reconciliation/update refreshes and persists generate
 
 The production container is a single-process image. Node is used only in the build stage to produce the static export; the final image contains FPBPack and CA certificates, not a Node runtime.
 
+Automated Docker builds run only for published GitHub releases. Pull-request/development CI does not build Docker images.
+
 Build from the repository root:
 
 ```bash
