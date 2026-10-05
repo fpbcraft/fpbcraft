@@ -82,6 +82,8 @@ type Candidate struct {
 	Dependencies   []Dependency       `json:"dependencies,omitempty"`
 	Changelogs     []ChangelogEntry   `json:"changelogs,omitempty"`
 	RequiredBy     []string           `json:"required_by,omitempty"`
+	MetadataStale  bool               `json:"metadata_stale,omitempty"`
+	RefreshError   string             `json:"refresh_error,omitempty"`
 	Rejected       []RejectedVersion  `json:"rejected,omitempty"`
 }
 
