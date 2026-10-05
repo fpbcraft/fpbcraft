@@ -17,17 +17,22 @@ permissions:
 
 jobs:
   docker:
-    if: ${{ github.event_name == 'workflow_call' || !github.event.release.prerelease }}
+    if: ${{ inputs.tag != '' || !github.event.release.prerelease }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event_name == 'workflow_call' && inputs.tag || github.event.release.tag_name }}
+          ref: ${{ inputs.tag || github.event.release.tag_name }}
 
       - name: Resolve image metadata
         env:
-          RELEASE_TAG: ${{ github.event_name == 'workflow_call' && inputs.tag || github.event.release.tag_name }}
+          RELEASE_TAG: ${{ inputs.tag || github.event.release.tag_name }}
         run: |
+          if [[ -z "${RELEASE_TAG}" ]]; then
+            echo "::error::Release tag is empty."
+            exit 1
+          fi
+
           version="${RELEASE_TAG#v}"
           image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/fpbpack"
           echo "FPBPACK_VERSION=$version" >> "$GITHUB_ENV"
@@ -46,6 +51,8 @@ jobs:
 
       - name: Smoke-test released Docker image
         run: |
+          test "$(docker run --rm fpbpack-release version)" = "fpbpack ${FPBPACK_VERSION}"
+
           mkdir -p "${RUNNER_TEMP}/fpbpack-server/mods" "${RUNNER_TEMP}/fpbpack-state"
           docker run -d --name fpbpack-release \
             -p 127.0.0.1:18787:8787 \
@@ -53,6 +60,7 @@ jobs:
             -v "${RUNNER_TEMP}/fpbpack-state:/data" \
             fpbpack-release
           trap 'docker rm -f fpbpack-release >/dev/null 2>&1 || true' EXIT
+
           for attempt in {1..30}; do
             if curl --fail --silent http://127.0.0.1:18787/healthz >/dev/null; then
               break
@@ -63,9 +71,10 @@ jobs:
             fi
             sleep 1
           done
+
+          # Fresh startup persists durable state but intentionally does not run
+          # inventory/update refreshes, so their cache files may not exist yet.
           test -f "${RUNNER_TEMP}/fpbpack-state/state.json"
-          test -f "${RUNNER_TEMP}/fpbpack-state/inventory.json"
-          test -f "${RUNNER_TEMP}/fpbpack-state/updates.json"
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
