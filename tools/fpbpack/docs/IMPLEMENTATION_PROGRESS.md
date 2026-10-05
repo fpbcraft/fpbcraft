@@ -4,41 +4,36 @@ Last updated: **2026-10-05**
 
 ## Active slice
 
-**Slice 3 — Apply & Restore: in progress**
+**Slice 4 — Catalog Management: in progress**
 
-Working branch: `fpbcraft/fpbcraft:feat/apply-restore` → draft PR #15 against `main`.
+Working branch: `fpbcraft/fpbcraft:feat/catalog-management` → draft PR #17 against `main`.
 
-Slices 1–2 and the release-only Docker CI adjustment are merged. PR #15 contains the combined Slice 3 backend/GUI work plus real-server remediation discovered while exercising Slice 2.
+Slices 1–3 plus the operational/reconciliation follow-up are merged. The user merges PRs manually; do not merge this branch automatically.
 
-The user merges PRs manually. Do not merge these branches automatically.
+### Slice 4 work in PR #17
 
-### Slice 3 work currently in PR #15
-
-- [x] Multi-artifact management identity supports multiple independently managed JARs from one provider project/repository.
-- [x] Verified source assignment no longer removes sibling artifacts from the same repository.
-- [x] Mods expose current vs preferred server/common or AutoModpack client-only placement.
-- [x] Preferred placement is persisted separately from current placement; **Review move** creates a verified same-version placement plan even when no update exists.
-- [x] Updates can deep-link to the exact mod in Mods.
-- [x] Mods filters/page persist across reloads and remain URL-addressable.
-- [x] Blocking catalog entries missing from the live inventory render as explicit diagnostic rows instead of disappearing from the Mods table.
-- [x] Absent unresolved/managed catalog rows can be explicitly forgotten; the backend rechecks that no live file exists before changing state.
-- [x] Optional Modrinth environments such as `client_only_server_optional` on the server are not placement warnings; stale persisted warnings are normalized on startup.
-- [x] Crafty API v2 status, explicit Start/Stop controls, GUI configuration, secret token storage, and opt-in self-signed TLS support.
-- [x] Apply requires a persisted ready/verified plan and a positively confirmed stopped server.
-- [x] Apply rechecks the complete managed state for unrelated drift plus selected accepted identity/path/hash, target occupancy, and cached target hashes immediately before mutation.
-- [x] Target artifacts are staged and hash-verified before filesystem commit.
-- [x] Post-mutation failures roll files, accepted state, inventory, and plan state back.
-- [x] Restore points include the accepted pre-apply catalog state, including add-only plans.
-- [x] History exposes explicit confirmed Restore, shows the exact paths being reverted, suppresses already-restored actions, and keeps server restart manual.
-- [x] CurseForge/manual provider downloads can be uploaded from Review; provider checksums are verified before the plan can become ready.
-- [x] Crafty Start/Stop waits for the requested runtime state instead of assuming an accepted action completed immediately.
-- [x] Apply/Restore publish in-memory state atomically to concurrent API readers.
-- [x] Retention protects plans/backups referenced by retained or in-progress operation history.
-- [x] PR #15 CI/build/test validation is continuously exercised by the FPBPack workflow; latest real-pack remediation commits remain under the same gate.
-- [ ] Exercise Crafty configuration/status/start/stop against the real FPBCraft server.
-- [ ] Exercise a real reviewed Apply on the FPBCraft server while stopped.
-- [ ] Exercise Restore from the resulting history record.
-- [ ] Resolve any real-pack edge cases before marking Slice 3 complete.
+- [x] Search compatible Modrinth projects from the GUI.
+- [x] Search compatible CurseForge projects from the GUI.
+- [x] Mark provider projects already managed by the accepted catalog.
+- [x] Browse compatible exact Modrinth versions with readable number/date/channel/changelog.
+- [x] Browse compatible exact CurseForge files with readable name/date/channel.
+- [x] Filter release/beta/alpha/all in the reusable version picker.
+- [x] Add a new mod with explicit server/common or client-only placement.
+- [x] Change an existing Modrinth/CurseForge mod to an exact version, including downgrade/reinstall.
+- [x] Resolve required dependencies into install/version plans using the existing provider dependency resolvers.
+- [x] Add true `remove` plan operations instead of conflating removal with state-only Forget.
+- [x] Back up removed JARs and restore both bytes and accepted catalog state.
+- [x] Verify reverse dependencies from the currently installed provider versions/files before removal.
+- [x] Fail removal closed when current provider dependency metadata cannot be verified.
+- [x] Update Review to distinguish installation, version change, dependency changes, and removal.
+- [x] Add catalog search/version/plan API endpoints and serve wiring.
+- [x] Add planning and Apply/Restore regression coverage for install/removal semantics.
+- [x] Add provider search/version-filter fixtures for Modrinth and CurseForge.
+- [ ] Final PR #17 CI/build/test validation.
+- [ ] Exercise Modrinth add/version/remove against the real FPBCraft server.
+- [ ] Exercise CurseForge add/version/remove against the real FPBCraft server.
+- [ ] Exercise at least one dependency-driven install and one blocked required-dependency removal.
+- [ ] Resolve real-provider edge cases before marking Slice 4 complete.
 
 ## Architecture / runtime completed
 
