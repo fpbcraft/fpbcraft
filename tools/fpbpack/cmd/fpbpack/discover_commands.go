@@ -114,6 +114,10 @@ func runServe(args []string) int {
 		ModrinthBaseURL: *modrinthAPI,
 		CurseForgeAPIKey: strings.TrimSpace(os.Getenv("FPBPACK_CURSEFORGE_API_KEY")),
 		GitHubToken: strings.TrimSpace(os.Getenv("FPBPACK_GITHUB_TOKEN")),
+		CraftyURL: strings.TrimSpace(os.Getenv("FPBPACK_CRAFTY_URL")),
+		CraftyServerID: strings.TrimSpace(os.Getenv("FPBPACK_CRAFTY_SERVER_ID")),
+		CraftyToken: strings.TrimSpace(os.Getenv("FPBPACK_CRAFTY_TOKEN")),
+		CraftyAllowInsecure: strings.EqualFold(strings.TrimSpace(os.Getenv("FPBPACK_CRAFTY_INSECURE")), "true"),
 		BootstrapReport: *bootstrapReport,
 	})
 	if err != nil {
