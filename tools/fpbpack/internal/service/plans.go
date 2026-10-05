@@ -189,24 +189,53 @@ func (s *Service) pruneHistory(retention int) error {
 		return nil
 	}
 
-	for _, old := range events[retention:] {
-		// Slice 2 only creates plan events. Future active/incomplete apply events
-		// must be excluded from pruning before Slice 3 adds them.
-		if old.event.Type != "plan" {
+	keep := map[string]struct{}{}
+	keptPlans := map[string]struct{}{}
+	keptBackups := map[string]struct{}{}
+	for index, stored := range events {
+		nonTerminal := stored.event.Status == "pending" || stored.event.Status == "running"
+		if index < retention || nonTerminal {
+			keep[stored.path] = struct{}{}
+			if stored.event.PlanID != "" {
+				keptPlans[stored.event.PlanID] = struct{}{}
+			}
+			if stored.event.BackupID != "" {
+				keptBackups[stored.event.BackupID] = struct{}{}
+			}
+		}
+	}
+
+	candidatePlans := map[string]struct{}{}
+	candidateBackups := map[string]struct{}{}
+	for _, stored := range events {
+		if _, ok := keep[stored.path]; ok {
 			continue
 		}
-		if old.event.PlanID != "" {
-			if err := os.Remove(filepath.Join(s.options.StateDir, "plans", old.event.PlanID+".json")); err != nil && !os.IsNotExist(err) {
-				return fmt.Errorf("remove plan %s: %w", old.event.PlanID, err)
-			}
+		if stored.event.PlanID != "" {
+			candidatePlans[stored.event.PlanID] = struct{}{}
 		}
-		if old.event.BackupID != "" {
-			if err := os.RemoveAll(filepath.Join(s.options.StateDir, "backups", old.event.BackupID)); err != nil {
-				return fmt.Errorf("remove backup %s: %w", old.event.BackupID, err)
-			}
+		if stored.event.BackupID != "" {
+			candidateBackups[stored.event.BackupID] = struct{}{}
 		}
-		if err := os.Remove(old.path); err != nil && !os.IsNotExist(err) {
+		if err := os.Remove(stored.path); err != nil && !os.IsNotExist(err) {
 			return fmt.Errorf("remove history event: %w", err)
+		}
+	}
+
+	for planID := range candidatePlans {
+		if _, protected := keptPlans[planID]; protected {
+			continue
+		}
+		if err := os.Remove(filepath.Join(s.options.StateDir, "plans", planID+".json")); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("remove plan %s: %w", planID, err)
+		}
+	}
+	for backupID := range candidateBackups {
+		if _, protected := keptBackups[backupID]; protected {
+			continue
+		}
+		if err := os.RemoveAll(filepath.Join(s.options.StateDir, "backups", backupID)); err != nil {
+			return fmt.Errorf("remove backup %s: %w", backupID, err)
 		}
 	}
 	return nil
