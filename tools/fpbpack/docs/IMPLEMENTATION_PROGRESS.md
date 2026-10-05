@@ -17,16 +17,20 @@ The user merges PRs manually. Do not merge these branches automatically.
 - [x] Multi-artifact management identity supports multiple independently managed JARs from one provider project/repository.
 - [x] Verified source assignment no longer removes sibling artifacts from the same repository.
 - [x] Mods expose current vs preferred server/common or AutoModpack client-only placement.
-- [x] Preferred placement is persisted and future reviewed update plans target it without immediately moving the live JAR.
+- [x] Preferred placement is persisted separately from current placement; **Review move** creates a verified same-version placement plan even when no update exists.
 - [x] Updates can deep-link to the exact mod in Mods.
 - [x] Mods filters/page persist across reloads and remain URL-addressable.
+- [x] Blocking catalog entries missing from the live inventory render as explicit diagnostic rows instead of disappearing from the Mods table.
 - [x] Crafty API v2 status, explicit Start/Stop controls, GUI configuration, secret token storage, and opt-in self-signed TLS support.
 - [x] Apply requires a persisted ready/verified plan and a positively confirmed stopped server.
-- [x] Apply rechecks live/current hashes, target occupancy, and cached target hashes immediately before mutation.
+- [x] Apply rechecks the complete managed state for unrelated drift plus selected accepted identity/path/hash, target occupancy, and cached target hashes immediately before mutation.
 - [x] Target artifacts are staged and hash-verified before filesystem commit.
 - [x] Post-mutation failures roll files, accepted state, inventory, and plan state back.
 - [x] Restore points include the accepted pre-apply catalog state, including add-only plans.
-- [x] History exposes explicit confirmed Restore and keeps server restart manual.
+- [x] History exposes explicit confirmed Restore, shows the exact paths being reverted, suppresses already-restored actions, and keeps server restart manual.
+- [x] CurseForge/manual provider downloads can be uploaded from Review; provider checksums are verified before the plan can become ready.
+- [x] Crafty Start/Stop waits for the requested runtime state instead of assuming an accepted action completed immediately.
+- [x] Apply/Restore publish in-memory state atomically to concurrent API readers.
 - [x] Retention protects plans/backups referenced by retained or in-progress operation history.
 - [ ] PR #15 CI/build/test validation.
 - [ ] Exercise Crafty configuration/status/start/stop against the real FPBCraft server.
