@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"context"
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/catalog"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
@@ -23,7 +24,8 @@ func runCatalog(args []string) int {
 	force := flags.Bool("force", false, "replace a non-empty output directory")
 	strict := flags.Bool("strict", false, "exit non-zero when unresolved artifacts or version conflicts remain")
 	resolveCurseForge := flags.Bool("resolve-curseforge", false, "resolve unresolved JARs using an isolated Packwiz CurseForge detector")
-	packwizPath := flags.String("packwiz", "packwiz", "Packwiz executable used with --resolve-curseforge")
+	packwizPath := flags.String("packwiz", "packwiz", "Packwiz executable used by catalog resolvers")
+	sourcesPath := flags.String("sources", "", "source registry JSON for exact GitHub and pinned custom artifacts")
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
@@ -68,6 +70,21 @@ func runCatalog(args []string) int {
 		}
 	}
 
+	var sourceSummary catalog.SourceResolutionSummary
+	if *sourcesPath != "" {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*60*1000000000)
+		sourceSummary, err = catalog.ResolveSourceRegistry(ctx, inv, &result, catalog.SourceResolveOptions{
+			RegistryPath: *sourcesPath,
+			OutputPath: *output,
+			PackwizPath: *packwizPath,
+		})
+		cancel()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "resolve source registry: %v\n", err)
+			return 1
+		}
+	}
+
 	s := result.Report.Summary
 	fmt.Println("FPBPack catalog")
 	fmt.Printf("Inventory JARs:      %d\n", s.InventoryJARs)
@@ -77,9 +94,15 @@ func runCatalog(args []string) int {
 	fmt.Printf("Unresolved:          %d\n", s.Unresolved)
 	fmt.Printf("Version conflicts:   %d\n", s.ConflictProjects)
 	fmt.Printf("Placement warnings:  %d\n", s.PlacementWarnings)
+	fmt.Printf("Pinned artifacts:     %d\n", s.PinnedArtifacts)
 	if *resolveCurseForge {
 		fmt.Printf("CurseForge detected: %d\n", curseForge.Detected)
 		fmt.Printf("CF still unmatched:  %d\n", curseForge.Unmatched)
+	}
+	if *sourcesPath != "" {
+		fmt.Printf("GitHub verified:      %d\n", sourceSummary.GitHubVerified)
+		fmt.Printf("Registry pinned:      %d\n", sourceSummary.Pinned)
+		fmt.Printf("Still unresolved:     %d\n", sourceSummary.Remaining)
 	}
 	fmt.Printf("Output:              %s\n", *output)
 	fmt.Printf("Report:              %s/migration-report.json\n", *output)
