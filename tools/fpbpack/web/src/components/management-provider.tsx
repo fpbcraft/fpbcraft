@@ -57,17 +57,25 @@ async function loadManagementState(): Promise<ManagementState> {
     updates = await fetchApi<UpdateReport>('/api/updates');
   } catch {
     if (status.refresh?.last_error) {
-      errors.push('Background refresh failed: ' + status.refresh.last_error);
-    } else {
+      errors.push('Refresh failed: ' + status.refresh.last_error);
+    } else if (status.refresh?.refreshing) {
       errors.push('Update discovery is still refreshing; cached update data is not available yet.');
+    } else {
+      errors.push('No cached update data is available yet. Run Check updates when you want to query providers.');
     }
   }
 
   return {
     status,
-    mods: modsResponse.mods,
-    diagnostics,
-    updates,
+    mods: Array.isArray(modsResponse.mods) ? modsResponse.mods : [],
+    diagnostics: {
+      ...diagnostics,
+      findings: Array.isArray(diagnostics.findings) ? diagnostics.findings : [],
+    },
+    updates: {
+      ...updates,
+      candidates: Array.isArray(updates.candidates) ? updates.candidates : [],
+    },
     source: 'api',
     errors,
   };

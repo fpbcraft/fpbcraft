@@ -3,6 +3,7 @@
 import {useEffect, useMemo, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {
+  Check,
   ExternalLink,
   GitBranch,
   RefreshCw,
@@ -437,7 +438,8 @@ export default function ModsPage() {
       | 'assign_curseforge'
       | 'assign_github'
       | 'forget_missing'
-      | 'set_placement',
+      | 'set_placement'
+      | 'adopt_current',
     path: string,
     extra?: {
       project_id?: string;
@@ -1003,11 +1005,23 @@ export default function ModsPage() {
                       <ShieldOff size={14} /> Keep unmanaged
                     </button>
                   ) : null}
+                  {(selectedBlockers.some((finding) => finding.code === 'managed_artifact_replaced') ||
+                    selectedMod.management === 'external') ? (
+                    <button
+                      className="btn btn-sm btn-outline"
+                      type="button"
+                      disabled={managementBusy}
+                      onClick={() => void manageMod('adopt_current', selectedMod.path)}
+                    >
+                      <Check size={14} /> Adopt current JAR
+                    </button>
+                  ) : null}
                 </div>
                 <p className="text-xs text-base-content/45">
                   Auto-detect retries exact provider identification/metadata for this mod only.
-                  Keeping it unmanaged accepts the current JAR as intentional, clears source
-                  blockers, and excludes it from update planning without touching the file.
+                  Adopt current JAR is for an intentional manual replacement: FPBPack accepts it
+                  only after proving it belongs to the same provider project/repository. Keeping
+                  it unmanaged excludes it from update planning without touching the file.
                 </p>
 
                 <div className="border-t border-base-300 pt-4">

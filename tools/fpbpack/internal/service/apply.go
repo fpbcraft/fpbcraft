@@ -171,6 +171,7 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 		GeneratedAt: now,
 		Minecraft: s.options.Minecraft,
 		Loader: s.options.Loader,
+		Candidates: []updatecheck.Candidate{},
 	}
 	_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), nextUpdates)
 	s.mu.Lock()
@@ -285,6 +286,7 @@ func (s *Service) RestoreBackup(ctx context.Context, backupID string) (result Re
 		GeneratedAt: now,
 		Minecraft: s.options.Minecraft,
 		Loader: s.options.Loader,
+		Candidates: []updatecheck.Candidate{},
 	}
 	_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), nextUpdates)
 	s.mu.Lock()

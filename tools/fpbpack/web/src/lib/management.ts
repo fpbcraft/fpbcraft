@@ -25,8 +25,23 @@ export interface DiagnosticReport {
 
 export interface RefreshStatus {
   refreshing: boolean;
+  kind?: string;
+  phase?: string;
+  message?: string;
+  current?: number;
+  total?: number;
+  percent?: number;
+  started_at?: string;
   last_success?: string;
   last_error?: string;
+}
+
+export interface RuntimeLogEntry {
+  id: number;
+  time: string;
+  level: 'info' | 'warn' | 'error' | string;
+  area: string;
+  message: string;
 }
 
 export interface CraftyStatus {

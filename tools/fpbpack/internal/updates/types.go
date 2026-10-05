@@ -104,6 +104,9 @@ type Report struct {
 }
 
 func (r *Report) RecalculateSummary() {
+	if r.Candidates == nil {
+		r.Candidates = []Candidate{}
+	}
 	r.Summary = Summary{}
 	for _, candidate := range r.Candidates {
 		switch candidate.Classification {

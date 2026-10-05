@@ -70,6 +70,13 @@ type State struct {
 
 type RefreshStatus struct {
 	Refreshing  bool       `json:"refreshing"`
+	Kind        string     `json:"kind,omitempty"`
+	Phase       string     `json:"phase,omitempty"`
+	Message     string     `json:"message,omitempty"`
+	Current     int        `json:"current,omitempty"`
+	Total       int        `json:"total,omitempty"`
+	Percent     int        `json:"percent,omitempty"`
+	StartedAt   *time.Time `json:"started_at,omitempty"`
 	LastSuccess *time.Time `json:"last_success,omitempty"`
 	LastError   string     `json:"last_error,omitempty"`
 }
@@ -84,6 +91,8 @@ type Service struct {
 	hasUpdate     bool
 	refreshStatus RefreshStatus
 	secrets       ProviderSecrets
+	logSeq        uint64
+	logs          []RuntimeLogEntry
 }
 
 func New(ctx context.Context, options Options) (*Service, error) {
@@ -123,6 +132,7 @@ func New(ctx context.Context, options Options) (*Service, error) {
 		}
 	}
 	service.loadRuntimeCaches()
+	service.logEvent("info", "service", "FPBPack started from persisted state; automatic refresh waits for its configured interval")
 	return service, nil
 }
 
@@ -165,30 +175,73 @@ func (s *Service) Snapshot() (management.Snapshot, error) {
 	return s.snapshot, nil
 }
 
+func (s *Service) Catalog() (catalog.Report, error) {
+	return s.catalogSnapshot()
+}
+
 func (s *Service) RefreshStatus() RefreshStatus {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.refreshStatus
 }
 
-func (s *Service) beginRefresh() {
+func (s *Service) beginRefresh(kind, message string) {
+	now := time.Now().UTC()
 	s.mu.Lock()
 	s.refreshStatus.Refreshing = true
+	s.refreshStatus.Kind = kind
+	s.refreshStatus.Phase = "starting"
+	s.refreshStatus.Message = message
+	s.refreshStatus.Current = 0
+	s.refreshStatus.Total = 0
+	s.refreshStatus.Percent = 0
+	s.refreshStatus.StartedAt = &now
 	s.refreshStatus.LastError = ""
+	s.mu.Unlock()
+	s.logEvent("info", "refresh", message)
+}
+
+func (s *Service) setRefreshProgress(phase, message string, current, total, percent int) {
+	if percent < 0 {
+		percent = 0
+	}
+	if percent > 100 {
+		percent = 100
+	}
+	s.mu.Lock()
+	if s.refreshStatus.Refreshing {
+		s.refreshStatus.Phase = phase
+		s.refreshStatus.Message = message
+		s.refreshStatus.Current = current
+		s.refreshStatus.Total = total
+		s.refreshStatus.Percent = percent
+	}
 	s.mu.Unlock()
 }
 
 func (s *Service) finishRefresh(err error) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.refreshStatus.Refreshing = false
+	s.refreshStatus.Phase = ""
+	s.refreshStatus.Current = 0
+	s.refreshStatus.Total = 0
+	s.refreshStatus.StartedAt = nil
 	if err != nil {
+		kind := s.refreshStatus.Kind
+		s.refreshStatus.Message = "Refresh failed"
 		s.refreshStatus.LastError = err.Error()
+		s.mu.Unlock()
+		s.logRefreshFailure(kind, err)
 		return
 	}
 	now := time.Now().UTC()
+	kind := s.refreshStatus.Kind
+	s.refreshStatus.Message = "Refresh complete"
+	s.refreshStatus.Percent = 100
 	s.refreshStatus.LastSuccess = &now
 	s.refreshStatus.LastError = ""
+	s.mu.Unlock()
+	s.logEvent("info", "refresh", kind+" refresh completed")
 }
 
 func (s *Service) Updates() (updatecheck.Report, error) {
@@ -200,24 +253,83 @@ func (s *Service) Updates() (updatecheck.Report, error) {
 	return s.updates, nil
 }
 
+func (s *Service) catalogSnapshot() (catalog.Report, error) {
+	s.mu.RLock()
+	bytes, err := json.Marshal(s.state.Catalog)
+	s.mu.RUnlock()
+	if err != nil {
+		return catalog.Report{}, err
+	}
+	var result catalog.Report
+	if err := json.Unmarshal(bytes, &result); err != nil {
+		return catalog.Report{}, err
+	}
+	return result, nil
+}
+
+func (s *Service) updateReportSnapshot() (updatecheck.Report, bool, error) {
+	s.mu.RLock()
+	if !s.hasUpdate {
+		s.mu.RUnlock()
+		return updatecheck.Report{}, false, nil
+	}
+	bytes, err := json.Marshal(s.updates)
+	s.mu.RUnlock()
+	if err != nil {
+		return updatecheck.Report{}, false, err
+	}
+	var result updatecheck.Report
+	if err := json.Unmarshal(bytes, &result); err != nil {
+		return updatecheck.Report{}, false, err
+	}
+	return result, true, nil
+}
+
+func reconcileUpdateReportToCatalog(report *updatecheck.Report, current catalog.Report) {
+	managed := make(map[string]catalog.Entry, len(current.Managed))
+	for _, entry := range current.Managed {
+		managed[catalog.EntryKey(entry)] = entry
+	}
+	filtered := report.Candidates[:0]
+	for _, candidate := range report.Candidates {
+		entry, ok := managed[candidate.Key]
+		if !ok {
+			continue
+		}
+		candidate.Deployment = entry.Deployment
+		candidate.Side = entry.Side
+		if strings.TrimSpace(entry.Name) != "" {
+			candidate.Name = entry.Name
+		}
+		filtered = append(filtered, candidate)
+	}
+	report.Candidates = filtered
+	report.RecalculateSummary()
+}
+
 func (s *Service) Refresh(ctx context.Context) (err error) {
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
-	s.beginRefresh()
+	s.beginRefresh("full", "Refreshing inventory and provider metadata")
 	defer func() { s.finishRefresh(err) }()
 
+	s.setRefreshProgress("inventory", "Scanning installed JARs", 0, 0, 5)
 	inv, err := s.scanInventory(ctx)
 	if err != nil {
 		return err
 	}
-	snapshot := management.BuildSnapshot(inv, s.state.Catalog)
 	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "inventory.json"), inv); err != nil {
 		return fmt.Errorf("write inventory cache: %w", err)
 	}
 
+	acceptedCatalog, err := s.catalogSnapshot()
+	if err != nil {
+		return fmt.Errorf("snapshot accepted catalog: %w", err)
+	}
+	s.setRefreshProgress("providers", "Refreshing provider metadata", 0, len(acceptedCatalog.Managed), 20)
 	updateCtx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
-	report := updatecheck.Discover(updateCtx, s.state.Catalog, updatecheck.Options{
+	report := updatecheck.Discover(updateCtx, acceptedCatalog, updatecheck.Options{
 		Minecraft:       s.options.Minecraft,
 		Mode:            updatecheck.RefreshModeBackground,
 		Loader:          s.options.Loader,
@@ -229,59 +341,90 @@ func (s *Service) Refresh(ctx context.Context) (err error) {
 		}(),
 		GitHubBaseURL: s.options.GitHubBaseURL,
 		GitHubToken: s.options.GitHubToken,
+		Progress: func(current, total int, name string) {
+			percent := 20
+			if total > 0 {
+				percent += (current * 70) / total
+			}
+			message := "Refreshing provider metadata"
+			if strings.TrimSpace(name) != "" {
+				message = "Checked " + name
+			}
+			s.setRefreshProgress("providers", message, current, total, percent)
+		},
 	})
 	if err := updateCtx.Err(); err != nil {
 		return fmt.Errorf("update discovery: %w", err)
 	}
-	s.mu.RLock()
-	previousReport := s.updates
-	hasPrevious := s.hasUpdate
-	s.mu.RUnlock()
+
+	s.setRefreshProgress("finalizing", "Reconciling refreshed data", 0, 0, 95)
+	previousReport, hasPrevious, snapshotErr := s.updateReportSnapshot()
+	if snapshotErr != nil {
+		return fmt.Errorf("snapshot previous update report: %w", snapshotErr)
+	}
+	currentCatalog, snapshotErr := s.catalogSnapshot()
+	if snapshotErr != nil {
+		return fmt.Errorf("snapshot current catalog: %w", snapshotErr)
+	}
 	if hasPrevious {
 		preserveFailedMetadata(previousReport, &report)
 	}
+	reconcileUpdateReportToCatalog(&report, currentCatalog)
 	s.applyUpdateRules(&report)
 	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), report); err != nil {
 		return fmt.Errorf("write update cache: %w", err)
 	}
+	snapshot := management.BuildSnapshot(inv, currentCatalog)
 
 	s.mu.Lock()
 	s.snapshot = snapshot
 	s.updates = report
 	s.hasUpdate = true
 	s.mu.Unlock()
+	s.setRefreshProgress("finalizing", "Refresh complete", 0, 0, 100)
 	return nil
 }
 
 func (s *Service) RefreshInventory(ctx context.Context) (err error) {
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
-	s.beginRefresh()
+	s.beginRefresh("inventory", "Refreshing inventory")
 	defer func() { s.finishRefresh(err) }()
+	s.setRefreshProgress("inventory", "Scanning installed JARs", 0, 0, 10)
 
 	inv, err := s.scanInventory(ctx)
 	if err != nil {
 		return err
 	}
-	snapshot := management.BuildSnapshot(inv, s.state.Catalog)
+	currentCatalog, snapshotErr := s.catalogSnapshot()
+	if snapshotErr != nil {
+		return fmt.Errorf("snapshot current catalog: %w", snapshotErr)
+	}
+	snapshot := management.BuildSnapshot(inv, currentCatalog)
 	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "inventory.json"), inv); err != nil {
 		return fmt.Errorf("write inventory cache: %w", err)
 	}
 	s.mu.Lock()
 	s.snapshot = snapshot
 	s.mu.Unlock()
+	s.setRefreshProgress("inventory", "Inventory refresh complete", 0, 0, 100)
 	return nil
 }
 
 func (s *Service) CheckUpdates(ctx context.Context) (err error) {
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
-	s.beginRefresh()
+	s.beginRefresh("updates", "Checking providers for updates")
 	defer func() { s.finishRefresh(err) }()
 
+	acceptedCatalog, err := s.catalogSnapshot()
+	if err != nil {
+		return fmt.Errorf("snapshot accepted catalog: %w", err)
+	}
+	s.setRefreshProgress("providers", "Checking providers for updates", 0, len(acceptedCatalog.Managed), 5)
 	updateCtx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
-	report := updatecheck.Discover(updateCtx, s.state.Catalog, updatecheck.Options{
+	report := updatecheck.Discover(updateCtx, acceptedCatalog, updatecheck.Options{
 		Minecraft:       s.options.Minecraft,
 		Mode:            updatecheck.RefreshModeInteractive,
 		Loader:          s.options.Loader,
@@ -293,18 +436,35 @@ func (s *Service) CheckUpdates(ctx context.Context) (err error) {
 		}(),
 		GitHubBaseURL: s.options.GitHubBaseURL,
 		GitHubToken: s.options.GitHubToken,
+		Progress: func(current, total int, name string) {
+			percent := 5
+			if total > 0 {
+				percent += (current * 90) / total
+			}
+			message := "Checking providers for updates"
+			if strings.TrimSpace(name) != "" {
+				message = "Checked " + name
+			}
+			s.setRefreshProgress("providers", message, current, total, percent)
+		},
 	})
 	if err := updateCtx.Err(); err != nil {
 		return fmt.Errorf("update discovery: %w", err)
 	}
-	s.mu.RLock()
-	previousReport := s.updates
-	hasPrevious := s.hasUpdate
-	s.mu.RUnlock()
+	previousReport, hasPrevious, snapshotErr := s.updateReportSnapshot()
+	if snapshotErr != nil {
+		return fmt.Errorf("snapshot previous update report: %w", snapshotErr)
+	}
 	if hasPrevious {
 		preserveFailedMetadata(previousReport, &report)
 	}
+	currentCatalog, snapshotErr := s.catalogSnapshot()
+	if snapshotErr != nil {
+		return fmt.Errorf("snapshot current catalog: %w", snapshotErr)
+	}
+	reconcileUpdateReportToCatalog(&report, currentCatalog)
 	s.applyUpdateRules(&report)
+	s.setRefreshProgress("finalizing", "Saving update metadata", 0, 0, 97)
 	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), report); err != nil {
 		return fmt.Errorf("write update cache: %w", err)
 	}
@@ -312,6 +472,7 @@ func (s *Service) CheckUpdates(ctx context.Context) (err error) {
 	s.updates = report
 	s.hasUpdate = true
 	s.mu.Unlock()
+	s.setRefreshProgress("finalizing", "Update check complete", 0, 0, 100)
 	return nil
 }
 

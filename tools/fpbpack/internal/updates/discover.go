@@ -24,6 +24,7 @@ type Options struct {
 	GitHubToken       string
 	HTTPClient       *http.Client
 	Mode             RefreshMode
+	Progress         func(current, total int, name string)
 }
 
 func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
@@ -74,12 +75,25 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 	candidates := make([]Candidate, len(cat.Managed))
 	semaphore := make(chan struct{}, providerConcurrency(opts.Mode))
 	var wait sync.WaitGroup
+	var progressMu sync.Mutex
+	completed := 0
+	total := len(cat.Managed)
 
 	for index, entry := range cat.Managed {
 		index, entry := index, entry
 		wait.Add(1)
 		go func() {
 			defer wait.Done()
+			defer func() {
+				if opts.Progress == nil {
+					return
+				}
+				progressMu.Lock()
+				completed++
+				current := completed
+				progressMu.Unlock()
+				opts.Progress(current, total, entry.Name)
+			}()
 			select {
 			case semaphore <- struct{}{}:
 				defer func() { <-semaphore }()
