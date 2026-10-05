@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"crypto/sha1"
+	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
@@ -22,6 +23,7 @@ const maxArtifactBytes int64 = 2 << 30
 type verifiedArtifact struct {
 	Bytes  int64
 	SHA1   string
+	SHA256 string
 	SHA512 string
 }
 
@@ -33,6 +35,9 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 	for index := range plan.Changes {
 		change := &plan.Changes[index]
 		cacheKey := change.Artifact.SHA512
+		if cacheKey == "" && change.Artifact.SHA256 != "" {
+			cacheKey = "sha256-" + change.Artifact.SHA256
+		}
 		if cacheKey == "" {
 			cacheKey = "sha1-" + change.Artifact.SHA1
 		}
@@ -42,6 +47,7 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 			ctx,
 			change.Artifact.URL,
 			change.Artifact.SHA512,
+			change.Artifact.SHA256,
 			change.Artifact.SHA1,
 			cachePath,
 		)
@@ -59,8 +65,14 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 		if change.Artifact.SHA1 == "" {
 			change.Artifact.SHA1 = verified.SHA1
 		}
+		if change.Artifact.SHA256 == "" {
+			change.Artifact.SHA256 = verified.SHA256
+		}
 		if change.Target.SHA1 == "" {
 			change.Target.SHA1 = verified.SHA1
+		}
+		if change.Target.SHA256 == "" {
+			change.Target.SHA256 = verified.SHA256
 		}
 		for operationIndex := range change.Operations {
 			change.Operations[operationIndex].TargetSHA512 = verified.SHA512
@@ -89,11 +101,12 @@ func ensureArtifact(
 	ctx context.Context,
 	artifactURL string,
 	expectedSHA512 string,
+	expectedSHA256 string,
 	expectedSHA1 string,
 	targetPath string,
 ) (verifiedArtifact, error) {
 	if strings.TrimSpace(artifactURL) == "" ||
-		(strings.TrimSpace(expectedSHA512) == "" && strings.TrimSpace(expectedSHA1) == "") {
+		(strings.TrimSpace(expectedSHA512) == "" && strings.TrimSpace(expectedSHA256) == "" && strings.TrimSpace(expectedSHA1) == "") {
 		return verifiedArtifact{}, fmt.Errorf("artifact URL and at least one provider checksum are required")
 	}
 	parsed, err := url.Parse(artifactURL)
@@ -103,7 +116,7 @@ func ensureArtifact(
 
 	if info, err := os.Stat(targetPath); err == nil && info.Mode().IsRegular() {
 		hashes, hashErr := artifactFileHashes(targetPath)
-		if hashErr == nil && hashesMatch(hashes, expectedSHA512, expectedSHA1) {
+		if hashErr == nil && hashesMatch(hashes, expectedSHA512, expectedSHA256, expectedSHA1) {
 			hashes.Bytes = info.Size()
 			return hashes, nil
 		}
@@ -144,9 +157,10 @@ func ensureArtifact(
 	defer os.Remove(tmpPath)
 
 	sha1Hash := sha1.New()
+	sha256Hash := sha256.New()
 	sha512Hash := sha512.New()
 	written, copyErr := io.Copy(
-		io.MultiWriter(tmp, sha1Hash, sha512Hash),
+		io.MultiWriter(tmp, sha1Hash, sha256Hash, sha512Hash),
 		io.LimitReader(response.Body, maxArtifactBytes+1),
 	)
 	if copyErr != nil {
@@ -160,12 +174,16 @@ func ensureArtifact(
 	hashes := verifiedArtifact{
 		Bytes: written,
 		SHA1: hex.EncodeToString(sha1Hash.Sum(nil)),
+		SHA256: hex.EncodeToString(sha256Hash.Sum(nil)),
 		SHA512: hex.EncodeToString(sha512Hash.Sum(nil)),
 	}
-	if !hashesMatch(hashes, expectedSHA512, expectedSHA1) {
+	if !hashesMatch(hashes, expectedSHA512, expectedSHA256, expectedSHA1) {
 		_ = tmp.Close()
 		if expectedSHA512 != "" && !strings.EqualFold(hashes.SHA512, expectedSHA512) {
 			return verifiedArtifact{}, fmt.Errorf("SHA-512 mismatch: expected %s, got %s", expectedSHA512, hashes.SHA512)
+		}
+		if expectedSHA256 != "" && !strings.EqualFold(hashes.SHA256, expectedSHA256) {
+			return verifiedArtifact{}, fmt.Errorf("SHA-256 mismatch: expected %s, got %s", expectedSHA256, hashes.SHA256)
 		}
 		return verifiedArtifact{}, fmt.Errorf("SHA-1 mismatch: expected %s, got %s", expectedSHA1, hashes.SHA1)
 	}
@@ -185,8 +203,11 @@ func ensureArtifact(
 	return hashes, nil
 }
 
-func hashesMatch(actual verifiedArtifact, expectedSHA512, expectedSHA1 string) bool {
+func hashesMatch(actual verifiedArtifact, expectedSHA512, expectedSHA256, expectedSHA1 string) bool {
 	if expectedSHA512 != "" && !strings.EqualFold(actual.SHA512, expectedSHA512) {
+		return false
+	}
+	if expectedSHA256 != "" && !strings.EqualFold(actual.SHA256, expectedSHA256) {
 		return false
 	}
 	if expectedSHA1 != "" && !strings.EqualFold(actual.SHA1, expectedSHA1) {
@@ -202,12 +223,14 @@ func artifactFileHashes(path string) (verifiedArtifact, error) {
 	}
 	defer file.Close()
 	sha1Hash := sha1.New()
+	sha256Hash := sha256.New()
 	sha512Hash := sha512.New()
-	if _, err := io.Copy(io.MultiWriter(sha1Hash, sha512Hash), file); err != nil {
+	if _, err := io.Copy(io.MultiWriter(sha1Hash, sha256Hash, sha512Hash), file); err != nil {
 		return verifiedArtifact{}, err
 	}
 	return verifiedArtifact{
 		SHA1: hex.EncodeToString(sha1Hash.Sum(nil)),
+		SHA256: hex.EncodeToString(sha256Hash.Sum(nil)),
 		SHA512: hex.EncodeToString(sha512Hash.Sum(nil)),
 	}, nil
 }
