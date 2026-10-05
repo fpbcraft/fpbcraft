@@ -28,6 +28,7 @@ type ModManagementRequest struct {
 	Tag        string `json:"tag,omitempty"`
 	Asset      string `json:"asset,omitempty"`
 	Placement  string `json:"placement,omitempty"`
+	ReplacesPath string `json:"replaces_path,omitempty"`
 }
 
 type ModManagementResult struct {
@@ -42,6 +43,7 @@ type ModManagementResult struct {
 func (s *Service) ManageMod(ctx context.Context, request ModManagementRequest) (ModManagementResult, error) {
 	request.Action = strings.TrimSpace(request.Action)
 	request.Path = normalizeCatalogPath(request.Path)
+	request.ReplacesPath = normalizeCatalogPath(request.ReplacesPath)
 	if request.Path == "" {
 		return ModManagementResult{}, fmt.Errorf("mod path is required")
 	}
@@ -89,7 +91,7 @@ func (s *Service) ManageMod(ctx context.Context, request ModManagementRequest) (
 		case "assign_github":
 			return s.assignGitHubSource(ctx, request)
 		default:
-			return s.adoptCurrentArtifact(ctx, request.Path)
+			return s.adoptCurrentArtifact(ctx, request)
 		}
 	default:
 		return ModManagementResult{}, fmt.Errorf("unsupported mod management action %q", request.Action)
@@ -165,7 +167,8 @@ func (s *Service) RefreshModMetadata(ctx context.Context, path string) (err erro
 	return s.refreshSingleManagedEntry(ctx, entry)
 }
 
-func (s *Service) adoptCurrentArtifact(ctx context.Context, path string) (ModManagementResult, error) {
+func (s *Service) adoptCurrentArtifact(ctx context.Context, request ModManagementRequest) (ModManagementResult, error) {
+	path := request.Path
 	mod, ok := s.liveModByPath(path)
 	if !ok {
 		return ModManagementResult{}, fmt.Errorf(
@@ -175,6 +178,26 @@ func (s *Service) adoptCurrentArtifact(ctx context.Context, path string) (ModMan
 	}
 
 	previous, ok := s.managedEntryByPath(path)
+	if !ok && request.ReplacesPath != "" {
+		candidate, found := s.managedEntryByPath(request.ReplacesPath)
+		if !found {
+			return ModManagementResult{}, fmt.Errorf(
+				"accepted managed artifact %q was not found",
+				request.ReplacesPath,
+			)
+		}
+		for _, source := range candidate.SourcePaths {
+			if _, exists := s.liveModByPath(source.Path); exists {
+				return ModManagementResult{}, fmt.Errorf(
+					"cannot replace %q because its accepted live artifact still exists at %s",
+					request.ReplacesPath,
+					source.Path,
+				)
+			}
+		}
+		previous = candidate
+		ok = true
+	}
 	if !ok && mod.Modrinth != nil {
 		for _, entry := range s.state.Catalog.Managed {
 			if entry.Provider != "modrinth" || entry.ProjectID != mod.Modrinth.ProjectID {
