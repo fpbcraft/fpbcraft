@@ -64,6 +64,13 @@ export function CatalogManagerDialog({
       setVersions(next);
       const firstRelease = next.find((version) => version.channel === 'release');
       const defaultVersion = firstRelease ?? next[0];
+      if (!firstRelease && defaultVersion?.channel === 'beta') {
+        setChannel('beta');
+      } else if (!firstRelease && defaultVersion?.channel === 'alpha') {
+        setChannel('alpha');
+      } else {
+        setChannel('release');
+      }
       setSelectedVersionID(defaultVersion?.id ?? '');
       if (
         defaultVersion?.environment === 'client_only' ||
@@ -139,6 +146,26 @@ export function CatalogManagerDialog({
   const latestReleaseID = versions.find(
     (version) => (version.channel || 'release') === 'release',
   )?.id;
+
+  useEffect(() => {
+    if (!selectedProject) return;
+    if (!filteredVersions.length) {
+      setSelectedVersionID('');
+      return;
+    }
+    if (!filteredVersions.some((version) => version.id === selectedVersionID)) {
+      const version = filteredVersions[0];
+      setSelectedVersionID(version.id);
+      if (version.environment === 'client_only' || version.environment === 'singleplayer_only') {
+        setPlacement('client');
+      } else if (
+        version.environment === 'server_only' ||
+        version.environment === 'dedicated_server_only'
+      ) {
+        setPlacement('server');
+      }
+    }
+  }, [filteredVersions, selectedProject, selectedVersionID]);
 
   const chooseVersion = (version: CatalogVersion) => {
     setSelectedVersionID(version.id);
@@ -267,20 +294,38 @@ export function CatalogManagerDialog({
                       key={project.provider + ':' + project.project_id}
                       onClick={() => chooseProject(project)}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{project.name}</span>
-                        <Pill tone={project.installed ? 'good' : 'neutral'}>
-                          {project.installed ? 'already managed' : project.provider}
-                        </Pill>
+                      <div className="flex items-start gap-3">
+                        {project.icon_url ? (
+                          <img
+                            src={project.icon_url}
+                            alt=""
+                            className="size-10 shrink-0 rounded-lg border border-base-300 object-cover"
+                          />
+                        ) : (
+                          <div className="grid size-10 shrink-0 place-items-center rounded-lg border border-base-300 bg-base-200 text-sm font-semibold text-base-content/40">
+                            {project.name.slice(0, 1).toUpperCase()}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-medium">{project.name}</span>
+                            <Pill tone={project.installed ? 'good' : 'neutral'}>
+                              {project.installed ? 'already managed' : project.provider}
+                            </Pill>
+                          </div>
+                          {project.summary ? (
+                            <p className="mt-1 line-clamp-2 text-xs leading-5 text-base-content/50">
+                              {project.summary}
+                            </p>
+                          ) : null}
+                          <div className="mt-2 text-[0.68rem] text-base-content/35">
+                            {project.downloads
+                              ? project.downloads.toLocaleString() + ' downloads'
+                              : project.project_id}
+                          </div>
+                        </div>
                       </div>
-                      {project.summary ? (
-                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-base-content/50">
-                          {project.summary}
-                        </p>
-                      ) : null}
-                      <div className="mt-2 text-[0.68rem] text-base-content/35">
-                        {project.downloads ? project.downloads.toLocaleString() + ' downloads' : project.project_id}
-                      </div>
+
                     </button>
                   ))}
                 </div>
@@ -291,10 +336,22 @@ export function CatalogManagerDialog({
               )
             ) : selectedProject ? (
               <div className="p-4">
-                <div className="font-medium">{selectedProject.name}</div>
-                <div className="mono mt-1 text-xs text-base-content/40">
-                  {selectedProject.provider}:{selectedProject.project_id}
+                <div className="flex items-center gap-3">
+                  {selectedProject.icon_url ? (
+                    <img
+                      src={selectedProject.icon_url}
+                      alt=""
+                      className="size-12 rounded-lg border border-base-300 object-cover"
+                    />
+                  ) : null}
+                  <div className="min-w-0">
+                    <div className="font-medium">{selectedProject.name}</div>
+                    <div className="mono mt-1 text-xs text-base-content/40">
+                      {selectedProject.provider}:{selectedProject.project_id}
+                    </div>
+                  </div>
                 </div>
+
                 {selectedProject.summary ? (
                   <p className="mt-3 text-sm leading-6 text-base-content/60">
                     {selectedProject.summary}
