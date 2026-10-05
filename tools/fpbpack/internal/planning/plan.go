@@ -42,7 +42,9 @@ type Artifact struct {
 	SHA1       string `json:"sha1,omitempty"`
 	SHA256     string `json:"sha256,omitempty"`
 	SHA512     string `json:"sha512,omitempty"`
-	Deployment string `json:"deployment"`
+	Deployment     string `json:"deployment"`
+	ManualDownload bool   `json:"manual_download,omitempty"`
+	ManualURL      string `json:"manual_url,omitempty"`
 }
 
 type FileOperation struct {
@@ -180,6 +182,7 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 				Provider: candidate.Provider, ProjectID: candidate.ProjectID,
 				VersionID: target.ID, Filename: target.Filename, URL: target.URL,
 				SHA1: target.SHA1, SHA256: target.SHA256, SHA512: target.SHA512, Deployment: string(candidate.Deployment),
+				ManualDownload: target.ManualDownload, ManualURL: target.ManualURL,
 			},
 			Operations: []FileOperation{{
 				Action: "replace", CurrentPath: mod.Path, TargetPath: targetPath,
@@ -319,6 +322,8 @@ func appendDependencyClosure(
 					SHA256: target.SHA256,
 					SHA512: target.SHA512,
 					Deployment: string(deployment),
+					ManualDownload: target.ManualDownload,
+					ManualURL: target.ManualURL,
 				},
 				Operations: []FileOperation{operation},
 			}
@@ -370,7 +375,9 @@ func appendChange(plan *Plan, change Change, changeIndex map[string]int) {
 }
 
 func validateTargetArtifact(plan *Plan, key, name string, target updatecheck.Release) {
-	if target.URL == "" || (target.SHA512 == "" && target.SHA256 == "" && target.SHA1 == "") || target.Filename == "" {
+	if (!target.ManualDownload && target.URL == "") ||
+		(target.SHA512 == "" && target.SHA256 == "" && target.SHA1 == "") ||
+		target.Filename == "" {
 		if name == "" {
 			name = key
 		}
@@ -378,7 +385,7 @@ func validateTargetArtifact(plan *Plan, key, name string, target updatecheck.Rel
 			plan,
 			"target_artifact_incomplete",
 			key,
-			"The target release for "+name+" is missing a download URL, provider checksum, or filename.",
+			"The target release for "+name+" is missing a usable download/manual source, provider checksum, or filename.",
 		)
 	}
 }
