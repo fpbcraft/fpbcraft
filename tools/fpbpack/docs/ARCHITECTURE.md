@@ -99,6 +99,7 @@ The service owns refreshes.
 - manual refresh/check endpoints enqueue server-owned work and return immediately; browser reload/navigation does not cancel the job;
 - cancelled or timed-out discovery is discarded rather than replacing the last good update cache;
 - update-provider work runs with bounded concurrency;
+- provider requests are paced separately for background vs interactive work and retry rate-limit/transient failures using provider Retry-After/rate-limit-reset hints when available;
 - serve mode may periodically refresh read-only provider/update data;
 - refreshes never mutate live mod JARs.
 
@@ -109,10 +110,26 @@ Standalone CLI commands remain available for diagnostics, scripting, migration, 
 FPBPack only makes a provider update actionable when the source can be identified and verified safely.
 
 - **Modrinth:** exact project/version/file identity, Minecraft/loader filtering, provider SHA-512, changelogs, dependency metadata.
-- **CurseForge:** official API discovery when a GUI-saved key or `FPBPACK_CURSEFORGE_API_KEY` is configured. GUI-managed credentials are validated before being written to `state-dir/secrets.json` with `0600` permissions, are never returned through the API, and take precedence over the environment fallback. Target files are checked with CurseForge SHA-1 and then normalized to SHA-512 during prefetch.
+- **CurseForge:** official API discovery when a GUI-saved key or `FPBPACK_CURSEFORGE_API_KEY` is configured. GUI-managed credentials are validated before being written to `state-dir/secrets.json` with `0600` permissions, are never returned through the API, and take precedence over the environment fallback. Target files are checked with CurseForge SHA-1 and then normalized to SHA-512 during prefetch. If a project disables third-party direct downloads, FPBPack keeps the candidate in Review with the exact CurseForge file-page URL; it does not pretend the artifact is automatically downloadable.
 - **GitHub releases:** only for artifacts previously accepted through an explicit verified GitHub release source. Candidate assets must be unambiguous and expose a GitHub SHA-256 digest. GitHub candidates are always Review because release metadata does not prove Minecraft/loader compatibility.
 
 Pinned/unmanaged artifacts are not implicitly converted into provider-managed artifacts.
+
+## Catalog remediation model
+
+Blocking catalog findings are expected to be repairable from the GUI without editing JSON by hand.
+
+For an installed artifact, the Mods detail surface can:
+
+- retry exact automatic metadata/source detection for that artifact only;
+- accept the artifact as intentionally unmanaged, which clears source blockers without touching the JAR;
+- assign a Modrinth project + installed version only when that version contains the exact installed SHA-512;
+- assign a CurseForge project + installed file only when the provider SHA-1 matches the installed JAR;
+- assign a GitHub repository + release/tag/asset only when the GitHub asset SHA-256 matches the installed JAR;
+- refresh provider/update metadata for an already managed artifact without re-scanning every mod.
+
+A missing previously accepted deployment entry can be explicitly forgotten. These are management-state mutations only; they do not add, replace, move, or delete live mod JARs.
+
 
 ## Repository layout
 
