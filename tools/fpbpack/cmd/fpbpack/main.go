@@ -132,7 +132,13 @@ func runInventory(args []string) int {
 	}
 
 	if lookupFailed {
-		fmt.Fprintln(os.Stderr, "\nRemote source matching failed; local inventory is complete but some remote matches are not. Exit status 2.")
+		if result.ModrinthError != "" {
+			fmt.Fprintf(os.Stderr, "\nModrinth matching failed: %s\n", result.ModrinthError)
+		}
+		if result.CurseForgeError != "" {
+			fmt.Fprintf(os.Stderr, "\nCurseForge matching failed: %s\n", result.CurseForgeError)
+		}
+		fmt.Fprintln(os.Stderr, "Local inventory is complete, but remote source matching is incomplete. Exit status 2.")
 		return 2
 	}
 	return 0
@@ -140,7 +146,9 @@ func runInventory(args []string) int {
 
 func renderInventory(result inventory.Inventory) {
 	fmt.Println("FPBPack inventory")
-	fmt.Printf("Server root: %s\n", result.ServerRoot)
+	fmt.Printf("Version:           %s\n", version)
+	fmt.Printf("Schema:            %d\n", result.SchemaVersion)
+	fmt.Printf("Server root:       %s\n", result.ServerRoot)
 	fmt.Printf("Server/common JARs: %d\n", result.Summary.Server)
 	fmt.Printf("Client-only JARs:  %d\n", result.Summary.Client)
 	fmt.Printf("Total JARs:        %d\n", result.Summary.Total)
