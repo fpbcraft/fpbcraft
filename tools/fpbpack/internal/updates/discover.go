@@ -250,7 +250,7 @@ func discoverModrinthCandidate(
 		Deployment: entry.Deployment,
 	}
 
-	versions, err := client.ListCompatibleVersions(ctx, entry.ProjectID, opts.Minecraft, opts.Loader)
+	versions, err := client.ListVersions(ctx, entry.ProjectID)
 	if err != nil {
 		candidate.Installed = installedRelease(entry)
 		candidate.Classification = ClassificationBlocked
@@ -300,8 +300,36 @@ func discoverModrinthCandidate(
 	target := valid[0]
 	release := releaseFromModrinth(target)
 	candidate.Target = &release
-	candidate.Changelogs = changelogEntries(valid)
 	candidate.Classification = ClassificationSafe
+
+	// Keep the broad version-history request lightweight so large projects do
+	// not need to return years of changelog text. Hydrate changelogs only for
+	// versions compatible with the configured Minecraft/loader pair.
+	changelogVersions, changelogErr := client.ListCompatibleVersionsWithChangelog(
+		ctx,
+		entry.ProjectID,
+		opts.Minecraft,
+		opts.Loader,
+	)
+	if changelogErr == nil {
+		relevant := make([]modrinthVersion, 0, len(changelogVersions))
+		for _, version := range changelogVersions {
+			if !version.DatePublished.After(current.DatePublished) {
+				continue
+			}
+			if len(rejectionReasons(version, opts.Minecraft, opts.Loader)) > 0 {
+				continue
+			}
+			relevant = append(relevant, version)
+		}
+		candidate.Changelogs = changelogEntries(relevant)
+	} else {
+		candidate.Changelogs = changelogEntries(valid)
+		candidate.Reasons = append(candidate.Reasons, Reason{
+			Code: "changelog_refresh_failed",
+			Message: "Compatible releases were resolved, but their changelogs could not be refreshed: " + changelogErr.Error(),
+		})
+	}
 
 	if target.VersionType != "" && target.VersionType != "release" {
 		promote(&candidate, ClassificationReview, Reason{
