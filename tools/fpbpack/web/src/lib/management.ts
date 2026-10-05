@@ -202,6 +202,15 @@ export interface UpdatePlan {
   changes: PlanChange[];
   warnings?: PlanFinding[];
   blockers?: PlanFinding[];
+  prefetched?: Array<{
+    filename: string;
+    sha512: string;
+    cache_path: string;
+    bytes: number;
+  }>;
+  verified: boolean;
+  verified_at?: string;
+  backup_id?: string;
   requires_server_stop: boolean;
   requires_backup: boolean;
 }
@@ -213,6 +222,7 @@ export interface PlanSummary {
   changes: number;
   blockers: number;
   warnings: number;
+  verified: boolean;
 }
 
 export interface HistoryEvent {

@@ -72,7 +72,7 @@ export default function ReviewPage() {
           <div className="section-label">Protection</div>
           <div className="mt-2 flex items-center gap-2 text-sm">
             <FileArchive size={15} className="text-base-content/40" />
-            {plan.requires_backup ? 'Restore point required' : 'No backup required'}
+            {plan.backup_id ? plan.backup_id : plan.requires_backup ? 'Restore point pending' : 'No backup required'}
           </div>
         </div>
         <div className="surface rounded-box px-4 py-3">
@@ -128,6 +128,26 @@ export default function ReviewPage() {
         </section>
       ) : null}
 
+      <section className="panel mb-4">
+        <div className="panel-header">
+          <div>
+            <div className="section-label">Verification</div>
+            <h2 className="mt-0.5 text-sm font-semibold">Resolved artifacts</h2>
+          </div>
+          <Pill tone={plan.verified ? 'good' : 'warn'}>{plan.verified ? 'Verified' : 'Not verified'}</Pill>
+        </div>
+        <div className="grid gap-3 p-4 sm:grid-cols-2">
+          <div>
+            <div className="text-xs text-base-content/40">Prefetched artifacts</div>
+            <div className="mt-1 text-sm font-medium">{plan.prefetched?.length ?? 0}</div>
+          </div>
+          <div>
+            <div className="text-xs text-base-content/40">Verified at</div>
+            <div className="mt-1 text-sm font-medium">{plan.verified_at ? formatDate(plan.verified_at) : '—'}</div>
+          </div>
+        </div>
+      </section>
+
       <section className="panel overflow-hidden">
         <div className="panel-header">
           <div>
@@ -172,7 +192,9 @@ export default function ReviewPage() {
 
       <div className="sticky bottom-0 mt-4 flex items-center justify-between gap-4 border-t border-base-300 bg-base-200/95 py-3 backdrop-blur">
         <div className="text-xs text-base-content/45">
-          {ready ? 'Plan is structurally ready. Artifact prefetch/verification is still required before Apply.' : 'This plan cannot proceed while blockers remain.'}
+          {ready && plan.verified && plan.backup_id
+            ? 'Targets are hash-verified and the current files have a restore point.'
+            : 'This plan cannot proceed while verification, backup, or blockers remain.'}
         </div>
         <button className="btn btn-sm btn-primary" type="button" disabled>
           Apply unavailable until Slice 3
