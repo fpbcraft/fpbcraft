@@ -3,6 +3,7 @@ package httpapi
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
@@ -13,7 +14,8 @@ type Loader func() (management.Snapshot, error)
 type UpdatesLoader func() (updatecheck.Report, error)
 
 type ServerOptions struct {
-	Updates UpdatesLoader
+	Updates        UpdatesLoader
+	AllowedOrigins []string
 }
 
 type Server struct {
@@ -35,7 +37,47 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("GET /api/mods", server.mods)
 	mux.HandleFunc("GET /api/diagnostics", server.diagnostics)
 	mux.HandleFunc("GET /api/updates", server.updates)
-	return mux
+	return withCORS(mux, opts.AllowedOrigins)
+}
+
+func withCORS(next http.Handler, allowedOrigins []string) http.Handler {
+	allowed := make(map[string]struct{}, len(allowedOrigins))
+	for _, value := range allowedOrigins {
+		origin := strings.TrimSuffix(strings.TrimSpace(value), "/")
+		if origin != "" {
+			allowed[origin] = struct{}{}
+		}
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := strings.TrimSuffix(strings.TrimSpace(r.Header.Get("Origin")), "/")
+		_, originAllowed := allowed[origin]
+
+		if origin != "" && originAllowed {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Add("Vary", "Origin")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			if r.Header.Get("Access-Control-Request-Private-Network") == "true" {
+				// Kept for compatibility with browsers that still send the older
+				// Private Network Access preflight. Current Chrome gates LAN access
+				// with the Local Network Access permission instead.
+				w.Header().Set("Access-Control-Allow-Private-Network", "true")
+			}
+		}
+
+		if r.Method == http.MethodOptions {
+			if origin == "" || !originAllowed {
+				writeError(w, http.StatusForbidden, "origin is not allowed")
+				return
+			}
+			w.Header().Set("Cache-Control", "no-store")
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
