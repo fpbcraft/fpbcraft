@@ -52,16 +52,43 @@ The state directory is FPBPack-owned:
 
 ```text
 /data/
-├── state.json          durable accepted management state
-├── inventory.json      generated cache/debug snapshot
-├── updates.json        generated cache/debug snapshot
-├── history/            Slice 2+
-└── backups/            Slice 2+
+├── state.json                 durable accepted management state + settings
+├── inventory.json             generated cache/debug snapshot
+├── updates.json               generated cache/debug snapshot
+├── plans/
+│   └── plan-<id>.json         deterministic persisted update plans
+├── history/
+│   └── <time>-plan-<id>.json  structured audit events
+├── backups/
+│   └── backup-<id>/
+│       ├── manifest.json
+│       └── files/...           verified copies of affected current JARs
+└── cache/
+    └── artifacts/
+        └── <sha512>.jar        prefetched + hash-verified target artifacts
 ```
 
 `state.json` is authoritative for durable management identity such as provider/project ownership and unmanaged/pinned artifacts. The old `migration-report.json` is only a bootstrap/import format.
 
 A legacy migration report may be imported explicitly on the first run, or auto-discovered from supported legacy locations. Once imported, future starts use `state.json` and do not require the migration report.
+
+## Plan readiness contract
+
+Planning remains non-mutating with respect to the live Minecraft installation.
+
+A persisted plan is only `ready` when:
+
+1. every selected update has an exact provider target;
+2. required Modrinth dependency additions/updates have an exact compatible target, recursively;
+3. no dependency requirements conflict;
+4. no blocking inventory/managed-file drift finding exists;
+5. planned target paths do not collide with unrelated live artifacts, including unmanaged/pinned files;
+6. every target artifact has been downloaded into FPBPack state and its SHA-512 verified;
+7. every current JAR that would later be replaced has been copied into a linked restore point and re-hashed successfully.
+
+Dependency additions are represented as explicit `add` operations. Installed dependency upgrades and requested updates are explicit `replace` operations.
+
+A ready plan still does **not** imply that Apply is permitted. Slice 3 must re-check the live state, verify the plan has not gone stale, and require the appropriate server state immediately before any live mutation.
 
 ## Refresh model
 
