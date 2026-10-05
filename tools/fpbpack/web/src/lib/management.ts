@@ -79,6 +79,7 @@ export interface UpdateDependency {
   target?: UpdateRelease;
   dependencies?: UpdateDependency[];
   changelogs?: UpdateChangelogEntry[];
+  required_by?: string[];
 }
 
 export interface UpdateRule {
