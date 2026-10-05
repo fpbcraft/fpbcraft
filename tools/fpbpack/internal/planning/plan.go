@@ -462,7 +462,7 @@ func coalesceSatisfiedManagedAdds(plan *Plan, mods []management.Mod) {
 				Code: "dependency_already_satisfied",
 				CandidateKey: change.CandidateKey,
 				Message: fmt.Sprintf(
-					"%s is already present at %s with the exact required bytes; no filesystem change is needed for this dependency.",
+					"Provider metadata described %s as an addition, but the exact required managed bytes are already present at %s; no filesystem change is needed for this dependency.",
 					name,
 					targetPath,
 				),
