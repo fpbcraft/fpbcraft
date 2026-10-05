@@ -95,6 +95,8 @@ The service owns refreshes.
 
 - startup serves cached state first and starts the initial inventory/update refresh asynchronously;
 - the GUI can request an inventory/update refresh through the API;
+- manual refresh/check endpoints enqueue server-owned work and return immediately; browser reload/navigation does not cancel the job;
+- cancelled or timed-out discovery is discarded rather than replacing the last good update cache;
 - update-provider work runs with bounded concurrency;
 - serve mode may periodically refresh read-only provider/update data;
 - refreshes never mutate live mod JARs.
@@ -106,7 +108,7 @@ Standalone CLI commands remain available for diagnostics, scripting, migration, 
 FPBPack only makes a provider update actionable when the source can be identified and verified safely.
 
 - **Modrinth:** exact project/version/file identity, Minecraft/loader filtering, provider SHA-512, changelogs, dependency metadata.
-- **CurseForge:** official API discovery when `FPBPACK_CURSEFORGE_API_KEY` is configured. Target files are checked with CurseForge SHA-1 and then normalized to SHA-512 during prefetch.
+- **CurseForge:** official API discovery when a GUI-saved key or `FPBPACK_CURSEFORGE_API_KEY` is configured. GUI-managed credentials are validated before being written to `state-dir/secrets.json` with `0600` permissions, are never returned through the API, and take precedence over the environment fallback. Target files are checked with CurseForge SHA-1 and then normalized to SHA-512 during prefetch.
 - **GitHub releases:** only for artifacts previously accepted through an explicit verified GitHub release source. Candidate assets must be unambiguous and expose a GitHub SHA-256 digest. GitHub candidates are always Review because release metadata does not prove Minecraft/loader compatibility.
 
 Pinned/unmanaged artifacts are not implicitly converted into provider-managed artifacts.
