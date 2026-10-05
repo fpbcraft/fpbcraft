@@ -375,7 +375,7 @@ func TestAdoptCurrentArtifactAcceptsManualModrinthReplacement(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	result, err := s.adoptCurrentArtifact(ctx, current.Path)
+	result, err := s.adoptCurrentArtifact(ctx, ModManagementRequest{Path: current.Path})
 	if err != nil {
 		t.Fatal(err)
 	}
