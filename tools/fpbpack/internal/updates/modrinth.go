@@ -42,6 +42,7 @@ type modrinthVersion struct {
 	VersionType   string                `json:"version_type"`
 	Status        string                `json:"status"`
 	DatePublished time.Time             `json:"date_published"`
+	Changelog     string                `json:"changelog"`
 	GameVersions  []string              `json:"game_versions"`
 	Loaders       []string              `json:"loaders"`
 	Environment   string                `json:"environment"`
@@ -104,7 +105,7 @@ func (client *ModrinthClient) GetVersion(ctx context.Context, versionID string) 
 }
 
 func (client *ModrinthClient) ListVersions(ctx context.Context, projectID string) ([]modrinthVersion, error) {
-	endpoint := client.baseURL() + "/project/" + url.PathEscape(projectID) + "/version?include_changelog=false"
+	endpoint := client.baseURL() + "/project/" + url.PathEscape(projectID) + "/version?include_changelog=true"
 	var versions []modrinthVersion
 	if err := client.getJSON(ctx, endpoint, &versions); err != nil {
 		return nil, fmt.Errorf("Modrinth versions for %s: %w", projectID, err)
