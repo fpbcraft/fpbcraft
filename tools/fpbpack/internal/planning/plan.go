@@ -40,6 +40,7 @@ type Artifact struct {
 	Filename   string `json:"filename"`
 	URL        string `json:"url"`
 	SHA1       string `json:"sha1,omitempty"`
+	SHA256     string `json:"sha256,omitempty"`
 	SHA512     string `json:"sha512,omitempty"`
 	Deployment string `json:"deployment"`
 }
@@ -178,7 +179,7 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 			Artifact: Artifact{
 				Provider: candidate.Provider, ProjectID: candidate.ProjectID,
 				VersionID: target.ID, Filename: target.Filename, URL: target.URL,
-				SHA1: target.SHA1, SHA512: target.SHA512, Deployment: string(candidate.Deployment),
+				SHA1: target.SHA1, SHA256: target.SHA256, SHA512: target.SHA512, Deployment: string(candidate.Deployment),
 			},
 			Operations: []FileOperation{{
 				Action: "replace", CurrentPath: mod.Path, TargetPath: targetPath,
@@ -315,6 +316,7 @@ func appendDependencyClosure(
 					Filename: target.Filename,
 					URL: target.URL,
 					SHA1: target.SHA1,
+					SHA256: target.SHA256,
 					SHA512: target.SHA512,
 					Deployment: string(deployment),
 				},
@@ -368,7 +370,7 @@ func appendChange(plan *Plan, change Change, changeIndex map[string]int) {
 }
 
 func validateTargetArtifact(plan *Plan, key, name string, target updatecheck.Release) {
-	if target.URL == "" || (target.SHA512 == "" && target.SHA1 == "") || target.Filename == "" {
+	if target.URL == "" || (target.SHA512 == "" && target.SHA256 == "" && target.SHA1 == "") || target.Filename == "" {
 		if name == "" {
 			name = key
 		}
