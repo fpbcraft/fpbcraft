@@ -6,9 +6,9 @@ Last updated: **2026-10-05**
 
 **Slice 2 — Plan & Protect: in progress**
 
-Working branch: `fpbcraft/fpbcraft:feat/plan-protect` → PR #10 against `main`.
+Working branch: `fpbcraft/fpbcraft:feat/plan-protect` → draft PR #13 against `main`.
 
-PR #9 (`feat/self-contained-serve`) has been merged; PR #10 is now independently reviewable against `main`.
+PR #10 has been merged. PR #13 contains the post-merge Slice 2 hardening/remediation work requested during real-server testing.
 
 The user merges PRs manually. Do not merge these branches automatically.
 
@@ -22,6 +22,9 @@ The user merges PRs manually. Do not merge these branches automatically.
 - [x] Cached GUI/API state remains available while a background refresh is running.
 - [x] Manual refresh/check jobs are server-owned, survive browser disconnects/page reloads, deduplicate active refreshes, and never persist cancelled partial reports.
 - [x] Provider discovery uses bounded concurrency instead of serial per-project requests.
+- [x] Automatic/startup provider refresh uses a deliberately slower background policy; user-triggered checks use a faster interactive policy.
+- [x] Provider clients pace requests globally and honor Retry-After / rate-limit reset headers with bounded exponential backoff.
+- [x] Failed provider metadata refreshes preserve the last-good target/changelog/dependency/project metadata and mark it stale instead of flushing it.
 - [x] Multi-stage production Dockerfile with no Node runtime.
 - [x] PR/dev CI does not build Docker images.
 - [x] Stable published releases build and smoke-test the Docker image.
@@ -29,7 +32,7 @@ The user merges PRs manually. Do not merge these branches automatically.
 
 ## Discover, Decide & Review capabilities included in Slice 2
 
-The remaining Slice 1 decision/review work is intentionally being completed in PR #10 instead of being carried into a later slice.
+The remaining decision/review hardening is being completed in PR #13 instead of being carried into Apply & Restore.
 
 - [x] Diagnostics and managed-file drift detection.
 - [x] Safe / Review / Blocked / Ignored update model and real GUI update data.
@@ -47,6 +50,12 @@ The remaining Slice 1 decision/review work is intentionally being completed in P
 - [x] Updates rows expose changelogs, provider links, project icons, and decision actions.
 - [x] Mods page shows installed/latest/status and opens a responsive detail surface.
 - [x] Mod detail shows provider link, changelogs, dependencies, reverse dependencies, update preference controls, path and provider identifiers.
+- [x] Updates blocking-diagnostics banner links directly to Mods → Needs attention.
+- [x] Needs-attention view exposes blocker-specific remediation instead of dead-end diagnostics.
+- [x] Live mod details can refresh metadata for only that artifact, explicitly mark it unmanaged, or assign a verified GitHub release source.
+- [x] Missing accepted catalog entries can be explicitly forgotten without touching live files.
+- [x] Verified GitHub source assignment requires the current JAR SHA-256 to match the selected release asset digest.
+- [x] CurseForge files that prohibit third-party direct downloads remain Review candidates with a manual CurseForge file link instead of being treated as permanently unavailable.
 - [x] The six custom BlueMap/FPBCraft artifacts remain explicitly pinned/unmanaged and are never guessed into an update source.
 
 ### Provider caveats
@@ -120,7 +129,8 @@ The remaining Slice 1 decision/review work is intentionally being completed in P
 
 ## Remaining before Slice 2 can be called complete
 
-- [x] PR #10 passes GUI build, Go test/vet, static binary build, and artifact upload.
+- [x] Merged PR #10 passed GUI build, Go test/vet, static binary build, and artifact upload.
+- [ ] PR #13 must pass the same validation for remediation/rate-limit/manual-download hardening.
 - [ ] Exercise the revised fast-start/background-refresh behavior on the real FPBCraft server.
 - [ ] Exercise Modrinth changelog/rule/detail flows against the real inventory.
 - [ ] Configure/test CurseForge discovery on the real pack if a CurseForge API key is available.
