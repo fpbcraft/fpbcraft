@@ -65,6 +65,12 @@ type curseForgeFileResponse struct {
 
 type curseForgeFilesResponse struct {
 	Data []curseForgeFile `json:"data"`
+	Pagination struct {
+		Index       int `json:"index"`
+		PageSize    int `json:"pageSize"`
+		ResultCount int `json:"resultCount"`
+		TotalCount  int `json:"totalCount"`
+	} `json:"pagination"`
 }
 
 type curseForgeStringResponse struct {
@@ -94,18 +100,36 @@ func (client *CurseForgeClient) ListFiles(
 	minecraft string,
 	loader string,
 ) ([]curseForgeFile, error) {
-	values := url.Values{}
-	values.Set("gameVersion", minecraft)
-	if loaderType := curseForgeLoaderType(loader); loaderType != 0 {
-		values.Set("modLoaderType", strconv.Itoa(loaderType))
+	const pageSize = 50
+	result := make([]curseForgeFile, 0, pageSize)
+	for index := 0; index < 10000; index += pageSize {
+		values := url.Values{}
+		values.Set("gameVersion", minecraft)
+		if loaderType := curseForgeLoaderType(loader); loaderType != 0 {
+			values.Set("modLoaderType", strconv.Itoa(loaderType))
+		}
+		values.Set("index", strconv.Itoa(index))
+		values.Set("pageSize", strconv.Itoa(pageSize))
+
+		var response curseForgeFilesResponse
+		path := "/mods/" + url.PathEscape(projectID) + "/files?" + values.Encode()
+		if err := client.getJSON(ctx, path, &response); err != nil {
+			return nil, err
+		}
+		result = append(result, response.Data...)
+
+		if response.Pagination.TotalCount > 0 {
+			if index+len(response.Data) >= response.Pagination.TotalCount {
+				break
+			}
+		} else if len(response.Data) < pageSize {
+			break
+		}
+		if len(response.Data) == 0 {
+			break
+		}
 	}
-	values.Set("pageSize", "50")
-	var response curseForgeFilesResponse
-	path := "/mods/" + url.PathEscape(projectID) + "/files?" + values.Encode()
-	if err := client.getJSON(ctx, path, &response); err != nil {
-		return nil, err
-	}
-	return response.Data, nil
+	return result, nil
 }
 
 func (client *CurseForgeClient) DownloadURL(ctx context.Context, projectID string, file curseForgeFile) (string, error) {
