@@ -22,9 +22,11 @@ type CurseForgeClient struct {
 }
 
 type curseForgeMod struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Slug  string `json:"slug"`
+	ID            int    `json:"id"`
+	Name          string `json:"name"`
+	Slug          string `json:"slug"`
+	Summary       string `json:"summary"`
+	DownloadCount int64  `json:"downloadCount"`
 	Links struct {
 		WebsiteURL string `json:"websiteUrl"`
 	} `json:"links"`
