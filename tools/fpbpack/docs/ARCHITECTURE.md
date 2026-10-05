@@ -94,14 +94,16 @@ A ready plan still does **not** imply that Apply is permitted. Slice 3 must re-c
 
 The service owns refreshes.
 
-- startup serves cached state first and starts the initial inventory/update refresh asynchronously;
+- startup serves cached state and does not start a refresh; the first automatic run waits for the configured interval;
 - the GUI can request an inventory/update refresh through the API;
 - manual refresh/check endpoints enqueue server-owned work and return immediately; browser reload/navigation does not cancel the job;
 - cancelled or timed-out discovery is discarded rather than replacing the last good update cache;
 - update-provider work runs with bounded concurrency;
 - provider requests are paced separately for background vs interactive work and retry rate-limit/transient failures using provider Retry-After/rate-limit-reset hints when available;
-- serve mode may periodically refresh read-only provider/update data;
-- refreshes never mutate live mod JARs.
+- serve mode periodically refreshes inventory/provider/update data after the configured interval and also supports explicit inventory-only, update-only, or full refreshes;
+- refreshes never mutate live mod JARs;
+- provider discovery works from isolated catalog/update snapshots, so safe catalog-only remediation can remain responsive while discovery is in flight;
+- provider/source mutations that would conflict with discovery fail fast rather than blocking behind the refresh.
 
 Standalone CLI commands remain available for diagnostics, scripting, migration, and development, but are not prerequisites for GUI operation.
 
@@ -179,3 +181,10 @@ A developer can run `fpbpack serve --web-dir web/out` after a frontend build to 
 ## Repository decision
 
 The former `fpbcraft-gui` repository is superseded by `fpbcraft/tools/fpbpack/web`. New GUI/API work is implemented together in the FPBPack branch so wire-contract changes, tests, and releases stay synchronized.
+
+
+## Operations UI
+
+The **Tools** page calls the same long-running service methods as the practical CLI commands rather than spawning the FPBPack binary recursively. It exposes inventory refresh, doctor-style diagnostics, update discovery, full refresh, and read-only JSON views of the accepted catalog and generated caches. The migration-oriented `catalog` workspace generator remains CLI-only.
+
+The **Logs** page reads a bounded in-memory structured event ring from the service. It is intended for recent FPBPack operational events and refresh/provider errors; container/process logs remain the source for low-level runtime output.
