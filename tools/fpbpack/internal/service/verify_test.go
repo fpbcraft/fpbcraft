@@ -22,7 +22,7 @@ func TestEnsureArtifactDownloadsAndVerifiesSHA512(t *testing.T) {
 	}))
 
 	target := filepath.Join(t.TempDir(), "cache", expected+".jar")
-	verified, err := ensureArtifact(context.Background(), server.URL, expected, "", target)
+	verified, err := ensureArtifact(context.Background(), server.URL, expected, "", "", target)
 	if err != nil {
 		server.Close()
 		t.Fatal(err)
@@ -54,7 +54,7 @@ func TestEnsureArtifactRejectsHashMismatch(t *testing.T) {
 	defer server.Close()
 
 	target := filepath.Join(t.TempDir(), "artifact.jar")
-	if _, err := ensureArtifact(context.Background(), server.URL, strings.Repeat("0", 128), "", target); err == nil {
+	if _, err := ensureArtifact(context.Background(), server.URL, strings.Repeat("0", 128), "", "", target); err == nil {
 		t.Fatal("expected hash mismatch")
 	}
 	if _, err := os.Stat(target); !os.IsNotExist(err) {
@@ -75,7 +75,7 @@ func TestEnsureArtifactVerifiesSHA1AndComputesSHA512(t *testing.T) {
 	defer server.Close()
 
 	target := filepath.Join(t.TempDir(), "artifact.jar")
-	verified, err := ensureArtifact(context.Background(), server.URL, "", expectedSHA1, target)
+	verified, err := ensureArtifact(context.Background(), server.URL, "", "", expectedSHA1, target)
 	if err != nil {
 		t.Fatal(err)
 	}
