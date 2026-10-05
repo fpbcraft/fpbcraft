@@ -38,6 +38,7 @@ jobs:
           mkdir -p dist
           go build -trimpath -ldflags "-s -w -X main.version=${FPBPACK_VERSION::12}" -o dist/fpbpack-linux-amd64 ./cmd/fpbpack
           sha256sum dist/fpbpack-linux-amd64 > dist/fpbpack-linux-amd64.sha256
+          cp fpbpack-sources.json dist/fpbpack-sources.json
           file dist/fpbpack-linux-amd64
 
       - name: Build pinned Packwiz helper
@@ -61,5 +62,6 @@ jobs:
             tools/fpbpack/dist/fpbpack-linux-amd64.sha256
             tools/fpbpack/dist/packwiz-linux-amd64
             tools/fpbpack/dist/packwiz-linux-amd64.sha256
+            tools/fpbpack/dist/fpbpack-sources.json
           if-no-files-found: error
           retention-days: 30
