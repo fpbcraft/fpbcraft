@@ -221,6 +221,7 @@ export interface PlanArtifact {
   sha512: string;
   deployment: string;
   manual_download?: boolean;
+  manual_provided?: boolean;
   manual_url?: string;
 }
 
