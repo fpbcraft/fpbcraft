@@ -63,6 +63,7 @@ export interface UpdateRelease {
   channel?: string;
   filename?: string;
   url?: string;
+  sha1?: string;
   sha512?: string;
 }
 
@@ -189,6 +190,7 @@ export interface PlanArtifact {
   version_id: string;
   filename: string;
   url: string;
+  sha1?: string;
   sha512: string;
   deployment: string;
 }
