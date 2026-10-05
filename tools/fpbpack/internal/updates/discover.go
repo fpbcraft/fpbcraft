@@ -250,7 +250,7 @@ func discoverModrinthCandidate(
 		Deployment: entry.Deployment,
 	}
 
-	versions, err := client.ListVersions(ctx, entry.ProjectID)
+	versions, err := client.ListCompatibleVersions(ctx, entry.ProjectID, opts.Minecraft, opts.Loader)
 	if err != nil {
 		candidate.Installed = installedRelease(entry)
 		candidate.Classification = ClassificationBlocked
@@ -543,7 +543,7 @@ func (r dependencyResolver) resolveTarget(
 		return version, nil
 	}
 
-	versions, err := r.client.ListVersions(r.ctx, projectID)
+	versions, err := r.client.ListCompatibleVersions(r.ctx, projectID, r.opts.Minecraft, r.opts.Loader)
 	if err != nil {
 		return modrinthVersion{}, fmt.Errorf("required dependency %s versions could not be loaded: %w", projectID, err)
 	}
