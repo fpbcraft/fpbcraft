@@ -14,6 +14,7 @@ import (
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/httpapi"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
+	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
 
 func runDoctor(args []string) int {
@@ -84,6 +85,7 @@ func runServe(args []string) int {
 	flags.SetOutput(os.Stderr)
 	inventoryPath := flags.String("inventory", "", "current FPBPack inventory JSON")
 	reportPath := flags.String("report", "", "accepted migration report JSON")
+	updatesPath := flags.String("updates", "", "cached update report JSON (optional)")
 	listen := flags.String("listen", "127.0.0.1:8787", "HTTP listen address")
 	if err := flags.Parse(args); err != nil {
 		return 2
@@ -99,9 +101,27 @@ func runServe(args []string) int {
 		return 2
 	}
 
+	var updatesLoader httpapi.UpdatesLoader
+	if *updatesPath != "" {
+		updatesLoader = func() (updatecheck.Report, error) {
+			file, err := os.Open(*updatesPath)
+			if err != nil {
+				return updatecheck.Report{}, fmt.Errorf("open update report: %w", err)
+			}
+			defer file.Close()
+			var report updatecheck.Report
+			if err := json.NewDecoder(file).Decode(&report); err != nil {
+				return updatecheck.Report{}, fmt.Errorf("decode update report: %w", err)
+			}
+			return report, nil
+		}
+	}
+
 	server := &http.Server{
-		Addr:              *listen,
-		Handler:           httpapi.NewHandler(source.Load, version),
+		Addr: *listen,
+		Handler: httpapi.NewHandlerWithOptions(source.Load, version, httpapi.ServerOptions{
+			Updates: updatesLoader,
+		}),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
