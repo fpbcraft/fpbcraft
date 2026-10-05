@@ -25,7 +25,7 @@ interface ManagementContextValue {
   state: ManagementState;
   connectionStatus: ConnectionStatus;
   connectionError: string | null;
-  reload: () => Promise<void>;
+  reload: (options?: {silent?: boolean}) => Promise<void>;
   refresh: () => Promise<void>;
   checkUpdates: () => Promise<void>;
 }
@@ -56,7 +56,11 @@ async function loadManagementState(): Promise<ManagementState> {
   try {
     updates = await fetchApi<UpdateReport>('/api/updates');
   } catch {
-    errors.push('Update discovery is still refreshing; cached update data is not available yet.');
+    if (status.refresh?.last_error) {
+      errors.push('Background refresh failed: ' + status.refresh.last_error);
+    } else {
+      errors.push('Update discovery is still refreshing; cached update data is not available yet.');
+    }
   }
 
   return {
@@ -74,8 +78,10 @@ export function ManagementProvider({children}: {children: ReactNode}) {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('loading');
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  const reload = useCallback(async () => {
-    setConnectionStatus('loading');
+  const reload = useCallback(async (options?: {silent?: boolean}) => {
+    if (!options?.silent) {
+      setConnectionStatus('loading');
+    }
     setConnectionError(null);
     try {
       setState(await loadManagementState());
@@ -105,14 +111,17 @@ export function ManagementProvider({children}: {children: ReactNode}) {
   }, [reload]);
 
   useEffect(() => {
-    if (!state.errors.some((message) => message.includes('still refreshing'))) {
+    const shouldPoll =
+      state.status.refresh?.refreshing ||
+      state.errors.some((message) => message.includes('still refreshing'));
+    if (!shouldPoll) {
       return;
     }
     const timer = window.setTimeout(() => {
-      void reload();
+      void reload({silent: true});
     }, 2500);
     return () => window.clearTimeout(timer);
-  }, [state.errors, reload]);
+  }, [state.status.refresh?.refreshing, state.errors, reload]);
 
   const value = useMemo(
     () => ({state, connectionStatus, connectionError, reload, refresh, checkUpdates}),
