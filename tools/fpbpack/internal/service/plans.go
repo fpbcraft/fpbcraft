@@ -35,6 +35,10 @@ func (s *Service) CreatePlan(ctx context.Context, candidateKeys []string) (plann
 	if err != nil {
 		return planning.Plan{}, err
 	}
+	return s.persistPlannedChange(ctx, plan)
+}
+
+func (s *Service) persistPlannedChange(ctx context.Context, plan planning.Plan) (planning.Plan, error) {
 	planPath := filepath.Join(s.options.StateDir, "plans", plan.ID+".json")
 	var existing planning.Plan
 	if err := readJSON(planPath, &existing); err == nil {

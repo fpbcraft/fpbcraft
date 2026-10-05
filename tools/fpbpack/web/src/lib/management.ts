@@ -36,6 +36,35 @@ export interface RefreshStatus {
   last_error?: string;
 }
 
+export interface CatalogProject {
+  provider: 'modrinth' | 'curseforge' | string;
+  project_id: string;
+  name: string;
+  slug?: string;
+  summary?: string;
+  icon_url?: string;
+  project_url?: string;
+  downloads?: number;
+  environment?: string[];
+  installed: boolean;
+  installed_key?: string;
+}
+
+export interface CatalogVersion {
+  id: string;
+  number: string;
+  name?: string;
+  published_at?: string;
+  channel?: string;
+  filename?: string;
+  environment?: string;
+  changelog?: string;
+  sha1?: string;
+  sha512?: string;
+  manual_download?: boolean;
+  manual_url?: string;
+}
+
 export interface RuntimeLogEntry {
   id: number;
   time: string;
@@ -235,6 +264,7 @@ export interface PlanArtifact {
   sha256?: string;
   sha512: string;
   deployment: string;
+  environment?: string;
   manual_download?: boolean;
   manual_provided?: boolean;
   manual_url?: string;

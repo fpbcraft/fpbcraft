@@ -511,6 +511,7 @@ func (r dependencyResolver) resolve(
 		release := releaseFromModrinth(target)
 		result.Target = &release
 		result.TargetVersion = target.ID
+		result.Environment = target.Environment
 		if result.Deployment == "" {
 			result.Deployment = dependencyDeployment(target.Environment, parentDeployment)
 		}

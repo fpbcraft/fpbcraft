@@ -782,3 +782,119 @@ func TestLogsEndpointReturnsBoundedRuntimeEntries(t *testing.T) {
 		t.Fatalf("unexpected log payload: %+v", payload.Entries)
 	}
 }
+
+
+func TestCatalogManagementEndpoints(t *testing.T) {
+	var searchedProvider string
+	var searchedQuery string
+	var versionProvider string
+	var versionProject string
+	var planned service.CatalogPlanRequest
+
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			SearchCatalog: func(
+				_ context.Context,
+				provider string,
+				query string,
+			) ([]updatecheck.CatalogProject, error) {
+				searchedProvider = provider
+				searchedQuery = query
+				return []updatecheck.CatalogProject{{
+					Provider: "modrinth",
+					ProjectID: "abc",
+					Name: "Example",
+				}}, nil
+			},
+			CatalogVersions: func(
+				_ context.Context,
+				provider string,
+				projectID string,
+			) ([]updatecheck.CatalogVersion, error) {
+				versionProvider = provider
+				versionProject = projectID
+				return []updatecheck.CatalogVersion{{
+					ID: "v1",
+					Number: "1.2.3",
+					Channel: "release",
+				}}, nil
+			},
+			CreateCatalogPlan: func(
+				_ context.Context,
+				request service.CatalogPlanRequest,
+			) (planning.Plan, error) {
+				planned = request
+				return planning.Plan{
+					ID: "plan-0123456789abcdef",
+					Status: planning.StatusReady,
+				}, nil
+			},
+		},
+	)
+
+	search := httptest.NewRecorder()
+	handler.ServeHTTP(
+		search,
+		httptest.NewRequest(
+			http.MethodGet,
+			"/api/catalog/search?provider=modrinth&q=example",
+			nil,
+		),
+	)
+	if search.Code != http.StatusOK ||
+		searchedProvider != "modrinth" ||
+		searchedQuery != "example" {
+		t.Fatalf(
+			"search = %d provider=%q query=%q body=%s",
+			search.Code,
+			searchedProvider,
+			searchedQuery,
+			search.Body.String(),
+		)
+	}
+
+	versions := httptest.NewRecorder()
+	handler.ServeHTTP(
+		versions,
+		httptest.NewRequest(
+			http.MethodGet,
+			"/api/catalog/projects/modrinth/abc/versions",
+			nil,
+		),
+	)
+	if versions.Code != http.StatusOK ||
+		versionProvider != "modrinth" ||
+		versionProject != "abc" {
+		t.Fatalf(
+			"versions = %d provider=%q project=%q body=%s",
+			versions.Code,
+			versionProvider,
+			versionProject,
+			versions.Body.String(),
+		)
+	}
+
+	plan := httptest.NewRecorder()
+	handler.ServeHTTP(
+		plan,
+		httptest.NewRequest(
+			http.MethodPost,
+			"/api/catalog/plans",
+			strings.NewReader(
+				"{\"action\":\"install\",\"provider\":\"modrinth\",\"project_id\":\"abc\",\"version_id\":\"v1\",\"placement\":\"client\"}",
+			),
+		),
+	)
+	if plan.Code != http.StatusCreated {
+		t.Fatalf("catalog plan = %d: %s", plan.Code, plan.Body.String())
+	}
+	if planned.Action != "install" ||
+		planned.Provider != "modrinth" ||
+		planned.ProjectID != "abc" ||
+		planned.VersionID != "v1" ||
+		planned.Placement != inventory.LocationClient {
+		t.Fatalf("catalog plan request = %+v", planned)
+	}
+}

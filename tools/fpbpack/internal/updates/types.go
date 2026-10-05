@@ -6,6 +6,35 @@ import (
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
 )
 
+type CatalogProject struct {
+	Provider    string   `json:"provider"`
+	ProjectID   string   `json:"project_id"`
+	Name        string   `json:"name"`
+	Slug        string   `json:"slug,omitempty"`
+	Summary     string   `json:"summary,omitempty"`
+	IconURL     string   `json:"icon_url,omitempty"`
+	ProjectURL  string   `json:"project_url,omitempty"`
+	Downloads   int64    `json:"downloads,omitempty"`
+	Environment []string `json:"environment,omitempty"`
+	Installed   bool     `json:"installed"`
+	InstalledKey string  `json:"installed_key,omitempty"`
+}
+
+type CatalogVersion struct {
+	ID           string    `json:"id"`
+	Number       string    `json:"number"`
+	Name         string    `json:"name,omitempty"`
+	PublishedAt  time.Time `json:"published_at,omitempty"`
+	Channel      string    `json:"channel,omitempty"`
+	Filename     string    `json:"filename,omitempty"`
+	Environment  string    `json:"environment,omitempty"`
+	Changelog    string    `json:"changelog,omitempty"`
+	SHA1         string    `json:"sha1,omitempty"`
+	SHA512       string    `json:"sha512,omitempty"`
+	ManualDownload bool   `json:"manual_download,omitempty"`
+	ManualURL    string    `json:"manual_url,omitempty"`
+}
+
 type Classification string
 
 const (
@@ -46,6 +75,7 @@ type Dependency struct {
 	InstalledVersion string             `json:"installed_version,omitempty"`
 	TargetVersion    string             `json:"target_version,omitempty"`
 	Deployment       inventory.Location `json:"deployment,omitempty"`
+	Environment      string             `json:"environment,omitempty"`
 	Target           *Release           `json:"target,omitempty"`
 	Dependencies     []Dependency       `json:"dependencies,omitempty"`
 }
@@ -74,6 +104,7 @@ type Candidate struct {
 	IconURL        string             `json:"icon_url,omitempty"`
 	Side           string             `json:"side"`
 	Deployment     inventory.Location `json:"deployment"`
+	Environment    string             `json:"environment,omitempty"`
 	Installed      Release            `json:"installed"`
 	Target         *Release           `json:"target,omitempty"`
 	Classification     Classification     `json:"classification"`
@@ -85,6 +116,7 @@ type Candidate struct {
 	MetadataStale  bool               `json:"metadata_stale,omitempty"`
 	RefreshError   string             `json:"refresh_error,omitempty"`
 	Rejected       []RejectedVersion  `json:"rejected,omitempty"`
+	Intent         string             `json:"intent,omitempty"`
 }
 
 type Summary struct {

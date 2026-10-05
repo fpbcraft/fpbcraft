@@ -45,7 +45,7 @@ func (s *Service) createRestorePoint(plan *planning.Plan) error {
 	}
 	for _, change := range plan.Changes {
 		for _, operation := range change.Operations {
-			if operation.Action != "replace" || operation.CurrentPath == "" {
+			if (operation.Action != "replace" && operation.Action != "remove") || operation.CurrentPath == "" {
 				continue
 			}
 			relative, err := safeRelativePath(operation.CurrentPath)

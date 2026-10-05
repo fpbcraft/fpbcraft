@@ -172,6 +172,9 @@ The management API covers discovery, remediation, planning, server control, Appl
 - `GET /api/status`, `/api/inventory`, `/api/mods`, `/api/diagnostics`, `/api/updates`
 - `POST /api/refresh`, `POST /api/inventory/refresh`, `POST /api/updates/check`
 - `GET /api/catalog`, `POST /api/catalog/preview`, `GET /api/logs`
+- `GET /api/catalog/search?provider=...&q=...`
+- `GET /api/catalog/projects/{provider}/{id}/versions`
+- `POST /api/catalog/plans`
 - `GET|POST /api/plans`, `GET /api/plans/{id}`
 - `POST /api/placement-plans`
 - `POST /api/plans/{id}/manual-artifact?candidate_key=...`
@@ -196,7 +199,7 @@ A plan contains:
 - requested updates and mechanically required dependency changes;
 - old/new versions and provider IDs;
 - exact download URLs, provider checksums, and normalized SHA-512 hashes after prefetch;
-- explicit `add` / `replace` filesystem operations;
+- explicit `add` / `replace` / `remove` filesystem operations;
 - warnings and blockers;
 - whether a future Apply requires the server to be stopped;
 - the linked restore-point ID.
@@ -212,6 +215,29 @@ For a plan to be marked `ready`, FPBPack also:
 7. verifies the backup hashes and writes a manifest.
 
 Plans and history are retained under the state directory. The default retention count is 20 and can be changed from Settings (1–100). Reducing retention prunes old plan records and their linked restore points.
+
+## Catalog management
+
+The Mods page can manage modpack membership directly through verified provider metadata.
+
+**Add mod** searches compatible Modrinth or CurseForge projects, shows readable project information, and opens an exact version browser filtered to the configured Minecraft version and loader. The normal flow does not require typing a Modrinth version ID or CurseForge file ID.
+
+For an existing Modrinth/CurseForge-managed artifact, **Change version** uses the same exact version browser and supports upgrades, downgrades, and explicit reinstalls. Version rows expose their human-readable version/name, release channel, publication date, target filename, and changelog where the provider supplies one.
+
+**Review removal** creates a true `remove` plan operation. Before planning a destructive removal, FPBPack loads dependency metadata for the **currently installed** provider versions/files and blocks removal when another installed managed mod requires the target. If that dependency metadata cannot be verified, removal fails closed. Removed JARs are backed up and Restore recreates both the exact JAR and its accepted catalog entry.
+
+Install and exact-version plans resolve required provider dependencies into the same reviewed batch. FPBPack deliberately leaves no-longer-needed dependencies installed; removing them remains an explicit user action.
+
+Catalog operations never install/remove a JAR immediately. They enter the same protected workflow as updates:
+
+```text
+Add / Change version / Review removal
+    → Review exact plan
+    → Stop server
+    → Apply
+    → Verify
+    → History / Restore
+```
 
 ## Apply & Restore
 

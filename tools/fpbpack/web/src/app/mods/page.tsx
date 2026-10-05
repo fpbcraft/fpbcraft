@@ -6,6 +6,8 @@ import {
   Check,
   ExternalLink,
   GitBranch,
+  PackageMinus,
+  PackagePlus,
   RefreshCw,
   Search,
   ShieldOff,
@@ -13,6 +15,7 @@ import {
   Wrench,
   X,
 } from 'lucide-react';
+import {CatalogManagerDialog} from '@/components/catalog-manager';
 import {PageHeader, Pill, formatDate} from '@/components/ui';
 import {useManagement} from '@/components/management-provider';
 import {api} from '@/lib/api';
@@ -93,6 +96,9 @@ export default function ModsPage() {
   const [githubAsset, setGithubAsset] = useState('');
   const [preferredPlacement, setPreferredPlacement] = useState<'server' | 'client'>('server');
   const [replacementPath, setReplacementPath] = useState('');
+  const [catalogDialog, setCatalogDialog] = useState<
+    {mode: 'install' | 'version'; mod?: ManagementMod} | null
+  >(null);
 
   const candidatesByKey = useMemo(
     () => new Map(state.updates.candidates.map((candidate) => [candidate.key, candidate])),
@@ -531,6 +537,29 @@ export default function ModsPage() {
     }
   };
 
+  const openVersionManager = (mod: ManagementMod) => {
+    closeMod();
+    setCatalogDialog({mode: 'version', mod});
+  };
+
+  const reviewRemoval = async (mod: ManagementMod) => {
+    setManagementBusy(true);
+    setManagementError(null);
+    setManagementMessage(null);
+    try {
+      const plan = await api<UpdatePlan>('/api/catalog/plans', {
+        method: 'POST',
+        body: JSON.stringify({action: 'remove', path: mod.path}),
+      });
+      closeMod();
+      router.push('/review?id=' + encodeURIComponent(plan.id));
+    } catch (error: unknown) {
+      setManagementError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setManagementBusy(false);
+    }
+  };
+
   const refreshModMetadata = async (path: string) => {
     setManagementBusy(true);
     setManagementError(null);
@@ -564,6 +593,13 @@ export default function ModsPage() {
         description="Installed server/common and AutoModpack client-only artifacts."
         action={
           <div className="flex items-center gap-2">
+            <button
+              className="btn btn-sm btn-primary"
+              type="button"
+              onClick={() => setCatalogDialog({mode: 'install'})}
+            >
+              <PackagePlus size={14} /> Add mod
+            </button>
             {blockers.length ? <Pill tone="bad">{blockers.length} blocking</Pill> : null}
             <Pill tone={connectionStatus === 'connected' ? 'good' : 'warn'}>
               {state.mods.length} JARs
@@ -916,6 +952,14 @@ export default function ModsPage() {
         </div>
       </section>
 
+      {catalogDialog ? (
+        <CatalogManagerDialog
+          mode={catalogDialog.mode}
+          mod={catalogDialog.mod}
+          onClose={() => setCatalogDialog(null)}
+        />
+      ) : null}
+
       {selectedMod ? (
         <div
           className="modal modal-open"
@@ -1036,6 +1080,28 @@ export default function ModsPage() {
                       ? 'Refresh metadata'
                       : 'Try auto-detect source'}
                   </button>
+                  {selectedMod.management === 'managed' &&
+                  (selectedMod.provider === 'modrinth' ||
+                    selectedMod.provider === 'curseforge') ? (
+                    <>
+                      <button
+                        className="btn btn-sm btn-outline"
+                        type="button"
+                        disabled={managementBusy}
+                        onClick={() => openVersionManager(selectedMod)}
+                      >
+                        <GitBranch size={14} /> Change version
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline btn-error"
+                        type="button"
+                        disabled={managementBusy}
+                        onClick={() => void reviewRemoval(selectedMod)}
+                      >
+                        <PackageMinus size={14} /> Review removal
+                      </button>
+                    </>
+                  ) : null}
                   {selectedMod.management !== 'unmanaged' ? (
                     <button
                       className="btn btn-sm btn-ghost"
