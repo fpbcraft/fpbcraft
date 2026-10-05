@@ -31,10 +31,11 @@ func TestCurseForgeExactFingerprintMatch(t *testing.T) {
 		_, _ = writer.Write([]byte(`{
 			"data": {
 				"exactMatches": [{
-					"id": 123456789,
+					"id": 326652,
 					"file": {
 						"id": 8889050,
 						"modId": 326652,
+						"fileFingerprint": 123456789,
 						"isAvailable": true,
 						"displayName": "Cupboard 1.21.1-4.2",
 						"fileName": "cupboard-1.21.1-4.2.jar",
@@ -68,10 +69,11 @@ func TestCurseForgeSkipsModrinthAndUnavailableFiles(t *testing.T) {
 		_, _ = writer.Write([]byte(`{
 			"data": {
 				"exactMatches": [{
-					"id": 555,
+					"id": 2,
 					"file": {
 						"id": 1,
 						"modId": 2,
+						"fileFingerprint": 555,
 						"isAvailable": false,
 						"fileName": "unavailable.jar"
 					}
