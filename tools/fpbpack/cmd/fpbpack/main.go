@@ -71,10 +71,8 @@ func runInventory(args []string) int {
 	serverMods := flags.String("server-mods", inventory.DefaultServerModsPath, "server/common mods path relative to server root")
 	clientMods := flags.String("client-mods", inventory.DefaultClientModsPath, "AutoModpack client-only mods path relative to server root")
 	jsonPath := flags.String("json", "", "also write complete inventory JSON to this path")
-	offline := flags.Bool("offline", false, "skip all remote exact-source lookups")
+	offline := flags.Bool("offline", false, "skip Modrinth exact-hash lookup")
 	modrinthAPI := flags.String("modrinth-api", inventory.DefaultModrinthAPI, "Modrinth API base URL")
-	curseForgeAPI := flags.String("curseforge-api", inventory.DefaultCurseForgeAPI, "CurseForge API base URL")
-	curseForgeAPIKey := flags.String("curseforge-api-key", os.Getenv("CURSEFORGE_API_KEY"), "CurseForge API key (defaults to CURSEFORGE_API_KEY)")
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
@@ -105,20 +103,6 @@ func runInventory(args []string) int {
 			inventory.ApplyModrinthMatches(&result, matches)
 		}
 
-		if !lookupFailed && strings.TrimSpace(*curseForgeAPIKey) != "" {
-			ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
-			matches, err := (inventory.CurseForgeClient{
-				BaseURL: *curseForgeAPI,
-				APIKey: *curseForgeAPIKey,
-			}).Match(ctx, result.Mods)
-			cancel()
-			if err != nil {
-				result.CurseForgeError = err.Error()
-				lookupFailed = true
-			} else {
-				inventory.ApplyCurseForgeMatches(&result, matches)
-			}
-		}
 	}
 
 	renderInventory(result)
@@ -159,15 +143,7 @@ func renderInventory(result inventory.Inventory) {
 	} else {
 		fmt.Println("Modrinth:          skipped")
 	}
-	if result.CurseForgeChecked {
-		fmt.Printf("CurseForge exact:  %d\n", result.Summary.CurseForgeExact)
-	} else if result.CurseForgeError != "" {
-		fmt.Printf("CurseForge:        LOOKUP FAILED (%s)\n", result.CurseForgeError)
-	} else if result.ModrinthChecked {
-		fmt.Println("CurseForge:        not checked (no API key)")
-	} else {
-		fmt.Println("CurseForge:        skipped")
-	}
+	fmt.Println("CurseForge:        deferred to catalog stage (Packwiz)")
 	if result.ModrinthChecked {
 		fmt.Printf("Unmatched:         %d\n", result.Summary.Unmatched)
 	}
