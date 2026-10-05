@@ -103,6 +103,7 @@ type Candidate struct {
 	IconURL        string             `json:"icon_url,omitempty"`
 	Side           string             `json:"side"`
 	Deployment     inventory.Location `json:"deployment"`
+	Environment    string             `json:"environment,omitempty"`
 	Installed      Release            `json:"installed"`
 	Target         *Release           `json:"target,omitempty"`
 	Classification     Classification     `json:"classification"`
