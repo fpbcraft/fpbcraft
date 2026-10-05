@@ -381,9 +381,9 @@ func packwizSide(environment string, deployment inventory.Location) string {
 
 func placementMismatch(deployment inventory.Location, environment string) bool {
 	if deployment == inventory.LocationClient {
-		return environment == "server_only" || environment == "server_only_client_optional"
+		return environment == "server_only"
 	}
-	return environment == "client_only" || environment == "client_only_server_optional"
+	return environment == "client_only"
 }
 
 func renderMetafile(entry Entry) string {
