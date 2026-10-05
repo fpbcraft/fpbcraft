@@ -17,7 +17,10 @@ import (
 	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
 
-const StateSchemaVersion = 1
+const (
+	StateSchemaVersion = 1
+	DefaultRetentionCount = 20
+)
 
 type Options struct {
 	ServerRoot      string
@@ -30,12 +33,17 @@ type Options struct {
 	BootstrapReport string
 }
 
+type RuntimeSettings struct {
+	RetentionCount int `json:"retention_count"`
+}
+
 type State struct {
-	SchemaVersion int            `json:"schema_version"`
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     time.Time      `json:"updated_at"`
-	ImportedFrom  string         `json:"imported_from,omitempty"`
-	Catalog       catalog.Report `json:"catalog"`
+	SchemaVersion int             `json:"schema_version"`
+	CreatedAt     time.Time       `json:"created_at"`
+	UpdatedAt     time.Time       `json:"updated_at"`
+	ImportedFrom  string          `json:"imported_from,omitempty"`
+	Settings      RuntimeSettings `json:"settings"`
+	Catalog       catalog.Report  `json:"catalog"`
 }
 
 type Service struct {
@@ -63,6 +71,13 @@ func New(ctx context.Context, options Options) (*Service, error) {
 	service := &Service{options: options}
 	if err := service.loadOrBootstrapState(ctx); err != nil {
 		return nil, err
+	}
+	if service.state.Settings.RetentionCount == 0 {
+		service.state.Settings.RetentionCount = DefaultRetentionCount
+		service.state.UpdatedAt = time.Now().UTC()
+		if err := service.persistState(); err != nil {
+			return nil, fmt.Errorf("persist default settings: %w", err)
+		}
 	}
 	if err := service.Refresh(ctx); err != nil {
 		return nil, fmt.Errorf("initial refresh: %w", err)
@@ -226,6 +241,7 @@ func (s *Service) loadOrBootstrapState(ctx context.Context) error {
 			CreatedAt:     now,
 			UpdatedAt:     now,
 			ImportedFrom:  reportPath,
+			Settings:      RuntimeSettings{RetentionCount: DefaultRetentionCount},
 			Catalog:       report,
 		}
 		return s.persistState()
@@ -247,6 +263,7 @@ func (s *Service) loadOrBootstrapState(ctx context.Context) error {
 		SchemaVersion: StateSchemaVersion,
 		CreatedAt:     now,
 		UpdatedAt:     now,
+		Settings:      RuntimeSettings{RetentionCount: DefaultRetentionCount},
 		Catalog:       result.Report,
 	}
 	return s.persistState()
