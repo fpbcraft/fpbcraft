@@ -98,12 +98,12 @@ export function ManagementProvider({children}: {children: ReactNode}) {
 
   const refresh = useCallback(async () => {
     await fetchApi<{status: string}>('/api/refresh', {method: 'POST'});
-    await reload();
+    await reload({silent: true});
   }, [reload]);
 
   const checkUpdates = useCallback(async () => {
     await fetchApi<{status: string}>('/api/updates/check', {method: 'POST'});
-    await reload();
+    await reload({silent: true});
   }, [reload]);
 
   useEffect(() => {
