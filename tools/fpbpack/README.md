@@ -111,6 +111,39 @@ Use `--strict` when the migration is expected to be complete. Strict mode exits 
 
 The generator refuses to replace a non-empty output directory unless `--force` is provided.
 
+## Diagnostics and read-only API
+
+Slice 1 adds a shared management-state layer used by both the CLI and the dashboard API.
+
+Run diagnostics against a fresh inventory and the accepted migration report:
+
+```bash
+./fpbpack doctor \
+  --inventory fpbpack-inventory.json \
+  --report modpack/migration-report.json
+```
+
+`doctor` reports blocking drift such as missing, moved or externally replaced managed JARs, as well as unresolved catalog entries and version conflicts. Explicitly unmanaged/pinned artifacts remain visible but are not treated as managed-file drift.
+
+To expose the same state to the dashboard without permitting mutation:
+
+```bash
+./fpbpack serve \
+  --inventory fpbpack-inventory.json \
+  --report modpack/migration-report.json \
+  --listen 127.0.0.1:8787
+```
+
+The initial API is deliberately read-only:
+
+- `GET /healthz`
+- `GET /api/status`
+- `GET /api/inventory`
+- `GET /api/mods`
+- `GET /api/diagnostics`
+
+The service reloads its input JSON for each request so a newly generated inventory is visible without restarting FPBPack. Update discovery and all mutation endpoints are intentionally deferred until the rest of Slice 1/2.
+
 ## Unraid
 
 The Unraid host's Python installation is not used. CI builds static Linux `amd64` binaries for FPBPack and a pinned upstream Packwiz helper with `CGO_ENABLED=0`.
