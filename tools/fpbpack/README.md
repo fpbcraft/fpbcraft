@@ -137,7 +137,7 @@ Generate a read-only update report from the accepted catalog state:
 Update discovery supports the source types FPBPack can verify safely:
 
 - Modrinth: Minecraft/loader filtering, release classification, required dependency closure, icons/project links, and target/intermediate changelogs;
-- CurseForge: official API discovery, project links, changelogs, and conservative required-dependency resolution when `FPBPACK_CURSEFORGE_API_KEY` is configured;
+- CurseForge: official API discovery, project links, changelogs, and conservative required-dependency resolution when a key is configured in the GUI or through `FPBPACK_CURSEFORGE_API_KEY`;
 - GitHub releases: only for artifacts already verified against an explicit GitHub release source. GitHub candidates require an unambiguous JAR asset with a SHA-256 digest and are always classified Review because GitHub does not provide Minecraft/loader compatibility metadata.
 
 Pinned/unmanaged artifacts stay pinned/unmanaged; FPBPack does not guess an update source for them.
@@ -178,8 +178,10 @@ The API still has **no live-mod mutation endpoints**. Slice 2 adds only FPBPack-
 - `PUT /api/update-rules`
 - `DELETE /api/update-rules?key=...`
 - `GET /api/providers`
+- `PUT /api/providers/{id}/credentials`
+- `DELETE /api/providers/{id}/credentials`
 
-The service owns inventory/reconciliation/update refreshes and persists generated cache snapshots under its state directory. The standalone `inventory`, `doctor`, and `updates` commands remain available for scripting and debugging, but are not required for GUI operation. Live-JAR mutation endpoints remain intentionally absent in Slice 2.
+The service owns inventory/reconciliation/update refreshes and persists generated cache snapshots under its state directory. Manual refresh/check requests return immediately and continue on a server-owned context, so reloading or closing the browser does not cancel provider discovery. Cancelled/timed-out refreshes never replace the last good update cache. The standalone `inventory`, `doctor`, and `updates` commands remain available for scripting and debugging, but are not required for GUI operation. Live-JAR mutation endpoints remain intentionally absent in Slice 2.
 
 ## Plan & Protect
 
@@ -267,11 +269,9 @@ go run ./cmd/fpbpack catalog --inventory /path/to/fpbpack-inventory.json --outpu
 # Packwiz-backed CurseForge detection is integration-tested with a fake isolated helper.
 ```
 
-For CurseForge update discovery, provide an official CurseForge API key to the service environment:
+For CurseForge update discovery, the normal path is **Settings → Providers → CurseForge**. Enter the key there and FPBPack validates it before saving it to `state-dir/secrets.json` with owner-only (`0600`) permissions. The key is never returned by the API or repopulated into the browser.
 
-```bash
-export FPBPACK_CURSEFORGE_API_KEY='...'
-```
+`FPBPACK_CURSEFORGE_API_KEY` remains available as a deployment/environment fallback. A GUI-saved key takes precedence over the environment value.
 
 For verified GitHub release sources, `FPBPACK_GITHUB_TOKEN` is optional and can be used to improve API rate limits or access eligible private sources.
 
