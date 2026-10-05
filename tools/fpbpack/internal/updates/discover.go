@@ -204,7 +204,7 @@ func normalizeNames(values []string) []string {
 
 func blockedProviderCandidate(entry catalog.Entry, code, message string) Candidate {
 	candidate := Candidate{
-		Key:            entry.Provider + ":" + entry.ProjectID,
+		Key:            catalog.EntryKey(entry),
 		Provider:       entry.Provider,
 		ProjectID:      entry.ProjectID,
 		Name:           entry.Name,
@@ -240,7 +240,7 @@ func discoverModrinthCandidate(
 		projectURL = "https://modrinth.com/mod/" + project.Slug
 	}
 	candidate := Candidate{
-		Key:        "modrinth:" + entry.ProjectID,
+		Key:        catalog.EntryKey(entry),
 		Provider:   "modrinth",
 		ProjectID:  entry.ProjectID,
 		Name:       name,
