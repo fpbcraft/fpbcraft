@@ -69,3 +69,16 @@ func (s *Service) logRefreshFailure(kind string, err error) {
 		s.logEvent("error", "refresh", fmt.Sprintf("%s refresh failed: %v", kind, err))
 	}
 }
+
+
+func (s *Service) logModManagement(action string, result ModManagementResult, err error) {
+	if err != nil {
+		s.logEvent("error", "mods", fmt.Sprintf("%s failed: %v", action, err))
+		return
+	}
+	message := strings.TrimSpace(result.Message)
+	if message == "" {
+		message = action + " completed"
+	}
+	s.logEvent("info", "mods", message)
+}
