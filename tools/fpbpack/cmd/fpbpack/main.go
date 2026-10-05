@@ -58,7 +58,7 @@ Usage:
   fpbpack catalog --inventory FILE [options]
   fpbpack doctor --inventory FILE --report FILE [options]
   fpbpack updates --report FILE [options]
-  fpbpack serve --inventory FILE --report FILE [options]
+  fpbpack serve [--server-root PATH --state-dir PATH] [options]
   fpbpack version
 
 Inventory is read-only. It scans:
@@ -69,8 +69,9 @@ Catalog converts a verified inventory into a safe partial Packwiz catalog,
 deduplicating identical artifacts and withholding ambiguous project versions.
 
 Doctor compares current inventory with the accepted catalog state and reports
-management drift without mutating files. Serve hosts the embedded web GUI and
-the same read-only management API from one HTTP process and origin.
+management drift without mutating files. Serve is the self-contained app mode:
+it scans/reconciles the live server, refreshes updates, persists FPBPack state,
+and hosts the embedded GUI/API without requiring other CLI commands first.
 
 Options are available with:
   fpbpack inventory --help

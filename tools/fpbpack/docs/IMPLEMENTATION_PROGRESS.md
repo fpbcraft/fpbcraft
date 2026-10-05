@@ -6,7 +6,7 @@ Last updated: **2026-10-05**
 
 **Slice 1 — Discover & Decide: in progress**
 
-Working branch: `fpbcraft/fpbcraft:feat/discover-decide` → draft PR #8.
+Working branch: `fpbcraft/fpbcraft:feat/self-contained-serve` → draft PR #9.
 
 The user merges PRs manually. Do not merge this branch automatically.
 
@@ -20,9 +20,20 @@ The user merges PRs manually. Do not merge this branch automatically.
 - [x] Add a `--web-dir` development override.
 - [x] Remove the CORS / Local Network Access requirement from the new architecture.
 - [x] Add a multi-stage Docker build with no Node runtime in the final image.
-- [x] Extend CI to typecheck/build the GUI, embed it, test/vet Go, build the static binary, and build the Docker image.
-- [x] Confirm the combined CI is green (GUI export, Go test/vet, embedded binary, Docker build, artifact upload).
-- [ ] Mark the separate GUI repository/PR as superseded after the combined branch has been accepted.
+- [x] Keep PR/dev CI focused on GUI typecheck/export, Go test/vet, and static Linux binary artifacts.
+- [x] Add a release-only Docker workflow triggered by published GitHub releases.
+- [x] Mark the separate GUI repository/PR as superseded after the combined branch has been accepted.
+
+## Self-contained serve mode
+
+- [x] Define `serve` as the normal application/GUI mode.
+- [x] Define inventory/update JSON as generated internal cache/debug artifacts, not required inputs.
+- [x] Define migration report as a one-time bootstrap/import format rather than permanent runtime state.
+- [x] Add durable `state.json` ownership under `--state-dir`.
+- [x] Make `serve` automatically scan/reconcile the live server.
+- [x] Make `serve` automatically refresh update discovery and caches.
+- [x] Add GUI/API-triggered refresh endpoints.
+- [x] Change Docker defaults to `/server` + `/data` with no pre-generated JSON requirement.
 
 ## Backend / FPBPack completed
 
@@ -45,4 +56,4 @@ The user merges PRs manually. Do not merge this branch automatically.
 
 ## Safety checkpoint
 
-The current service remains read-only. Serving the GUI from FPBPack does not introduce any live JAR mutation path.
+The current service remains read-only. Serve-mode refreshes scan/reconcile live files and update FPBPack-owned state/cache data, but do not mutate live mod JARs. Docker images are built and smoke-tested only for published releases, not PR/dev builds.

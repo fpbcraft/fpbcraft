@@ -10,12 +10,14 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"strings"
 	"time"
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/httpapi"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/service"
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/webui"
-	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
 
 func runDoctor(args []string) int {
@@ -84,39 +86,37 @@ func renderDiagnostics(snapshot management.Snapshot) {
 func runServe(args []string) int {
 	flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
-	inventoryPath := flags.String("inventory", "", "current FPBPack inventory JSON")
-	reportPath := flags.String("report", "", "accepted migration report JSON")
-	updatesPath := flags.String("updates", "", "cached update report JSON (optional)")
+	serverRoot := flags.String("server-root", envOrDefault("FPBPACK_SERVER_ROOT", "/server"), "Crafty/Minecraft server root")
+	stateDir := flags.String("state-dir", envOrDefault("FPBPACK_STATE_DIR", "/data"), "FPBPack durable state/cache directory")
+	serverMods := flags.String("server-mods", inventory.DefaultServerModsPath, "server/common mods path relative to server root")
+	clientMods := flags.String("client-mods", inventory.DefaultClientModsPath, "AutoModpack client-only mods path relative to server root")
+	minecraft := flags.String("minecraft", "1.21.1", "Minecraft version for update compatibility")
+	loader := flags.String("loader", "neoforge", "mod loader for update compatibility")
+	modrinthAPI := flags.String("modrinth-api", inventory.DefaultModrinthAPI, "Modrinth API base URL")
+	bootstrapReport := flags.String("bootstrap-report", "", "legacy migration report to import only when state.json does not exist")
+	refreshInterval := flags.Duration("refresh-interval", 6*time.Hour, "automatic inventory/update refresh interval; 0 disables periodic refresh")
 	listen := flags.String("listen", "0.0.0.0:8787", "HTTP listen address")
 	webDir := flags.String("web-dir", "", "serve GUI files from this directory instead of embedded assets")
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
-	if *inventoryPath == "" || *reportPath == "" {
-		fmt.Fprintln(os.Stderr, "--inventory and --report are required")
-		return 2
-	}
 
-	source := management.Source{InventoryPath: *inventoryPath, ReportPath: *reportPath}
-	if _, err := source.Load(); err != nil {
-		fmt.Fprintf(os.Stderr, "serve preflight failed: %v\n", err)
-		return 2
-	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	var updatesLoader httpapi.UpdatesLoader
-	if *updatesPath != "" {
-		updatesLoader = func() (updatecheck.Report, error) {
-			file, err := os.Open(*updatesPath)
-			if err != nil {
-				return updatecheck.Report{}, fmt.Errorf("open update report: %w", err)
-			}
-			defer file.Close()
-			var report updatecheck.Report
-			if err := json.NewDecoder(file).Decode(&report); err != nil {
-				return updatecheck.Report{}, fmt.Errorf("decode update report: %w", err)
-			}
-			return report, nil
-		}
+	app, err := service.New(ctx, service.Options{
+		ServerRoot:      *serverRoot,
+		StateDir:        *stateDir,
+		ServerModsPath:  *serverMods,
+		ClientModsPath:  *clientMods,
+		Minecraft:       *minecraft,
+		Loader:          *loader,
+		ModrinthBaseURL: *modrinthAPI,
+		BootstrapReport: *bootstrapReport,
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "serve startup failed: %v\n", err)
+		return 2
 	}
 
 	webHandler := webui.Handler()
@@ -126,9 +126,11 @@ func runServe(args []string) int {
 
 	server := &http.Server{
 		Addr: *listen,
-		Handler: httpapi.NewHandlerWithOptions(source.Load, version, httpapi.ServerOptions{
-			Updates: updatesLoader,
-			Web:     webHandler,
+		Handler: httpapi.NewHandlerWithOptions(app.Snapshot, version, httpapi.ServerOptions{
+			Updates:      app.Updates,
+			Refresh:      app.Refresh,
+			CheckUpdates: app.CheckUpdates,
+			Web:          webHandler,
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
@@ -137,10 +139,27 @@ func runServe(args []string) int {
 	go func() {
 		errCh <- server.ListenAndServe()
 	}()
-	fmt.Printf("FPBPack listening on http://%s (GUI + read-only API)\n", *listen)
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	if *refreshInterval > 0 {
+		go func() {
+			ticker := time.NewTicker(*refreshInterval)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					if err := app.Refresh(ctx); err != nil && ctx.Err() == nil {
+						fmt.Fprintf(os.Stderr, "automatic refresh failed: %v\n", err)
+					}
+				}
+			}
+		}()
+	}
+
+	fmt.Printf("FPBPack listening on http://%s (GUI + read-only API)\n", *listen)
+	fmt.Printf("Server root: %s\n", *serverRoot)
+	fmt.Printf("State dir:   %s\n", *stateDir)
 
 	select {
 	case err := <-errCh:
@@ -162,4 +181,11 @@ func runServe(args []string) int {
 		}
 		return 0
 	}
+}
+
+func envOrDefault(name, fallback string) string {
+	if value := strings.TrimSpace(os.Getenv(name)); value != "" {
+		return value
+	}
+	return fallback
 }

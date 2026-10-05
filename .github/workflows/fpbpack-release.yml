@@ -1,0 +1,51 @@
+name: FPBPack Docker Release
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: read
+
+jobs:
+  docker:
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Build Docker image
+        env:
+          FPBPACK_VERSION: ${{ github.event.release.tag_name }}
+        run: |
+          docker build \
+            -t fpbpack-release \
+            --build-arg FPBPACK_VERSION="${FPBPACK_VERSION}" \
+            -f tools/fpbpack/Dockerfile \
+            .
+
+      - name: Smoke-test released Docker image
+        run: |
+          mkdir -p "${RUNNER_TEMP}/fpbpack-server/mods" "${RUNNER_TEMP}/fpbpack-state"
+          docker run -d --name fpbpack-release \
+            -p 127.0.0.1:18787:8787 \
+            -v "${RUNNER_TEMP}/fpbpack-server:/server" \
+            -v "${RUNNER_TEMP}/fpbpack-state:/data" \
+            fpbpack-release
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:18787/healthz >/dev/null; then
+              break
+            fi
+            if [ "${attempt}" -eq 30 ]; then
+              docker logs fpbpack-release
+              exit 1
+            fi
+            sleep 1
+          done
+          test -f "${RUNNER_TEMP}/fpbpack-state/state.json"
+          test -f "${RUNNER_TEMP}/fpbpack-state/inventory.json"
+          test -f "${RUNNER_TEMP}/fpbpack-state/updates.json"
+          docker rm -f fpbpack-release

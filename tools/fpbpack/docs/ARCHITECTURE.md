@@ -13,12 +13,66 @@ FPBPack HTTP server :8787
    ├── /api/*                                      management API
    └── /healthz                                    service health
         │
-        ├── inventory / doctor / update services
+        ├── live inventory + reconciliation
+        ├── update discovery/cache
+        ├── persistent FPBPack state
         ├── Minecraft + AutoModpack filesystem
         └── provider integrations
 ```
 
 The GUI and API are same-origin. The GUI never owns update eligibility, dependency resolution, filesystem mutation, backup, restore, or provider policy.
+
+## Serve mode is the application mode
+
+`fpbpack serve` must be self-contained. Running the GUI must not require the administrator to run `inventory`, `catalog`, `doctor`, or `updates` first.
+
+The production contract is:
+
+```bash
+fpbpack serve --server-root /server --state-dir /data
+```
+
+On startup FPBPack:
+
+1. loads its durable application state from `state-dir`;
+2. imports a legacy migration report once when state does not yet exist and one is available;
+3. scans the live server/common and AutoModpack client-only mod directories;
+4. refreshes exact provider identity that can be verified safely;
+5. reconciles the live inventory against accepted management state;
+6. computes diagnostics;
+7. refreshes update candidates;
+8. writes internal cache/debug snapshots;
+9. serves the GUI and API.
+
+Inventory and update JSON files are implementation artifacts/cache files, not required command-line inputs.
+
+## Persistent state
+
+The state directory is FPBPack-owned:
+
+```text
+/data/
+├── state.json          durable accepted management state
+├── inventory.json      generated cache/debug snapshot
+├── updates.json        generated cache/debug snapshot
+├── history/            Slice 2+
+└── backups/            Slice 2+
+```
+
+`state.json` is authoritative for durable management identity such as provider/project ownership and unmanaged/pinned artifacts. The old `migration-report.json` is only a bootstrap/import format.
+
+A legacy migration report may be imported explicitly on the first run, or auto-discovered from supported legacy locations. Once imported, future starts use `state.json` and do not require the migration report.
+
+## Refresh model
+
+The service owns refreshes.
+
+- startup performs an initial inventory/update refresh;
+- the GUI can request an inventory/update refresh through the API;
+- serve mode may periodically refresh read-only provider/update data;
+- refreshes never mutate live mod JARs.
+
+Standalone CLI commands remain available for diagnostics, scripting, migration, and development, but are not prerequisites for GUI operation.
 
 ## Repository layout
 
@@ -27,10 +81,11 @@ tools/fpbpack/
 ├── cmd/fpbpack/
 ├── internal/
 │   ├── httpapi/
+│   ├── service/        long-running application state/refresh owner
 │   ├── webui/
-│   │   └── dist/        generated static export staged before release builds
+│   │   └── dist/       generated static export staged before release builds
 │   └── ...
-├── web/                 Next.js static-export source
+├── web/                Next.js static-export source
 ├── Dockerfile
 └── go.mod
 ```
@@ -41,22 +96,29 @@ Next.js is used only as a static build tool. Production does not run a Next.js s
 
 The frontend fetches relative routes such as `/api/mods`. Release builds copy `web/out` into `internal/webui/dist` and Go's `embed` package places those assets in the FPBPack binary.
 
-## Docker
+## Docker / Unraid
 
-The Dockerfile is multi-stage:
+The Dockerfile is multi-stage and is built by automation only for published full releases:
 
 1. Node builds/typechecks the static GUI.
 2. Go compiles FPBPack with those files embedded.
 3. The runtime image contains the FPBPack binary and CA certificates only.
 
-The container exposes port 8787 and runs a single process. This is the target deployment model for Unraid as well as ordinary Docker.
+The target container mounts:
+
+- `/server` — Minecraft/Crafty server root;
+- `/data` — FPBPack durable state/cache/history/backups.
+
+The container exposes port 8787 and runs one process. The image defaults to `fpbpack serve`, so normal container startup needs no command override and no pre-start inventory/update job.
+
+PR/dev CI does not build Docker images. The release workflow builds and smoke-tests the image only when a GitHub release is published.
 
 ## Development
 
 Backend unit tests remain independent of Node. The web handler accepts an `fs.FS` for testing, while the CLI injects the embedded production assets.
 
-A developer can also run `fpbpack serve --web-dir web/out` after a frontend build to test without rebuilding the binary for each static change.
+A developer can run `fpbpack serve --web-dir web/out` after a frontend build to test without rebuilding the binary for every static change.
 
 ## Repository decision
 
-The former `fpbcraft-gui` repository is being folded into `fpbcraft/tools/fpbpack/web`. New GUI/API work should be implemented together in the FPBPack branch so wire-contract changes, tests, and releases stay synchronized.
+The former `fpbcraft-gui` repository is superseded by `fpbcraft/tools/fpbpack/web`. New GUI/API work is implemented together in the FPBPack branch so wire-contract changes, tests, and releases stay synchronized.

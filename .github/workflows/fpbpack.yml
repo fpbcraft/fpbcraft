@@ -5,6 +5,7 @@ on:
     paths:
       - "tools/fpbpack/**"
       - ".github/workflows/fpbpack.yml"
+      - ".github/workflows/fpbpack-release.yml"
 
 permissions:
   contents: read
@@ -75,11 +76,6 @@ jobs:
           mv dist/packwiz dist/packwiz-linux-amd64
           sha256sum dist/packwiz-linux-amd64 > dist/packwiz-linux-amd64.sha256
           file dist/packwiz-linux-amd64
-
-      - name: Build Docker image
-        env:
-          FPBPACK_VERSION: ${{ github.event.pull_request.head.sha }}
-        run: docker build --build-arg FPBPACK_VERSION="${FPBPACK_VERSION::12}" -f tools/fpbpack/Dockerfile .
 
       - name: Upload Unraid binaries
         uses: actions/upload-artifact@v7
