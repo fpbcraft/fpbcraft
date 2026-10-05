@@ -827,7 +827,9 @@ func catalogAfterPlan(current catalog.Report, plan planning.Plan) (catalog.Repor
 			previous := next.Managed[found]
 			entry.ArtifactID = previous.ArtifactID
 			entry.Side = previous.Side
-			entry.Environment = previous.Environment
+			if strings.TrimSpace(entry.Environment) == "" {
+				entry.Environment = previous.Environment
+			}
 			entry.Repository = previous.Repository
 		}
 		switch entry.Provider {
