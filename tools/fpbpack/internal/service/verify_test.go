@@ -42,7 +42,7 @@ func TestEnsureArtifactDownloadsAndVerifiesSHA512(t *testing.T) {
 	}
 
 	server.Close()
-	if _, err := ensureArtifact(context.Background(), server.URL, expected, "", target); err != nil {
+	if _, err := ensureArtifact(context.Background(), server.URL, expected, "", "", target); err != nil {
 		t.Fatalf("verified cache was not reused: %v", err)
 	}
 }
