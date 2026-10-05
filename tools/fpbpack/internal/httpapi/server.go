@@ -18,6 +18,7 @@ type Loader func() (management.Snapshot, error)
 type UpdatesLoader func() (updatecheck.Report, error)
 type RefreshFunc func(context.Context) error
 type PlanCreator func(context.Context, []string) (planning.Plan, error)
+type PlacementPlanCreator func(context.Context, string) (planning.Plan, error)
 type PlansLoader func() ([]planning.Summary, error)
 type PlanLoader func(string) (planning.Plan, error)
 type HistoryLoader func() ([]planning.HistoryEvent, error)
@@ -44,6 +45,7 @@ type ServerOptions struct {
 	Refresh      RefreshFunc
 	CheckUpdates RefreshFunc
 	CreatePlan   PlanCreator
+	CreatePlacementPlan PlacementPlanCreator
 	Plans        PlansLoader
 	Plan         PlanLoader
 	History      HistoryLoader
@@ -75,6 +77,7 @@ type Server struct {
 	refresh       RefreshFunc
 	checkUpdates  RefreshFunc
 	createPlan    PlanCreator
+	createPlacementPlan PlacementPlanCreator
 	plansLoader   PlansLoader
 	planLoader    PlanLoader
 	historyLoader HistoryLoader
@@ -114,6 +117,7 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	server := &Server{
 		loader: loader, updatesLoader: opts.Updates, refresh: opts.Refresh,
 		checkUpdates: opts.CheckUpdates, createPlan: opts.CreatePlan,
+		createPlacementPlan: opts.CreatePlacementPlan,
 		plansLoader: opts.Plans, planLoader: opts.Plan, historyLoader: opts.History,
 		retentionLoader: opts.Retention, updateRetention: opts.UpdateRetention,
 		rulesLoader: opts.Rules, setRule: opts.SetRule, clearRule: opts.ClearRule,
@@ -144,6 +148,7 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("POST /api/updates/check", server.checkForUpdates)
 	mux.HandleFunc("GET /api/plans", server.plans)
 	mux.HandleFunc("POST /api/plans", server.createPlanHandler)
+	mux.HandleFunc("POST /api/placement-plans", server.createPlacementPlanHandler)
 	mux.HandleFunc("GET /api/plans/{id}", server.plan)
 	mux.HandleFunc("GET /api/history", server.history)
 	mux.HandleFunc("GET /api/settings", server.retentionSettings)
@@ -334,6 +339,29 @@ func (s *Server) createPlanHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	plan, err := s.createPlan(r.Context(), request.CandidateKeys)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, plan)
+}
+
+func (s *Server) createPlacementPlanHandler(w http.ResponseWriter, r *http.Request) {
+	if s.createPlacementPlan == nil {
+		writeError(w, http.StatusServiceUnavailable, "placement planning is not configured")
+		return
+	}
+	var request struct {
+		Path string `json:"path"`
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 16<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid placement plan request: "+err.Error())
+		return
+	}
+	plan, err := s.createPlacementPlan(r.Context(), request.Path)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
