@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect, useMemo, useState} from 'react';
+import {useRouter} from 'next/navigation';
 import {
   ExternalLink,
   GitBranch,
@@ -18,6 +19,7 @@ import type {
   DiagnosticFinding,
   ManagementMod,
   UpdateCandidate,
+  UpdatePlan,
   UpdateRule,
 } from '@/lib/management';
 
@@ -65,6 +67,7 @@ function updateTone(candidate?: UpdateCandidate): 'good' | 'warn' | 'bad' | 'neu
 
 export default function ModsPage() {
   const {state, connectionStatus, reload} = useManagement();
+  const router = useRouter();
   const [q, setQ] = useState('');
   const [deployment, setDeployment] = useState('all');
   const [management, setManagement] = useState('all');
@@ -457,6 +460,48 @@ export default function ModsPage() {
       setManagementMessage(result.message);
       closeMod();
       await reload({silent: true});
+    } catch (error: unknown) {
+      setManagementError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setManagementBusy(false);
+    }
+  };
+
+  const savePlacement = async (reviewMove: boolean) => {
+    if (!selectedMod) return;
+    setManagementBusy(true);
+    setManagementError(null);
+    setManagementMessage(null);
+    try {
+      if (preferredPlacement !== selectedMod.preferred_deployment) {
+        await api<ModManagementResult>('/api/mod-management', {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'set_placement',
+            path: selectedMod.path,
+            placement: preferredPlacement,
+          }),
+        });
+      }
+
+      if (reviewMove && preferredPlacement !== selectedMod.deployment) {
+        const plan = await api<UpdatePlan>('/api/placement-plans', {
+          method: 'POST',
+          body: JSON.stringify({path: selectedMod.path}),
+        });
+        await reload({silent: true});
+        closeMod();
+        router.push('/review?id=' + encodeURIComponent(plan.id));
+        return;
+      }
+
+      setManagementMessage(
+        preferredPlacement === selectedMod.deployment
+          ? 'Preferred placement now matches the live JAR.'
+          : 'Preferred placement saved. Review a protected move when you are ready.',
+      );
+      await reload({silent: true});
+      closeMod();
     } catch (error: unknown) {
       setManagementError(error instanceof Error ? error.message : String(error));
     } finally {
@@ -965,26 +1010,35 @@ export default function ModsPage() {
                       </select>
                     </label>
                     <button
-                      className="btn btn-sm btn-primary"
+                      className="btn btn-sm btn-ghost"
                       type="button"
                       disabled={
                         managementBusy ||
                         selectedMod.management !== 'managed' ||
                         preferredPlacement === selectedMod.preferred_deployment
                       }
-                      onClick={() =>
-                        void manageMod('set_placement', selectedMod.path, {
-                          placement: preferredPlacement,
-                        })
-                      }
+                      onClick={() => void savePlacement(false)}
                     >
-                      Save placement
+                      Save preference
+                    </button>
+                    <button
+                      className="btn btn-sm btn-primary"
+                      type="button"
+                      disabled={
+                        managementBusy ||
+                        selectedMod.management !== 'managed' ||
+                        preferredPlacement === selectedMod.deployment
+                      }
+                      onClick={() => void savePlacement(true)}
+                    >
+                      Review move
                     </button>
                   </div>
                   <p className="mt-2 text-xs text-base-content/40">
                     Current: {selectedMod.deployment === 'client' ? 'client-only' : 'server/common'}.
-                    Changing the preference does not move the live JAR immediately; the move is
-                    performed by the protected Apply flow.
+                    Saving only updates the preferred placement. Review move creates a verified,
+                    backed-up plan that moves the current JAR through the same server-stopped Apply
+                    flow as an update.
                   </p>
                 </div>
 
