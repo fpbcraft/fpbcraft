@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
 	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
@@ -84,8 +85,8 @@ type Plan struct {
 	Verified             bool                 `json:"verified"`
 	VerifiedAt           *time.Time            `json:"verified_at,omitempty"`
 	BackupID             string                `json:"backup_id,omitempty"`
-	RequiresServerStop   bool                 `json:"requires_server_stop"`
-	RequiresBackup       bool                 `json:"requires_backup"`
+	RequiresServerStop   bool                  `json:"requires_server_stop"`
+	RequiresBackup       bool                  `json:"requires_backup"`
 }
 
 type Summary struct {
@@ -135,70 +136,31 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 		}
 	}
 
+	changeIndex := map[string]int{}
+	closureVisited := map[string]bool{}
+
 	for _, key := range keys {
 		candidate, ok := candidates[key]
 		if !ok {
-			plan.Blockers = append(plan.Blockers, Finding{
-				Code: "candidate_not_found", CandidateKey: key,
-				Message: "The selected candidate is no longer present in the current update report.",
-			})
+			addBlocker(&plan, "candidate_not_found", key, "The selected candidate is no longer present in the current update report.")
 			continue
 		}
 		if candidate.Classification != updatecheck.ClassificationSafe &&
 			candidate.Classification != updatecheck.ClassificationReview {
-			plan.Blockers = append(plan.Blockers, Finding{
-				Code: "candidate_not_plannable", CandidateKey: key,
-				Message: "Only Safe and Review candidates can be included in an update plan.",
-			})
+			addBlocker(&plan, "candidate_not_plannable", key, "Only Safe and Review candidates can be included in an update plan.")
 			continue
 		}
 		if candidate.Target == nil {
-			plan.Blockers = append(plan.Blockers, Finding{
-				Code: "target_missing", CandidateKey: key,
-				Message: "The selected candidate does not have a resolved target release.",
-			})
+			addBlocker(&plan, "target_missing", key, "The selected candidate does not have a resolved target release.")
 			continue
 		}
 
 		target := *candidate.Target
-		if target.URL == "" || target.SHA512 == "" || target.Filename == "" {
-			plan.Blockers = append(plan.Blockers, Finding{
-				Code: "target_artifact_incomplete", CandidateKey: key,
-				Message: "The target release is missing a download URL, SHA-512, or filename.",
-			})
-		}
+		validateTargetArtifact(&plan, key, candidate.Name, target)
 
 		mod, installed := mods[candidate.Provider+":"+candidate.ProjectID]
 		if !installed {
-			plan.Blockers = append(plan.Blockers, Finding{
-				Code: "installed_artifact_missing", CandidateKey: key,
-				Message: "The currently managed artifact could not be matched to the live inventory.",
-			})
-		}
-
-		for _, dependency := range candidate.Dependencies {
-			switch dependency.Action {
-			case "unresolved", "conflict":
-				plan.Blockers = append(plan.Blockers, Finding{
-					Code: "dependency_" + dependency.Action, CandidateKey: key,
-					Message: "A required dependency cannot be resolved safely for this target.",
-				})
-			case "add", "update":
-				plan.Blockers = append(plan.Blockers, Finding{
-					Code: "dependency_artifact_not_resolved", CandidateKey: key,
-					Message: "A dependency change is required, but its exact target artifact is not yet part of the candidate closure.",
-				})
-			}
-		}
-
-		if candidate.Classification == updatecheck.ClassificationReview {
-			message := "This update is classified for review."
-			if len(candidate.Reasons) > 0 {
-				message = candidate.Reasons[0].Message
-			}
-			plan.Warnings = append(plan.Warnings, Finding{
-				Code: "review_candidate", CandidateKey: key, Message: message,
-			})
+			addBlocker(&plan, "installed_artifact_missing", key, "The currently managed artifact could not be matched to the live inventory.")
 		}
 
 		targetPath := target.Filename
@@ -222,7 +184,27 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 				CurrentSHA512: mod.SHA512, TargetSHA512: target.SHA512,
 			}},
 		}
-		plan.Changes = append(plan.Changes, change)
+		appendChange(&plan, change, changeIndex)
+
+		if candidate.Classification == updatecheck.ClassificationReview {
+			message := "This update is classified for review."
+			if len(candidate.Reasons) > 0 {
+				message = candidate.Reasons[0].Message
+			}
+			plan.Warnings = append(plan.Warnings, Finding{
+				Code: "review_candidate", CandidateKey: key, Message: message,
+			})
+		}
+
+		appendDependencyClosure(
+			&plan,
+			candidate.Dependencies,
+			mods,
+			snapshot.Inventory,
+			changeIndex,
+			closureVisited,
+			key,
+		)
 	}
 
 	for _, finding := range snapshot.Diagnostics.Findings {
@@ -233,24 +215,197 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 		if finding.Mod != "" {
 			message = finding.Mod + ": " + message
 		}
-		plan.Blockers = append(plan.Blockers, Finding{
-			Code: "diagnostic_" + finding.Code,
-			Message: message,
-		})
+		addBlocker(&plan, "diagnostic_"+finding.Code, "", message)
 	}
 
 	sort.Slice(plan.Changes, func(i, j int) bool {
-		return strings.ToLower(plan.Changes[i].Name) < strings.ToLower(plan.Changes[j].Name)
+		if strings.ToLower(plan.Changes[i].Name) != strings.ToLower(plan.Changes[j].Name) {
+			return strings.ToLower(plan.Changes[i].Name) < strings.ToLower(plan.Changes[j].Name)
+		}
+		return plan.Changes[i].CandidateKey < plan.Changes[j].CandidateKey
 	})
 	plan.Warnings = uniqueFindings(plan.Warnings)
 	plan.Blockers = uniqueFindings(plan.Blockers)
 	plan.RequiresServerStop = len(plan.Changes) > 0
-	plan.RequiresBackup = len(plan.Changes) > 0
+	plan.RequiresBackup = requiresBackup(plan.Changes)
 	if len(plan.Blockers) > 0 {
 		plan.Status = StatusBlocked
 	}
 	plan.ID = planID(plan)
 	return plan, nil
+}
+
+func appendDependencyClosure(
+	plan *Plan,
+	dependencies []updatecheck.Dependency,
+	mods map[string]management.Mod,
+	inv inventory.Inventory,
+	changeIndex map[string]int,
+	visited map[string]bool,
+	parentKey string,
+) {
+	for _, dependency := range dependencies {
+		depKey := dependency.Provider + ":" + dependency.ProjectID
+		switch dependency.Action {
+		case "unresolved", "conflict":
+			addBlocker(plan, "dependency_"+dependency.Action, parentKey, "A required dependency cannot be resolved safely for this target.")
+			continue
+		case "add", "update":
+			if dependency.Target == nil {
+				addBlocker(plan, "dependency_target_not_resolved", parentKey, "A required dependency change does not have an exact target artifact.")
+				continue
+			}
+			target := *dependency.Target
+			validateTargetArtifact(plan, depKey, dependency.Name, target)
+
+			visitKey := depKey + ":" + target.ID
+			if visited[visitKey] {
+				continue
+			}
+			visited[visitKey] = true
+
+			name := dependency.Name
+			if name == "" {
+				name = dependency.ProjectID
+			}
+			deployment := dependency.Deployment
+			if deployment == "" {
+				deployment = inventory.LocationServer
+			}
+
+			mod, installed := mods[depKey]
+			operation := FileOperation{
+				Action: "add",
+				TargetPath: filepath.ToSlash(filepath.Join(modsPath(inv, deployment), target.Filename)),
+				TargetSHA512: target.SHA512,
+			}
+			installedRelease := updatecheck.Release{}
+			if dependency.Action == "update" {
+				if !installed {
+					addBlocker(plan, "dependency_installed_artifact_missing", depKey, "A dependency update was resolved, but the installed dependency could not be matched to the live inventory.")
+				} else {
+					operation.Action = "replace"
+					operation.CurrentPath = mod.Path
+					operation.TargetPath = filepath.ToSlash(filepath.Join(filepath.Dir(mod.Path), target.Filename))
+					operation.CurrentSHA512 = mod.SHA512
+					installedRelease = updatecheck.Release{
+						ID: dependency.InstalledVersion,
+						Name: mod.Name,
+						Filename: mod.Filename,
+						SHA512: mod.SHA512,
+					}
+				}
+			} else if installed {
+				addBlocker(plan, "dependency_state_changed", depKey, "A dependency was resolved as an addition but is now present in the live inventory.")
+			}
+
+			change := Change{
+				CandidateKey: depKey,
+				Name: name,
+				DependencyDriven: true,
+				Classification: updatecheck.ClassificationReview,
+				Installed: installedRelease,
+				Target: target,
+				Artifact: Artifact{
+					Provider: dependency.Provider,
+					ProjectID: dependency.ProjectID,
+					VersionID: target.ID,
+					Filename: target.Filename,
+					URL: target.URL,
+					SHA512: target.SHA512,
+					Deployment: string(deployment),
+				},
+				Operations: []FileOperation{operation},
+			}
+			appendChange(plan, change, changeIndex)
+			appendDependencyClosure(
+				plan,
+				dependency.Dependencies,
+				mods,
+				inv,
+				changeIndex,
+				visited,
+				depKey,
+			)
+		}
+	}
+}
+
+func appendChange(plan *Plan, change Change, changeIndex map[string]int) {
+	key := change.Artifact.Provider + ":" + change.Artifact.ProjectID
+	if index, exists := changeIndex[key]; exists {
+		current := &plan.Changes[index]
+		if current.Target.ID != change.Target.ID {
+			addBlocker(
+				plan,
+				"dependency_target_conflict",
+				key,
+				fmt.Sprintf("The selected updates require conflicting target versions for %s.", change.Name),
+			)
+			return
+		}
+		if len(current.Operations) != len(change.Operations) ||
+			(len(current.Operations) > 0 && len(change.Operations) > 0 &&
+				(current.Operations[0].Action != change.Operations[0].Action ||
+					current.Operations[0].TargetPath != change.Operations[0].TargetPath)) {
+			addBlocker(plan, "dependency_operation_conflict", key, "The same artifact resolved to conflicting filesystem operations.")
+			return
+		}
+		current.Requested = current.Requested || change.Requested
+		current.DependencyDriven = current.DependencyDriven || change.DependencyDriven
+		if change.Requested {
+			current.Name = change.Name
+			current.Classification = change.Classification
+			current.Installed = change.Installed
+		}
+		return
+	}
+	changeIndex[key] = len(plan.Changes)
+	plan.Changes = append(plan.Changes, change)
+}
+
+func validateTargetArtifact(plan *Plan, key, name string, target updatecheck.Release) {
+	if target.URL == "" || target.SHA512 == "" || target.Filename == "" {
+		if name == "" {
+			name = key
+		}
+		addBlocker(
+			plan,
+			"target_artifact_incomplete",
+			key,
+			"The target release for "+name+" is missing a download URL, SHA-512, or filename.",
+		)
+	}
+}
+
+func addBlocker(plan *Plan, code, candidateKey, message string) {
+	plan.Blockers = append(plan.Blockers, Finding{
+		Code: code, CandidateKey: candidateKey, Message: message,
+	})
+}
+
+func modsPath(inv inventory.Inventory, deployment inventory.Location) string {
+	if deployment == inventory.LocationClient {
+		if strings.TrimSpace(inv.ClientModsPath) != "" {
+			return inv.ClientModsPath
+		}
+		return inventory.DefaultClientModsPath
+	}
+	if strings.TrimSpace(inv.ServerModsPath) != "" {
+		return inv.ServerModsPath
+	}
+	return inventory.DefaultServerModsPath
+}
+
+func requiresBackup(changes []Change) bool {
+	for _, change := range changes {
+		for _, operation := range change.Operations {
+			if operation.CurrentPath != "" && (operation.Action == "replace" || operation.Action == "remove") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (p Plan) Summary() Summary {
