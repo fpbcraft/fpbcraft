@@ -142,6 +142,12 @@ Update discovery supports the source types FPBPack can verify safely:
 
 Pinned/unmanaged artifacts stay pinned/unmanaged; FPBPack does not guess an update source for them.
 
+Blocking source/catalog findings can be repaired in the GUI. **Updates → Fix issues** opens **Mods → Needs attention**. From an affected mod you can retry automatic identification, keep the JAR intentionally unmanaged, or verify an explicit Modrinth, CurseForge, or GitHub source. Explicit provider assignments are accepted only when the selected provider artifact hash matches the installed JAR.
+
+Provider traffic is rate-aware: background work is deliberately slower/lower-concurrency than interactive per-mod refreshes, and provider requests retry 429/408/5xx responses with `Retry-After` / rate-limit-reset handling and bounded exponential fallback.
+
+CurseForge projects that disable third-party direct downloads are shown as **Review / manual download required** instead of permanently Blocked. FPBPack keeps the direct CurseForge file-page link in Updates and persisted plan review. Automatic Apply remains blocked until Slice 3 can accept and verify the manually downloaded JAR.
+
 The GUI also provides state-only remediation for blocking diagnostics. **Updates → Fix issues** opens **Mods → Needs attention**, where an installed artifact can be refreshed individually, explicitly marked unmanaged, or assigned a verified GitHub release source. GitHub assignment hashes the installed JAR and requires its SHA-256 to match the selected release asset. Missing accepted catalog entries can be explicitly forgotten. None of these actions mutates the live JAR.
 
 FPBPack serves the static GUI and API from one process. **Serve mode is self-contained**: the normal GUI path does not require running `inventory`, `catalog`, or `updates` first.
@@ -182,6 +188,8 @@ The API still has **no live-mod mutation endpoints**. Slice 2 adds only FPBPack-
 - `GET /api/providers`
 - `PUT /api/providers/{id}/credentials`
 - `DELETE /api/providers/{id}/credentials`
+- `POST /api/mod-management`
+- `POST /api/mod-metadata/refresh`
 - `POST /api/mod-management`
 - `POST /api/mod-metadata/refresh`
 
