@@ -160,6 +160,7 @@ func (client *ModrinthClient) CatalogCandidate(
 		IconURL:        project.IconURL,
 		Side:           sideForDeployment(deployment),
 		Deployment:     deployment,
+		Environment:    version.Environment,
 		Installed:      installedRelease,
 		Target:         &release,
 		Classification: ClassificationReview,
