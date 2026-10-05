@@ -4,13 +4,35 @@ Last updated: **2026-10-05**
 
 ## Active slice
 
-**Slice 2 — Plan & Protect: in progress**
+**Slice 3 — Apply & Restore: in progress**
 
-Working branch: `fpbcraft/fpbcraft:feat/plan-protect` → draft PR #13 against `main`.
+Working branch: `fpbcraft/fpbcraft:feat/apply-restore` → draft PR #15 against `main`.
 
-PR #10 has been merged. PR #13 contains the post-merge Slice 2 hardening/remediation work requested during real-server testing.
+Slices 1–2 and the release-only Docker CI adjustment are merged. PR #15 contains the combined Slice 3 backend/GUI work plus real-server remediation discovered while exercising Slice 2.
 
 The user merges PRs manually. Do not merge these branches automatically.
+
+### Slice 3 work currently in PR #15
+
+- [x] Multi-artifact management identity supports multiple independently managed JARs from one provider project/repository.
+- [x] Verified source assignment no longer removes sibling artifacts from the same repository.
+- [x] Mods expose current vs preferred server/common or AutoModpack client-only placement.
+- [x] Preferred placement is persisted and future reviewed update plans target it without immediately moving the live JAR.
+- [x] Updates can deep-link to the exact mod in Mods.
+- [x] Mods filters/page persist across reloads and remain URL-addressable.
+- [x] Crafty API v2 status, explicit Start/Stop controls, GUI configuration, secret token storage, and opt-in self-signed TLS support.
+- [x] Apply requires a persisted ready/verified plan and a positively confirmed stopped server.
+- [x] Apply rechecks live/current hashes, target occupancy, and cached target hashes immediately before mutation.
+- [x] Target artifacts are staged and hash-verified before filesystem commit.
+- [x] Post-mutation failures roll files, accepted state, inventory, and plan state back.
+- [x] Restore points include the accepted pre-apply catalog state, including add-only plans.
+- [x] History exposes explicit confirmed Restore and keeps server restart manual.
+- [x] Retention protects plans/backups referenced by retained or in-progress operation history.
+- [ ] PR #15 CI/build/test validation.
+- [ ] Exercise Crafty configuration/status/start/stop against the real FPBCraft server.
+- [ ] Exercise a real reviewed Apply on the FPBCraft server while stopped.
+- [ ] Exercise Restore from the resulting history record.
+- [ ] Resolve any real-pack edge cases before marking Slice 3 complete.
 
 ## Architecture / runtime completed
 
