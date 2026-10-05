@@ -70,6 +70,53 @@ func TestWritePackwizCatalog(t *testing.T) {
 	}
 }
 
+
+func TestWriteCurseForgeMetafile(t *testing.T) {
+	inv := inventory.Inventory{SchemaVersion: inventory.SchemaVersion, ModrinthChecked: true, CurseForgeChecked: true, Mods: []inventory.ModFile{
+		{
+			Location: inventory.LocationServer,
+			Path: "mods/cupboard.jar",
+			Filename: "cupboard-1.21.1-4.2.jar",
+			SHA1: "0123456789abcdef0123456789abcdef01234567",
+			SHA512: "cf-sha512",
+			CurseForgeFingerprint: 197930586,
+			CurseForge: &inventory.CurseForgeMatch{
+				ProjectID: 326652,
+				FileID: 8889050,
+				DisplayName: "Cupboard 1.21.1-4.2",
+				Filename: "cupboard-1.21.1-4.2.jar",
+			},
+		},
+	}}
+	result, err := Build(inv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Entries) != 1 || result.Entries[0].Provider != "curseforge" || result.Entries[0].ProjectID != "326652" {
+		t.Fatalf("unexpected entries: %+v", result.Entries)
+	}
+	out := filepath.Join(t.TempDir(), "modpack")
+	if err := Write(result, Options{OutputPath: out, Minecraft: "1.21.1"}); err != nil {
+		t.Fatal(err)
+	}
+	metafile, err := os.ReadFile(filepath.Join(out, "mods", "curseforge-326652.pw.toml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(metafile)
+	for _, expected := range []string{
+		`hash-format = "sha1"`,
+		`hash = "0123456789abcdef0123456789abcdef01234567"`,
+		`mode = "metadata:curseforge"`,
+		`file-id = 8889050`,
+		`project-id = 326652`,
+	} {
+		if !strings.Contains(text, expected) {
+			t.Fatalf("missing %q in metafile:\n%s", expected, text)
+		}
+	}
+}
+
 func mr(project, version, number, environment string) *inventory.ModrinthMatch {
 	return &inventory.ModrinthMatch{ProjectID: project, VersionID: version, VersionNumber: number, VersionName: project + " " + number, Filename: project + ".jar", URL: "https://cdn.example/" + project + ".jar", Environment: environment}
 }
