@@ -22,6 +22,7 @@ The user merges PRs manually. Do not merge these branches automatically.
 - [x] Cached GUI/API state remains available while a background refresh is running.
 - [x] Manual refresh/check jobs are server-owned, survive browser disconnects/page reloads, deduplicate active refreshes, and never persist cancelled partial reports.
 - [x] Provider discovery uses bounded concurrency instead of serial per-project requests.
+- [x] Provider HTTP calls are paced per provider/refresh mode and retry 429/408/5xx responses with Retry-After / rate-limit reset handling and bounded exponential fallback.
 - [x] Automatic/startup provider refresh uses a deliberately slower background policy; user-triggered checks use a faster interactive policy.
 - [x] Provider clients pace requests globally and honor Retry-After / rate-limit reset headers with bounded exponential backoff.
 - [x] Failed provider metadata refreshes preserve the last-good target/changelog/dependency/project metadata and mark it stale instead of flushing it.
@@ -50,6 +51,10 @@ The remaining decision/review hardening is being completed in PR #13 instead of 
 - [x] Updates rows expose changelogs, provider links, project icons, and decision actions.
 - [x] Mods page shows installed/latest/status and opens a responsive detail surface.
 - [x] Mod detail shows provider link, changelogs, dependencies, reverse dependencies, update preference controls, path and provider identifiers.
+- [x] Blocking diagnostics are actionable: Updates links to Mods → Needs attention, blockers can open the affected mod, and missing accepted entries can be forgotten explicitly.
+- [x] Mod detail can auto-detect metadata, mark an artifact intentionally unmanaged, or assign an exact verified Modrinth, CurseForge, or GitHub source.
+- [x] Per-mod metadata refresh uses server-owned background work and preserves last good metadata on transient provider failure.
+- [x] CurseForge files that prohibit third-party direct download remain Review candidates with a manual CurseForge file link rather than becoming permanently blocked.
 - [x] Updates blocking-diagnostics banner links directly to Mods → Needs attention.
 - [x] Needs-attention view exposes blocker-specific remediation instead of dead-end diagnostics.
 - [x] Live mod details can refresh metadata for only that artifact, explicitly mark it unmanaged, or assign a verified GitHub release source.
@@ -84,6 +89,7 @@ The remaining decision/review hardening is being completed in PR #13 instead of 
 - [x] Verify Modrinth SHA-512, CurseForge SHA-1, or GitHub SHA-256 during prefetch, then compute/persist FPBPack SHA-512.
 - [x] Reuse cached artifacts only after re-verifying their hash.
 - [x] Block the plan when an artifact cannot be downloaded or verified.
+- [x] Manual-download provider artifacts remain reviewable, retain their provider/manual URL in the plan, and stay unappliable until Slice 3 can accept and verify a user-supplied artifact.
 - [x] Bound individual artifact downloads with a 2 GiB safety limit.
 
 ### Protection / restore points
