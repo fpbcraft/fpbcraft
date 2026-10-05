@@ -128,3 +128,77 @@ func curseFileJSON(
 		"dependencies": []any{},
 	}
 }
+
+func TestDiscoverCurseForgeManualDownloadCandidate(t *testing.T) {
+	currentDate := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	targetDate := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/mods/123":
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": map[string]any{
+				"id": 123,
+				"name": "Restricted",
+				"slug": "restricted",
+				"links": map[string]any{"websiteUrl": "https://www.curseforge.com/minecraft/mc-mods/restricted"},
+			}})
+		case "/mods/123/files/10":
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": curseFileJSON(
+				10, 123, "1.0.0", "old.jar", currentDate, "oldsha1", "",
+			)})
+		case "/mods/123/files":
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": []any{
+				curseFileJSON(11, 123, "1.1.0", "restricted.jar", targetDate, "newsha1", ""),
+			}})
+		case "/mods/123/files/11/download-url":
+			http.Error(w, "third-party distribution disabled", http.StatusForbidden)
+		case "/mods/123/files/11/changelog":
+			_ = json.NewEncoder(w).Encode(map[string]any{"data": "<p>Manual release.</p>"})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	report := Discover(context.Background(), catalog.Report{
+		Managed: []catalog.Entry{{
+			Provider: "curseforge",
+			ProjectID: "123",
+			FileID: 10,
+			Name: "Restricted",
+			Filename: "old.jar",
+			SHA512: "installed-sha512",
+			Side: "both",
+			Deployment: inventory.LocationServer,
+		}},
+	}, Options{
+		Minecraft: "1.21.1",
+		Loader: "neoforge",
+		Mode: RefreshModeInteractive,
+		CurseForgeBaseURL: server.URL,
+		CurseForgeAPIKey: "test-key",
+		HTTPClient: server.Client(),
+	})
+
+	candidate := report.Candidates[0]
+	if candidate.Classification != ClassificationReview {
+		t.Fatalf("classification = %s reasons=%+v", candidate.Classification, candidate.Reasons)
+	}
+	if candidate.Target == nil || !candidate.Target.ManualDownload {
+		t.Fatalf("expected manual-download target: %+v", candidate.Target)
+	}
+	wantURL := "https://www.curseforge.com/minecraft/mc-mods/restricted/files/11"
+	if candidate.Target.ManualURL != wantURL {
+		t.Fatalf("manual URL = %q, want %q", candidate.Target.ManualURL, wantURL)
+	}
+	found := false
+	for _, reason := range candidate.Reasons {
+		if reason.Code == "manual_download_required" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("manual-download reason missing: %+v", candidate.Reasons)
+	}
+}
