@@ -285,6 +285,7 @@ export interface HistoryEvent {
   type: string;
   status: string;
   plan_id?: string;
+  backup_id?: string;
   mods: number;
   summary: string;
 }
