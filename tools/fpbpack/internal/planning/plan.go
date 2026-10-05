@@ -169,6 +169,60 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 			addBlocker(&plan, "candidate_not_plannable", key, "Only Safe and Review candidates can be included in an update plan.")
 			continue
 		}
+		intent := strings.TrimSpace(candidate.Intent)
+		if intent == "" {
+			intent = "update"
+		}
+		mod, installed := mods[candidate.Key]
+
+		if intent == "remove" {
+			if !installed {
+				addBlocker(&plan, "installed_artifact_missing", key, "The managed artifact selected for removal could not be matched to the live inventory.")
+				continue
+			}
+			if len(candidate.RequiredBy) > 0 {
+				addBlocker(
+					&plan,
+					"required_dependency_remove",
+					key,
+					fmt.Sprintf(
+						"%s is still required by %s. Remove or change those dependents first.",
+						candidate.Name,
+						strings.Join(candidate.RequiredBy, ", "),
+					),
+				)
+			}
+			change := Change{
+				CandidateKey:   key,
+				Name:           candidate.Name,
+				Requested:      true,
+				Classification: candidate.Classification,
+				Installed:      candidate.Installed,
+				Target:         candidate.Installed,
+				Artifact: Artifact{
+					Provider: candidate.Provider,
+					ProjectID: candidate.ProjectID,
+					VersionID: candidate.Installed.ID,
+					Filename: mod.Filename,
+					SHA512: mod.SHA512,
+					Deployment: string(mod.Deployment),
+				},
+				Operations: []FileOperation{{
+					Action: "remove",
+					CurrentPath: mod.Path,
+					TargetPath: mod.Path,
+					CurrentSHA512: mod.SHA512,
+				}},
+			}
+			appendChange(&plan, change, changeIndex)
+			plan.Warnings = append(plan.Warnings, Finding{
+				Code: "catalog_remove",
+				CandidateKey: key,
+				Message: "This plan removes the managed JAR and its accepted catalog entry. Restore can put both back.",
+			})
+			continue
+		}
+
 		if candidate.Target == nil {
 			addBlocker(&plan, "target_missing", key, "The selected candidate does not have a resolved target release.")
 			continue
@@ -177,8 +231,17 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 		target := *candidate.Target
 		validateTargetArtifact(&plan, key, candidate.Name, target)
 
-		mod, installed := mods[candidate.Key]
-		if !installed {
+		action := "replace"
+		currentPath := mod.Path
+		currentSHA512 := mod.SHA512
+		if intent == "install" {
+			action = "add"
+			currentPath = ""
+			currentSHA512 = ""
+			if installed {
+				addBlocker(&plan, "artifact_already_installed", key, "This provider project is already managed in the live inventory.")
+			}
+		} else if !installed {
 			addBlocker(&plan, "installed_artifact_missing", key, "The currently managed artifact could not be matched to the live inventory.")
 		}
 
@@ -200,14 +263,14 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 				ManualDownload: target.ManualDownload, ManualURL: target.ManualURL,
 			},
 			Operations: []FileOperation{{
-				Action: "replace", CurrentPath: mod.Path, TargetPath: targetPath,
-				CurrentSHA512: mod.SHA512, TargetSHA512: target.SHA512,
+				Action: action, CurrentPath: currentPath, TargetPath: targetPath,
+				CurrentSHA512: currentSHA512, TargetSHA512: target.SHA512,
 			}},
 		}
 		appendChange(&plan, change, changeIndex)
 
 		if candidate.Classification == updatecheck.ClassificationReview {
-			message := "This update is classified for review."
+			message := "This catalog change is classified for review."
 			if len(candidate.Reasons) > 0 {
 				message = candidate.Reasons[0].Message
 			}
