@@ -151,6 +151,13 @@ func runServe(args []string) int {
 			ClearProviderCredential: app.ClearProviderCredential,
 			ManageMod:      app.ManageMod,
 			RefreshMod:     app.RefreshModMetadata,
+			CraftyStatus:   app.CraftyStatus,
+			SetCraftyConfig: app.SetCraftyConfig,
+			ClearCraftyCredential: app.ClearCraftyCredential,
+			StartServer:    app.StartServer,
+			StopServer:     app.StopServer,
+			ApplyPlan:      app.ApplyPlan,
+			RestoreBackup:  app.RestoreBackup,
 			BackgroundContext: ctx,
 			Web:          webHandler,
 		}),
@@ -185,7 +192,7 @@ func runServe(args []string) int {
 		}()
 	}
 
-	fmt.Printf("FPBPack listening on http://%s (GUI + read-only API)\n", *listen)
+	fmt.Printf("FPBPack listening on http://%s (GUI + management API)\n", *listen)
 	fmt.Println("Initial inventory/update refresh is running in the background.")
 	fmt.Printf("Server root: %s\n", *serverRoot)
 	fmt.Printf("State dir:   %s\n", *stateDir)
