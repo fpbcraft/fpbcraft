@@ -1,11 +1,11 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {ExternalLink, RefreshCw} from 'lucide-react';
+import {Clock3, ExternalLink, MoreHorizontal, Pin, RefreshCw, RotateCcw, XCircle} from 'lucide-react';
 import {PageHeader, Pill, formatDate} from '@/components/ui';
 import {useManagement} from '@/components/management-provider';
-import type {UpdateCandidate, UpdateClassification, UpdatePlan} from '@/lib/management';
+import type {UpdateCandidate, UpdateClassification, UpdatePlan, UpdateRule} from '@/lib/management';
 import {api} from '@/lib/api';
 
 const groups: Array<{
@@ -23,10 +23,16 @@ function CandidateRow({
   candidate,
   selected,
   onToggle,
+  rule,
+  onRule,
+  onClearRule,
 }: {
   candidate: UpdateCandidate;
   selected: boolean;
   onToggle: () => void;
+  rule?: UpdateRule;
+  onRule: (rule: UpdateRule) => void;
+  onClearRule: () => void;
 }) {
   const selectable = candidate.classification === 'safe' || candidate.classification === 'review';
   const changelogs = candidate.changelogs ?? [];
@@ -84,6 +90,10 @@ function CandidateRow({
             <Pill tone="blue">dependency</Pill>
           ) : null}
 
+          {rule?.pin_version ? <Pill tone="neutral">pinned</Pill> : null}
+          {rule?.ignore_mod ? <Pill tone="neutral">ignored</Pill> : null}
+          {rule?.review_after ? <Pill tone="neutral">later</Pill> : null}
+
           {candidate.project_url ? (
             <a
               className="btn btn-xs btn-ghost"
@@ -100,6 +110,72 @@ function CandidateRow({
               <ExternalLink size={12} />
             </a>
           ) : null}
+
+          <details className="dropdown dropdown-end">
+            <summary className="btn btn-xs btn-ghost list-none px-2" aria-label={'Actions for ' + candidate.name}>
+              <MoreHorizontal size={14} />
+            </summary>
+            <ul className="menu dropdown-content z-20 mt-1 w-52 rounded-box border border-base-300 bg-base-100 p-1 text-xs shadow-lg">
+              <li>
+                <button
+                  type="button"
+                  disabled={!candidate.installed.id}
+                  onClick={() =>
+                    onRule({
+                      ...rule,
+                      pin_version: candidate.installed.id,
+                      ignore_mod: false,
+                      review_after: undefined,
+                    })
+                  }
+                >
+                  <Pin size={13} /> Pin current version
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  disabled={!candidate.target?.id}
+                  onClick={() =>
+                    onRule({
+                      ...rule,
+                      ignored_versions: Array.from(
+                        new Set([...(rule?.ignored_versions ?? []), candidate.target?.id ?? '']),
+                      ).filter(Boolean),
+                      review_after: undefined,
+                    })
+                  }
+                >
+                  <XCircle size={13} /> Ignore this version
+                </button>
+              </li>
+              <li>
+                <button type="button" onClick={() => onRule({...rule, ignore_mod: true, review_after: undefined})}>
+                  <XCircle size={13} /> Ignore this mod
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onRule({
+                      ...rule,
+                      review_after: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                    })
+                  }
+                >
+                  <Clock3 size={13} /> Review in 7 days
+                </button>
+              </li>
+              {rule ? (
+                <li>
+                  <button type="button" onClick={onClearRule}>
+                    <RotateCcw size={13} /> Clear rule
+                  </button>
+                </li>
+              ) : null}
+            </ul>
+          </details>
         </div>
       </div>
 
@@ -157,12 +233,58 @@ function CandidateRow({
 }
 
 export default function UpdatesPage() {
-  const {state, checkUpdates} = useManagement();
+  const {state, reload, checkUpdates} = useManagement();
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [checking, setChecking] = useState(false);
   const [creatingPlan, setCreatingPlan] = useState(false);
   const [planError, setPlanError] = useState<string | null>(null);
+  const [rules, setRules] = useState<Record<string, UpdateRule>>({});
+  const [ruleError, setRuleError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api<{rules: Record<string, UpdateRule>}>('/api/update-rules')
+      .then((response) => setRules(response.rules))
+      .catch((error: unknown) => {
+        setRuleError(error instanceof Error ? error.message : String(error));
+      });
+  }, []);
+
+  const applyRule = async (key: string, rule: UpdateRule) => {
+    setRuleError(null);
+    try {
+      await api<{key: string; rule: UpdateRule}>('/api/update-rules', {
+        method: 'PUT',
+        body: JSON.stringify({key, rule}),
+      });
+      setRules((current) => ({...current, [key]: rule}));
+      setSelected((current) => {
+        const next = new Set(current);
+        next.delete(key);
+        return next;
+      });
+      await reload();
+    } catch (error: unknown) {
+      setRuleError(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const clearRule = async (key: string) => {
+    setRuleError(null);
+    try {
+      await api<{status: string}>('/api/update-rules?key=' + encodeURIComponent(key), {
+        method: 'DELETE',
+      });
+      setRules((current) => {
+        const next = {...current};
+        delete next[key];
+        return next;
+      });
+      await reload();
+    } catch (error: unknown) {
+      setRuleError(error instanceof Error ? error.message : String(error));
+    }
+  };
 
   const selectableSafe = useMemo(
     () => state.updates.candidates.filter((candidate) => candidate.classification === 'safe'),
@@ -239,6 +361,7 @@ export default function UpdatesPage() {
       ) : null}
 
       {planError ? <div className="alert alert-error mb-4 rounded-box py-3 text-sm">{planError}</div> : null}
+      {ruleError ? <div className="alert alert-error mb-4 rounded-box py-3 text-sm">{ruleError}</div> : null}
 
       <div className="mb-4 flex items-center justify-between rounded-box border border-base-300 bg-base-100 px-4 py-3">
         <div>
@@ -278,6 +401,9 @@ export default function UpdatesPage() {
                       candidate={candidate}
                       selected={selected.has(candidate.key)}
                       onToggle={() => toggle(candidate.key)}
+                      rule={rules[candidate.key]}
+                      onRule={(rule) => void applyRule(candidate.key, rule)}
+                      onClearRule={() => void clearRule(candidate.key)}
                     />
                   ))}
                 </div>
