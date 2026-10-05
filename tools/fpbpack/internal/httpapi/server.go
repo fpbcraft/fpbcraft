@@ -22,6 +22,9 @@ type PlanLoader func(string) (planning.Plan, error)
 type HistoryLoader func() ([]planning.HistoryEvent, error)
 type RetentionLoader func() service.RuntimeSettings
 type RetentionUpdater func(service.RuntimeSettings) (service.RuntimeSettings, error)
+type RulesLoader func() map[string]service.UpdateRule
+type RuleSetter func(string, service.UpdateRule) (service.UpdateRule, error)
+type RuleClearer func(string) error
 
 type ServerOptions struct {
 	Updates      UpdatesLoader
@@ -33,6 +36,9 @@ type ServerOptions struct {
 	History      HistoryLoader
 	Retention    RetentionLoader
 	UpdateRetention RetentionUpdater
+	Rules        RulesLoader
+	SetRule      RuleSetter
+	ClearRule    RuleClearer
 	Web          http.Handler
 }
 
@@ -47,6 +53,9 @@ type Server struct {
 	historyLoader HistoryLoader
 	retentionLoader RetentionLoader
 	updateRetention RetentionUpdater
+	rulesLoader    RulesLoader
+	setRule        RuleSetter
+	clearRule      RuleClearer
 	version       string
 }
 
@@ -60,6 +69,7 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 		checkUpdates: opts.CheckUpdates, createPlan: opts.CreatePlan,
 		plansLoader: opts.Plans, planLoader: opts.Plan, historyLoader: opts.History,
 		retentionLoader: opts.Retention, updateRetention: opts.UpdateRetention,
+		rulesLoader: opts.Rules, setRule: opts.SetRule, clearRule: opts.ClearRule,
 		version: version,
 	}
 	mux := http.NewServeMux()
@@ -77,6 +87,9 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("GET /api/history", server.history)
 	mux.HandleFunc("GET /api/settings", server.retentionSettings)
 	mux.HandleFunc("PUT /api/settings", server.updateRetentionSettings)
+	mux.HandleFunc("GET /api/update-rules", server.updateRules)
+	mux.HandleFunc("PUT /api/update-rules", server.setUpdateRule)
+	mux.HandleFunc("DELETE /api/update-rules", server.clearUpdateRule)
 	if opts.Web != nil {
 		mux.Handle("/", opts.Web)
 	}
@@ -270,6 +283,55 @@ func (s *Server) updateRetentionSettings(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	writeJSON(w, http.StatusOK, updated)
+}
+
+func (s *Server) updateRules(w http.ResponseWriter, _ *http.Request) {
+	if s.rulesLoader == nil {
+		writeError(w, http.StatusServiceUnavailable, "update rules are not configured")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"rules": s.rulesLoader()})
+}
+
+func (s *Server) setUpdateRule(w http.ResponseWriter, r *http.Request) {
+	if s.setRule == nil {
+		writeError(w, http.StatusServiceUnavailable, "update rules are not configured")
+		return
+	}
+	var request struct {
+		Key  string             `json:"key"`
+		Rule service.UpdateRule `json:"rule"`
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 32<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid update rule: "+err.Error())
+		return
+	}
+	rule, err := s.setRule(request.Key, request.Rule)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"key": request.Key, "rule": rule})
+}
+
+func (s *Server) clearUpdateRule(w http.ResponseWriter, r *http.Request) {
+	if s.clearRule == nil {
+		writeError(w, http.StatusServiceUnavailable, "update rules are not configured")
+		return
+	}
+	key := r.URL.Query().Get("key")
+	if key == "" {
+		writeError(w, http.StatusBadRequest, "candidate key is required")
+		return
+	}
+	if err := s.clearRule(key); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "cleared", "key": key})
 }
 
 func (s *Server) load(w http.ResponseWriter) (management.Snapshot, bool) {
