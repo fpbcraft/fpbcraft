@@ -470,6 +470,7 @@ func TestProviderCredentialEndpointsNeverReturnSecret(t *testing.T) {
 func TestSlice3OperationalEndpoints(t *testing.T) {
 	var appliedID string
 	var restoredID string
+	var placementPath string
 	var started, stopped bool
 	handler := NewHandlerWithOptions(
 		func() (management.Snapshot, error) {
@@ -492,6 +493,10 @@ func TestSlice3OperationalEndpoints(t *testing.T) {
 			StopServer: func(context.Context) (service.CraftyStatus, error) {
 				stopped = true
 				return service.CraftyStatus{Configured: true, Connected: true, State: "stopped"}, nil
+			},
+			CreatePlacementPlan: func(_ context.Context, path string) (planning.Plan, error) {
+				placementPath = path
+				return planning.Plan{ID: "plan-aaaaaaaaaaaaaaaa", Status: planning.StatusReady, Verified: true}, nil
 			},
 			ApplyPlan: func(_ context.Context, id string) (service.ApplyResult, error) {
 				appliedID = id
@@ -533,6 +538,19 @@ func TestSlice3OperationalEndpoints(t *testing.T) {
 		if !*flag {
 			t.Fatalf("%s did not invoke server control", route)
 		}
+	}
+
+	placement := httptest.NewRecorder()
+	handler.ServeHTTP(
+		placement,
+		httptest.NewRequest(
+			http.MethodPost,
+			"/api/placement-plans",
+			strings.NewReader("{\"path\":\"mods/example.jar\"}"),
+		),
+	)
+	if placement.Code != http.StatusCreated || placementPath != "mods/example.jar" {
+		t.Fatalf("placement plan = %d path=%q body=%s", placement.Code, placementPath, placement.Body.String())
 	}
 
 	apply := httptest.NewRecorder()
