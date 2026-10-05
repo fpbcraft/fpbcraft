@@ -224,6 +224,7 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 		}
 		return plan.Changes[i].CandidateKey < plan.Changes[j].CandidateKey
 	})
+	validateOperationCollisions(&plan, snapshot.Mods)
 	plan.Warnings = uniqueFindings(plan.Warnings)
 	plan.Blockers = uniqueFindings(plan.Blockers)
 	plan.RequiresServerStop = len(plan.Changes) > 0
@@ -395,6 +396,53 @@ func modsPath(inv inventory.Inventory, deployment inventory.Location) string {
 		return inv.ServerModsPath
 	}
 	return inventory.DefaultServerModsPath
+}
+
+func validateOperationCollisions(plan *Plan, mods []management.Mod) {
+	liveByPath := make(map[string]management.Mod, len(mods))
+	for _, mod := range mods {
+		if strings.TrimSpace(mod.Path) != "" {
+			liveByPath[filepath.ToSlash(filepath.Clean(mod.Path))] = mod
+		}
+	}
+	plannedTargets := map[string]string{}
+	for _, change := range plan.Changes {
+		for _, operation := range change.Operations {
+			targetPath := filepath.ToSlash(filepath.Clean(operation.TargetPath))
+			if ownerKey, exists := plannedTargets[targetPath]; exists && ownerKey != change.CandidateKey {
+				addBlocker(
+					plan,
+					"target_path_conflict",
+					change.CandidateKey,
+					fmt.Sprintf("Multiple planned artifacts would write %s.", targetPath),
+				)
+			} else {
+				plannedTargets[targetPath] = change.CandidateKey
+			}
+
+			live, occupied := liveByPath[targetPath]
+			if !occupied {
+				continue
+			}
+			currentPath := filepath.ToSlash(filepath.Clean(operation.CurrentPath))
+			if operation.Action == "replace" && currentPath == targetPath {
+				continue
+			}
+			if currentPath != "" && live.Path == operation.CurrentPath {
+				continue
+			}
+			name := live.Name
+			if name == "" {
+				name = live.Filename
+			}
+			addBlocker(
+				plan,
+				"target_path_occupied",
+				change.CandidateKey,
+				fmt.Sprintf("Planned target %s is already occupied by %s (%s); FPBPack will not overwrite it.", targetPath, name, live.Management),
+			)
+		}
+	}
 }
 
 func requiresBackup(changes []Change) bool {
