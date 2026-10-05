@@ -144,9 +144,11 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 		if mod.Provider == "" || mod.ProjectID == "" {
 			continue
 		}
-		mods[mod.ID] = mod
 		base := mod.Provider + ":" + mod.ProjectID
-		if projectCounts[base] == 1 {
+		if strings.TrimSpace(mod.ID) != "" {
+			mods[mod.ID] = mod
+		}
+		if projectCounts[base] == 1 || strings.TrimSpace(mod.ID) == "" {
 			mods[base] = mod
 		}
 	}
