@@ -37,13 +37,21 @@ type RuntimeSettings struct {
 	RetentionCount int `json:"retention_count"`
 }
 
+type UpdateRule struct {
+	PinVersion      string     `json:"pin_version,omitempty"`
+	IgnoreMod       bool       `json:"ignore_mod,omitempty"`
+	IgnoredVersions []string   `json:"ignored_versions,omitempty"`
+	ReviewAfter     *time.Time `json:"review_after,omitempty"`
+}
+
 type State struct {
 	SchemaVersion int             `json:"schema_version"`
 	CreatedAt     time.Time       `json:"created_at"`
 	UpdatedAt     time.Time       `json:"updated_at"`
 	ImportedFrom  string          `json:"imported_from,omitempty"`
-	Settings      RuntimeSettings `json:"settings"`
-	Catalog       catalog.Report  `json:"catalog"`
+	Settings      RuntimeSettings       `json:"settings"`
+	UpdateRules   map[string]UpdateRule `json:"update_rules,omitempty"`
+	Catalog       catalog.Report        `json:"catalog"`
 }
 
 type Service struct {
@@ -153,6 +161,7 @@ func (s *Service) Refresh(ctx context.Context) error {
 	if err := updateCtx.Err(); err != nil && !errors.Is(err, context.Canceled) {
 		return fmt.Errorf("update discovery: %w", err)
 	}
+	s.applyUpdateRules(&report)
 	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), report); err != nil {
 		return fmt.Errorf("write update cache: %w", err)
 	}
@@ -197,6 +206,7 @@ func (s *Service) CheckUpdates(ctx context.Context) error {
 	if err := updateCtx.Err(); err != nil && !errors.Is(err, context.Canceled) {
 		return fmt.Errorf("update discovery: %w", err)
 	}
+	s.applyUpdateRules(&report)
 	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), report); err != nil {
 		return fmt.Errorf("write update cache: %w", err)
 	}
