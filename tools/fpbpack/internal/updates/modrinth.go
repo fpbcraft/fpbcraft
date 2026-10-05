@@ -179,7 +179,41 @@ func (client *ModrinthClient) GetVersion(ctx context.Context, versionID string) 
 }
 
 func (client *ModrinthClient) ListVersions(ctx context.Context, projectID string) ([]modrinthVersion, error) {
-	endpoint := client.baseURL() + "/project/" + url.PathEscape(projectID) + "/version?include_changelog=true"
+	return client.listVersions(ctx, projectID, "", "")
+}
+
+func (client *ModrinthClient) ListCompatibleVersions(
+	ctx context.Context,
+	projectID string,
+	minecraft string,
+	loader string,
+) ([]modrinthVersion, error) {
+	return client.listVersions(ctx, projectID, minecraft, loader)
+}
+
+func (client *ModrinthClient) listVersions(
+	ctx context.Context,
+	projectID string,
+	minecraft string,
+	loader string,
+) ([]modrinthVersion, error) {
+	query := url.Values{}
+	query.Set("include_changelog", "true")
+	if minecraft = strings.TrimSpace(minecraft); minecraft != "" {
+		encoded, err := json.Marshal([]string{minecraft})
+		if err != nil {
+			return nil, err
+		}
+		query.Set("game_versions", string(encoded))
+	}
+	if loader = strings.TrimSpace(loader); loader != "" {
+		encoded, err := json.Marshal([]string{loader})
+		if err != nil {
+			return nil, err
+		}
+		query.Set("loaders", string(encoded))
+	}
+	endpoint := client.baseURL() + "/project/" + url.PathEscape(projectID) + "/version?" + query.Encode()
 	var versions []modrinthVersion
 	if err := client.getJSON(ctx, endpoint, &versions); err != nil {
 		return nil, fmt.Errorf("Modrinth versions for %s: %w", projectID, err)
