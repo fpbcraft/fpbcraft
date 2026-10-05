@@ -11,7 +11,7 @@ import (
 func TestCurseForgeExactFingerprintMatch(t *testing.T) {
 	const fingerprint uint32 = 123456789
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method != http.MethodPost || request.URL.Path != "/v1/fingerprints/432" {
+		if request.Method != http.MethodPost || request.URL.Path != "/v1/fingerprints" {
 			t.Fatalf("unexpected request: %s %s", request.Method, request.URL.Path)
 		}
 		if request.Header.Get("x-api-key") != "test-key" {
