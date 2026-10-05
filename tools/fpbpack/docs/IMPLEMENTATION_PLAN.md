@@ -1,6 +1,6 @@
 # FPBPack — Implementation Plan
 
-Status: **in progress — Slice 1**
+Status: **in progress — Slice 2 (Plan & Protect)**
 
 Progress log: [IMPLEMENTATION_PROGRESS.md](./IMPLEMENTATION_PROGRESS.md)
 
@@ -275,6 +275,22 @@ This should already be useful enough to replace manual browsing of Modrinth/Curs
 ---
 
 # Slice 2 — Plan & Protect
+
+## Implementation status
+
+The core Slice 2 path is implemented on PR #10:
+
+- persisted deterministic plans;
+- recursive exact Modrinth dependency closure for required additions/updates;
+- exact add/replace operations;
+- target artifact prefetch + SHA-512 verification;
+- verified restore points for affected current JARs;
+- structured plan history;
+- configurable fixed retention;
+- Updates → Review → History GUI flow;
+- Tailwind 4 + daisyUI 5 visual-system refresh.
+
+Apply remains deliberately unavailable.
 
 ## Goal
 
