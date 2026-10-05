@@ -572,7 +572,10 @@ export default function ModsPage() {
             {blockers.map((finding, index) => {
               const liveMod = findLiveMod(finding);
               const canForget =
-                finding.code === 'managed_artifact_missing' && !!finding.path;
+                !!finding.path &&
+                !liveMod &&
+                (finding.code === 'managed_artifact_missing' ||
+                  finding.code === 'unresolved_artifact');
               return (
                 <div
                   className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center"
@@ -609,7 +612,7 @@ export default function ModsPage() {
                           void manageMod('forget_missing', finding.path ?? '')
                         }
                       >
-                        <Trash2 size={12} /> Forget missing entry
+                        <Trash2 size={12} /> Forget absent entry
                       </button>
                     ) : null}
                     {!liveMod && !canForget && finding.mod ? (
@@ -763,7 +766,22 @@ export default function ModsPage() {
                           {row.deployment === 'client' ? 'client-only' : 'server/common'}
                         </Pill>
                       </td>
-                      <td className="text-base-content/45">unknown</td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <span className="text-base-content/45">unknown</span>
+                          {(row.finding.code === 'managed_artifact_missing' ||
+                            row.finding.code === 'unresolved_artifact') && path ? (
+                            <button
+                              className="btn btn-xs btn-ghost"
+                              type="button"
+                              disabled={managementBusy}
+                              onClick={() => void manageMod('forget_missing', path)}
+                            >
+                              <Trash2 size={11} /> Forget
+                            </button>
+                          ) : null}
+                        </div>
+                      </td>
                     </tr>
                   );
                 }
