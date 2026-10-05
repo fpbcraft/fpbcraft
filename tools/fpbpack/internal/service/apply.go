@@ -425,13 +425,6 @@ func (s *Service) validatePlanLiveState(plan planning.Plan) error {
 	cacheByHash := s.prefetchedByHash(plan)
 	for _, change := range plan.Changes {
 		for _, operation := range change.Operations {
-			if operation.Action == "remove" {
-				staged = append(staged, stagedPlanOperation{
-					ChangeName: change.Name,
-					Operation: operation,
-				})
-				continue
-			}
 			targetRel, err := safeRelativePath(operation.TargetPath)
 			if err != nil {
 				return err
@@ -492,6 +485,13 @@ func (s *Service) stagePlanTargets(plan planning.Plan) ([]stagedPlanOperation, e
 	staged := make([]stagedPlanOperation, 0)
 	for _, change := range plan.Changes {
 		for _, operation := range change.Operations {
+			if operation.Action == "remove" {
+				staged = append(staged, stagedPlanOperation{
+					ChangeName: change.Name,
+					Operation: operation,
+				})
+				continue
+			}
 			targetRel, err := safeRelativePath(operation.TargetPath)
 			if err != nil {
 				cleanupStagedOperations(staged)
