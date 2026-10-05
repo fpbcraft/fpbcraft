@@ -25,6 +25,7 @@ interface ManagementContextValue {
   state: ManagementState;
   connectionStatus: ConnectionStatus;
   connectionError: string | null;
+  reload: () => Promise<void>;
   refresh: () => Promise<void>;
   checkUpdates: () => Promise<void>;
 }
@@ -103,9 +104,19 @@ export function ManagementProvider({children}: {children: ReactNode}) {
     void reload();
   }, [reload]);
 
+  useEffect(() => {
+    if (!state.errors.some((message) => message.includes('still refreshing'))) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void reload();
+    }, 2500);
+    return () => window.clearTimeout(timer);
+  }, [state.errors, reload]);
+
   const value = useMemo(
-    () => ({state, connectionStatus, connectionError, refresh, checkUpdates}),
-    [state, connectionStatus, connectionError, refresh, checkUpdates],
+    () => ({state, connectionStatus, connectionError, reload, refresh, checkUpdates}),
+    [state, connectionStatus, connectionError, reload, refresh, checkUpdates],
   );
 
   return <ManagementContext.Provider value={value}>{children}</ManagementContext.Provider>;
