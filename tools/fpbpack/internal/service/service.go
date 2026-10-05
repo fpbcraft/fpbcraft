@@ -32,6 +32,8 @@ type Options struct {
 	ModrinthBaseURL  string
 	CurseForgeBaseURL string
 	CurseForgeAPIKey string
+	GitHubBaseURL     string
+	GitHubToken       string
 	BootstrapReport  string
 }
 
@@ -162,6 +164,8 @@ func (s *Service) Refresh(ctx context.Context) error {
 		ModrinthBaseURL: s.options.ModrinthBaseURL,
 		CurseForgeBaseURL: s.options.CurseForgeBaseURL,
 		CurseForgeAPIKey: s.options.CurseForgeAPIKey,
+		GitHubBaseURL: s.options.GitHubBaseURL,
+		GitHubToken: s.options.GitHubToken,
 	})
 	if err := updateCtx.Err(); err != nil && !errors.Is(err, context.Canceled) {
 		return fmt.Errorf("update discovery: %w", err)
@@ -209,6 +213,8 @@ func (s *Service) CheckUpdates(ctx context.Context) error {
 		ModrinthBaseURL: s.options.ModrinthBaseURL,
 		CurseForgeBaseURL: s.options.CurseForgeBaseURL,
 		CurseForgeAPIKey: s.options.CurseForgeAPIKey,
+		GitHubBaseURL: s.options.GitHubBaseURL,
+		GitHubToken: s.options.GitHubToken,
 	})
 	if err := updateCtx.Err(); err != nil && !errors.Is(err, context.Canceled) {
 		return fmt.Errorf("update discovery: %w", err)
