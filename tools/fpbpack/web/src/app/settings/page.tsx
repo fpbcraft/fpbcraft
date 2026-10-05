@@ -65,6 +65,11 @@ export default function SettingsPage() {
       {settingsError ? (
         <div className="alert alert-error mb-4 rounded-box py-3 text-sm">{settingsError}</div>
       ) : null}
+      {state.status.refresh?.last_error ? (
+        <div className="alert alert-warning mb-4 rounded-box py-3 text-sm">
+          Background refresh failed: {state.status.refresh.last_error}
+        </div>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-2">
         <section className="panel">
@@ -81,6 +86,8 @@ export default function SettingsPage() {
               ['API base', '/api'],
               ['GUI delivery', 'Embedded static assets'],
               ['FPBPack version', state.status.version ?? 'Unavailable'],
+              ['Refresh state', state.status.refresh?.refreshing ? 'Refreshing' : state.status.refresh?.last_error ? 'Failed' : 'Idle'],
+              ['Last refresh', state.status.refresh?.last_success ? new Date(state.status.refresh.last_success).toLocaleString() : '—'],
             ].map(([label, value]) => (
               <div className="flex items-center justify-between gap-4 px-4 py-3" key={label}>
                 <dt className="text-base-content/45">{label}</dt>
