@@ -683,3 +683,43 @@ func TestToolsEndpointsExposeCatalogAndStartInventoryRefresh(t *testing.T) {
 		t.Fatal("inventory refresh handler did not invoke service")
 	}
 }
+
+
+func TestLogsEndpointReturnsStructuredRuntimeEvents(t *testing.T) {
+	now := time.Now().UTC()
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			Logs: func(limit int) []service.RuntimeLogEntry {
+				if limit != 1 {
+					t.Fatalf("limit = %d, want 1", limit)
+				}
+				return []service.RuntimeLogEntry{{
+					ID: 7,
+					Time: now,
+					Level: "error",
+					Area: "refresh",
+					Message: "provider failed",
+				}}
+			},
+		},
+	)
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/logs?limit=1", nil))
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("logs = %d: %s", recorder.Code, recorder.Body.String())
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	entries, ok := payload["entries"].([]any)
+	if !ok || len(entries) != 1 {
+		t.Fatalf("unexpected logs payload: %+v", payload)
+	}
+	entry, ok := entries[0].(map[string]any)
+	if !ok || entry["message"] != "provider failed" || entry["area"] != "refresh" {
+		t.Fatalf("unexpected log entry: %+v", entries[0])
+	}
+}
