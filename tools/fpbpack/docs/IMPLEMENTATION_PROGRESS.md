@@ -20,6 +20,7 @@ The user merges PRs manually. Do not merge these branches automatically.
 - [x] Legacy migration report is a one-time bootstrap/import source.
 - [x] Serve starts immediately from durable state/caches; inventory/provider refresh runs in the background.
 - [x] Cached GUI/API state remains available while a background refresh is running.
+- [x] Manual refresh/check jobs are server-owned, survive browser disconnects/page reloads, deduplicate active refreshes, and never persist cancelled partial reports.
 - [x] Provider discovery uses bounded concurrency instead of serial per-project requests.
 - [x] Multi-stage production Dockerfile with no Node runtime.
 - [x] PR/dev CI does not build Docker images.
@@ -33,7 +34,7 @@ The remaining Slice 1 decision/review work is intentionally being completed in P
 - [x] Diagnostics and managed-file drift detection.
 - [x] Safe / Review / Blocked / Ignored update model and real GUI update data.
 - [x] Modrinth discovery with Minecraft/NeoForge compatibility filtering.
-- [x] CurseForge candidate discovery through the official API when `FPBPACK_CURSEFORGE_API_KEY` is configured.
+- [x] CurseForge candidate discovery through the official API using either a GUI-managed key or `FPBPACK_CURSEFORGE_API_KEY`.
 - [x] Verified GitHub release discovery for artifacts already mapped to an explicit GitHub release source.
 - [x] Recursive required Modrinth dependency resolution with explicit target artifacts.
 - [x] Required CurseForge dependency additions can be resolved conservatively.
@@ -41,6 +42,7 @@ The remaining Slice 1 decision/review work is intentionally being completed in P
 - [x] Reverse-dependency metadata is exposed where provider dependency metadata is available.
 - [x] Target + intermediate changelogs are aggregated for Modrinth, CurseForge, and verified GitHub release sources.
 - [x] Modrinth/CurseForge/GitHub project links are exposed directly in the GUI.
+- [x] GUI-managed CurseForge credentials are validated before save, stored separately in `secrets.json` with `0600` permissions, never echoed back, and override the environment fallback.
 - [x] Persistent pin-current / ignore-version / ignore-mod / review-later rules live in `state.json`.
 - [x] Updates rows expose changelogs, provider links, project icons, and decision actions.
 - [x] Mods page shows installed/latest/status and opens a responsive detail surface.
