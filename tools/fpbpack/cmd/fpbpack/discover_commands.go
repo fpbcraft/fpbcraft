@@ -145,6 +145,7 @@ func runServe(args []string) int {
 			Providers:     app.ProviderStatuses,
 			SetProviderCredential: app.SetProviderCredential,
 			ClearProviderCredential: app.ClearProviderCredential,
+			BackgroundContext: ctx,
 			Web:          webHandler,
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
