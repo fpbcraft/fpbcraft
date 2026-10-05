@@ -29,7 +29,7 @@ Slices 1–3 plus the operational/reconciliation follow-up are merged. The user 
 - [x] Add catalog search/version/plan API endpoints and serve wiring.
 - [x] Add planning and Apply/Restore regression coverage for install/removal semantics.
 - [x] Add provider search/version-filter fixtures for Modrinth and CurseForge.
-- [ ] Final PR #17 CI/build/test validation.
+- [x] PR #17 implementation CI/build/test validation (workflow #289 green: GUI typecheck/build, Go test/vet, static Unraid binary, Packwiz helper, artifact upload).
 - [ ] Exercise Modrinth add/version/remove against the real FPBCraft server.
 - [ ] Exercise CurseForge add/version/remove against the real FPBCraft server.
 - [ ] Exercise at least one dependency-driven install and one blocked required-dependency removal.
