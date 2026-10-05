@@ -10,6 +10,7 @@ import (
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/doctor"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
+	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
 
 func TestStatusAndModsEndpointsExposeDomainState(t *testing.T) {
@@ -67,3 +68,41 @@ type testError string
 func (e testError) Error() string { return string(e) }
 
 const errTest testError = "test failure"
+
+func TestUpdatesEndpointUsesConfiguredLoader(t *testing.T) {
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			Updates: func() (updatecheck.Report, error) {
+				return updatecheck.Report{
+					Minecraft: "1.21.1",
+					Loader:    "neoforge",
+					Summary:   updatecheck.Summary{Safe: 2, Review: 1},
+				}, nil
+			},
+		},
+	)
+
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/updates", nil))
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("code = %d, want 200", recorder.Code)
+	}
+	var report updatecheck.Report
+	if err := json.Unmarshal(recorder.Body.Bytes(), &report); err != nil {
+		t.Fatal(err)
+	}
+	if report.Summary.Safe != 2 || report.Summary.Review != 1 {
+		t.Fatalf("unexpected update report: %+v", report)
+	}
+}
+
+func TestUpdatesEndpointIsUnavailableWithoutCache(t *testing.T) {
+	handler := NewHandler(func() (management.Snapshot, error) { return management.Snapshot{}, nil }, "dev")
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/updates", nil))
+	if recorder.Code != http.StatusServiceUnavailable {
+		t.Fatalf("code = %d, want 503", recorder.Code)
+	}
+}
