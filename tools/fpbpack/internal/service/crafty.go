@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -181,13 +182,13 @@ func (s *Service) SetCraftyConfig(ctx context.Context, request CraftyConfigReque
 	}
 
 	if strings.TrimSpace(request.APIToken) != "" {
-		if err := writeSecretJSONAtomic(s.options.StateDir+"/secrets.json", nextSecrets); err != nil {
+		if err := writeSecretJSONAtomic(filepath.Join(s.options.StateDir, "secrets.json"), nextSecrets); err != nil {
 			return CraftyStatus{}, fmt.Errorf("persist Crafty credential: %w", err)
 		}
 	}
-	if err := writeJSONAtomic(s.options.StateDir+"/state.json", nextState); err != nil {
+	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "state.json"), nextState); err != nil {
 		if strings.TrimSpace(request.APIToken) != "" {
-			_ = writeSecretJSONAtomic(s.options.StateDir+"/secrets.json", currentSecrets)
+			_ = writeSecretJSONAtomic(filepath.Join(s.options.StateDir, "secrets.json"), currentSecrets)
 		}
 		return CraftyStatus{}, fmt.Errorf("persist Crafty settings: %w", err)
 	}
@@ -207,7 +208,7 @@ func (s *Service) ClearCraftyCredential() (CraftyStatus, error) {
 	s.mu.RUnlock()
 	next.SchemaVersion = ProviderSecretsSchemaVersion
 	next.CraftyAPIToken = ""
-	if err := writeSecretJSONAtomic(s.options.StateDir+"/secrets.json", next); err != nil {
+	if err := writeSecretJSONAtomic(filepath.Join(s.options.StateDir, "secrets.json"), next); err != nil {
 		return CraftyStatus{}, fmt.Errorf("persist Crafty credential: %w", err)
 	}
 	s.mu.Lock()
@@ -229,6 +230,15 @@ func (s *Service) craftyAction(ctx context.Context, action string) (CraftyStatus
 	if strings.TrimSpace(config.URL) == "" || strings.TrimSpace(config.ServerID) == "" || strings.TrimSpace(token) == "" {
 		return CraftyStatus{}, fmt.Errorf("Crafty is not configured")
 	}
+	desired := ""
+	switch action {
+	case "start_server":
+		desired = "running"
+	case "stop_server":
+		desired = "stopped"
+	default:
+		return CraftyStatus{}, fmt.Errorf("unsupported Crafty server action %q", action)
+	}
 	if err := s.craftyRequest(
 		ctx,
 		config,
@@ -239,15 +249,40 @@ func (s *Service) craftyAction(ctx context.Context, action string) (CraftyStatus
 	); err != nil {
 		return CraftyStatus{}, err
 	}
-	status := s.craftyStatusWith(ctx, config, token, source)
-	if !status.Connected {
-		// The action was accepted; Crafty can briefly transition between states.
-		status.Configured = true
-		status.URL = config.URL
-		status.ServerID = config.ServerID
-		status.CredentialSource = source
+
+	waitCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+	last := CraftyStatus{
+		Configured: true,
+		State: "unknown",
+		URL: config.URL,
+		ServerID: config.ServerID,
+		CredentialSource: source,
+		AllowInsecure: config.AllowInsecure,
+		Detail: "Crafty accepted the server action; waiting for the requested state.",
 	}
-	return status, nil
+	for {
+		status := s.craftyStatusWith(waitCtx, config, token, source)
+		last = status
+		if status.Connected && status.State == desired {
+			return status, nil
+		}
+		select {
+		case <-waitCtx.Done():
+			if ctx.Err() != nil {
+				return last, ctx.Err()
+			}
+			return last, fmt.Errorf(
+				"Crafty accepted %s but the server did not reach %s state: %s",
+				action,
+				desired,
+				last.Detail,
+			)
+		case <-ticker.C:
+		}
+	}
 }
 
 func (s *Service) requireServerStopped(ctx context.Context) error {
