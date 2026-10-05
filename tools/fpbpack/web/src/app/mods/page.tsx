@@ -233,10 +233,10 @@ export default function ModsPage() {
                     </td>
                     <td><Pill tone={mod.side === 'client' ? 'blue' : 'neutral'}>{mod.side}</Pill></td>
                     <td>
-                      {mod.project_url ? (
+                      {(candidate?.project_url || mod.project_url) ? (
                         <a
                           className="link link-hover text-sm"
-                          href={mod.project_url}
+                          href={candidate?.project_url || mod.project_url}
                           target="_blank"
                           rel="noreferrer"
                           onClick={(event) => event.stopPropagation()}
