@@ -84,6 +84,7 @@ type RefreshStatus struct {
 type Service struct {
 	mu            sync.RWMutex
 	refreshMu     sync.Mutex
+	catalogMu     sync.Mutex
 	options       Options
 	state         State
 	snapshot      management.Snapshot
