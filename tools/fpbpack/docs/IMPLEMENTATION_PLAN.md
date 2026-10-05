@@ -278,7 +278,7 @@ This should already be useful enough to replace manual browsing of Modrinth/Curs
 
 ## Implementation status
 
-PR #10 deliberately completes the unfinished decision/review work from Slice 1 **inside Slice 2** rather than carrying it forward.
+The current Slice 2 PR deliberately completes the unfinished decision/review work from Slice 1 **inside Slice 2** rather than carrying it forward.
 
 Implemented/current scope includes:
 
@@ -291,6 +291,11 @@ Implemented/current scope includes:
 - reverse-dependency visibility;
 - durable pin-current / ignore-version / ignore-mod / review-later rules;
 - compact Updates decision UI and responsive Mods detail surface;
+- actionable diagnostic remediation from Updates → Mods → affected artifact;
+- per-mod metadata refresh and explicit verified source assignment for Modrinth, CurseForge, and GitHub;
+- intentional unmanaged acceptance for custom/local artifacts;
+- provider-aware request pacing, bounded concurrency, and retry/backoff;
+- CurseForge manual-download review flow for projects that disable third-party distribution;
 - persisted deterministic plans;
 - recursive exact dependency closure where provider metadata supports it;
 - exact add/replace operations;
