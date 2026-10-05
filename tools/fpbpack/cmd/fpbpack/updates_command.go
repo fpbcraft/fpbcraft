@@ -47,6 +47,7 @@ func runUpdates(args []string) int {
 		Minecraft: *minecraft,
 		Loader: *loader,
 		ModrinthBaseURL: *modrinthAPI,
+		CurseForgeAPIKey: os.Getenv("FPBPACK_CURSEFORGE_API_KEY"),
 	})
 	if ctx.Err() != nil {
 		fmt.Fprintf(os.Stderr, "update discovery timed out: %v\n", ctx.Err())
