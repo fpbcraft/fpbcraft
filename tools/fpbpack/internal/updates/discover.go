@@ -592,7 +592,18 @@ func releaseFromModrinth(version modrinthVersion) Release {
 }
 
 func installedRelease(entry catalog.Entry) Release {
-	return Release{ID: entry.VersionID, Name: entry.Name, Filename: entry.Filename, URL: entry.URL, SHA512: entry.SHA512}
+	id := entry.VersionID
+	if entry.Provider == "curseforge" && entry.FileID != 0 {
+		id = strconv.FormatUint(uint64(entry.FileID), 10)
+	}
+	return Release{
+		ID: id,
+		Name: entry.Name,
+		Filename: entry.Filename,
+		URL: entry.URL,
+		SHA1: entry.SHA1,
+		SHA512: entry.SHA512,
+	}
 }
 
 func strictEnvironmentMismatch(deployment inventory.Location, environment string) bool {
