@@ -134,7 +134,7 @@ Generate a read-only update report from the accepted catalog state:
   --loader neoforge
 ```
 
-The first provider implementation performs Modrinth project/version discovery, rejects incompatible Minecraft/loader releases, classifies pre-releases and major-version jumps for review, preserves rejected newer candidates, and surfaces required/incompatible dependency relationships. CurseForge and GitHub update discovery are still reported as blocked/pending rather than guessed.
+The first provider implementation performs Modrinth project/version discovery, rejects incompatible Minecraft/loader releases, classifies pre-releases and major-version jumps for review, preserves rejected newer candidates, and resolves required Modrinth dependency additions/updates recursively to exact compatible target artifacts. CurseForge and GitHub update discovery are still reported as blocked/pending rather than guessed.
 
 FPBPack serves the static GUI and API from one process. **Serve mode is self-contained**: the normal GUI path does not require running `inventory`, `catalog`, or `updates` first.
 
@@ -162,8 +162,46 @@ The initial API is deliberately read-only:
 - `GET /api/updates`
 - `POST /api/refresh`
 - `POST /api/updates/check`
+- `GET /api/plans`
+- `POST /api/plans`
+- `GET /api/plans/{id}`
+- `GET /api/history`
+- `GET /api/settings`
+- `PUT /api/settings`
 
 The service owns inventory/reconciliation/update refreshes and persists generated cache snapshots under its state directory. The standalone `inventory`, `doctor`, and `updates` commands remain available for scripting and debugging, but are not required for GUI operation. Live-JAR mutation endpoints remain intentionally absent in Slice 1.
+
+## Plan & Protect
+
+The GUI can turn selected Safe/Review candidates into a persisted update plan without changing live mod JARs.
+
+A plan contains:
+
+- requested updates and mechanically required dependency changes;
+- old/new versions and provider IDs;
+- exact download URLs and SHA-512 hashes;
+- explicit `add` / `replace` filesystem operations;
+- warnings and blockers;
+- whether a future Apply requires the server to be stopped;
+- the linked restore-point ID.
+
+For a plan to be marked `ready`, FPBPack also:
+
+1. resolves the required Modrinth dependency closure;
+2. rejects conflicting or incompatible requirements;
+3. rejects target paths that would overwrite unrelated/unmanaged artifacts;
+4. downloads every target into `state-dir/cache/artifacts`;
+5. verifies every target SHA-512;
+6. copies every current JAR that would be replaced into `state-dir/backups/<backup-id>`;
+7. verifies the backup hashes and writes a manifest.
+
+Plans and history are retained under the state directory. The default retention count is 20 and can be changed from Settings (1–100). Reducing retention prunes old plan records and their linked restore points.
+
+This is still a dry-run/protection stage. There is no endpoint or GUI action in Slice 2 that applies a plan to the live server.
+
+### Web stack / visual system
+
+The embedded UI uses Tailwind CSS 4 and daisyUI 5 with a custom FPBPack theme. The layout intentionally favors compact self-hosted-admin patterns: flat surfaces, thin borders, restrained status color, dense lists/tables, and minimal decorative effects.
 
 ## Docker
 
