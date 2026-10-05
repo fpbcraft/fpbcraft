@@ -155,10 +155,13 @@ func (s *Service) RefreshModMetadata(ctx context.Context, path string) (err erro
 	}
 	entry := result.Report.Managed[0]
 	entry.SourcePaths = s.sourcesForSHA(mod.SHA512)
+	s.mu.Lock()
 	s.replaceCatalogArtifact(mod, entry)
 	if err := s.persistCatalogMutation(); err != nil {
+		s.mu.Unlock()
 		return err
 	}
+	s.mu.Unlock()
 	return s.refreshSingleManagedEntry(ctx, entry)
 }
 
