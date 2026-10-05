@@ -465,3 +465,108 @@ func TestProviderCredentialEndpointsNeverReturnSecret(t *testing.T) {
 		t.Fatalf("DELETE credential = %d: %s", del.Code, del.Body.String())
 	}
 }
+
+
+func TestSlice3OperationalEndpoints(t *testing.T) {
+	var appliedID string
+	var restoredID string
+	var started, stopped bool
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) {
+			return management.Snapshot{Status: management.Status{Mode: "read-only", ReadOnly: true}}, nil
+		},
+		"dev",
+		ServerOptions{
+			CraftyStatus: func(context.Context) service.CraftyStatus {
+				return service.CraftyStatus{
+					Configured: true,
+					Connected: true,
+					State: "stopped",
+					ServerID: "server-1",
+				}
+			},
+			StartServer: func(context.Context) (service.CraftyStatus, error) {
+				started = true
+				return service.CraftyStatus{Configured: true, Connected: true, State: "running"}, nil
+			},
+			StopServer: func(context.Context) (service.CraftyStatus, error) {
+				stopped = true
+				return service.CraftyStatus{Configured: true, Connected: true, State: "stopped"}, nil
+			},
+			ApplyPlan: func(_ context.Context, id string) (service.ApplyResult, error) {
+				appliedID = id
+				return service.ApplyResult{PlanID: id, Status: "success"}, nil
+			},
+			RestoreBackup: func(_ context.Context, id string) (service.RestoreResult, error) {
+				restoredID = id
+				return service.RestoreResult{BackupID: id, Status: "success"}, nil
+			},
+		},
+	)
+
+	statusRecorder := httptest.NewRecorder()
+	handler.ServeHTTP(statusRecorder, httptest.NewRequest(http.MethodGet, "/api/status", nil))
+	if statusRecorder.Code != http.StatusOK {
+		t.Fatalf("status = %d", statusRecorder.Code)
+	}
+	var status struct {
+		Mode string `json:"mode"`
+		ReadOnly bool `json:"read_only"`
+		ServerState string `json:"server_state"`
+	}
+	if err := json.Unmarshal(statusRecorder.Body.Bytes(), &status); err != nil {
+		t.Fatal(err)
+	}
+	if status.Mode != "managed" || status.ReadOnly || status.ServerState != "stopped" {
+		t.Fatalf("unexpected managed status: %+v", status)
+	}
+
+	for route, flag := range map[string]*bool{
+		"/api/server/start": &started,
+		"/api/server/stop": &stopped,
+	} {
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, route, nil))
+		if recorder.Code != http.StatusAccepted {
+			t.Fatalf("%s = %d: %s", route, recorder.Code, recorder.Body.String())
+		}
+		if !*flag {
+			t.Fatalf("%s did not invoke server control", route)
+		}
+	}
+
+	apply := httptest.NewRecorder()
+	handler.ServeHTTP(
+		apply,
+		httptest.NewRequest(http.MethodPost, "/api/plans/plan-0123456789abcdef/apply", nil),
+	)
+	if apply.Code != http.StatusOK || appliedID != "plan-0123456789abcdef" {
+		t.Fatalf("apply = %d id=%q body=%s", apply.Code, appliedID, apply.Body.String())
+	}
+
+	unconfirmed := httptest.NewRecorder()
+	handler.ServeHTTP(
+		unconfirmed,
+		httptest.NewRequest(
+			http.MethodPost,
+			"/api/backups/backup-0123456789abcdef/restore",
+			strings.NewReader("{\"confirm\":false}"),
+		),
+	)
+	if unconfirmed.Code != http.StatusBadRequest || restoredID != "" {
+		t.Fatalf("unconfirmed restore = %d restored=%q", unconfirmed.Code, restoredID)
+	}
+
+	confirmed := httptest.NewRecorder()
+	handler.ServeHTTP(
+		confirmed,
+		httptest.NewRequest(
+			http.MethodPost,
+			"/api/backups/backup-0123456789abcdef/restore",
+			strings.NewReader("{\"confirm\":true}"),
+		),
+	)
+	if confirmed.Code != http.StatusOK || restoredID != "backup-0123456789abcdef" {
+		t.Fatalf("confirmed restore = %d restored=%q body=%s", confirmed.Code, restoredID, confirmed.Body.String())
+	}
+}
