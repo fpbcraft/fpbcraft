@@ -1,25 +1,70 @@
 'use client';
 
-import {RefreshCw} from 'lucide-react';
+import {useEffect, useState} from 'react';
+import {RefreshCw, Save} from 'lucide-react';
 import {PageHeader, Pill} from '@/components/ui';
 import {useManagement} from '@/components/management-provider';
+import {api} from '@/lib/api';
+
+interface RuntimeSettings {
+  retention_count: number;
+}
 
 export default function SettingsPage() {
   const {state, connectionStatus, connectionError, refresh} = useManagement();
   const connected = connectionStatus === 'connected';
+  const [retention, setRetention] = useState(20);
+  const [savedRetention, setSavedRetention] = useState(20);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    api<RuntimeSettings>('/api/settings')
+      .then((settings) => {
+        setRetention(settings.retention_count);
+        setSavedRetention(settings.retention_count);
+      })
+      .catch((error: unknown) => {
+        setSettingsError(error instanceof Error ? error.message : String(error));
+      });
+  }, []);
+
+  const saveRetention = async () => {
+    setSaving(true);
+    setSettingsError(null);
+    try {
+      const updated = await api<RuntimeSettings>('/api/settings', {
+        method: 'PUT',
+        body: JSON.stringify({retention_count: retention}),
+      });
+      setRetention(updated.retention_count);
+      setSavedRetention(updated.retention_count);
+    } catch (error: unknown) {
+      setSettingsError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <>
       <PageHeader
         eyebrow="System"
         title="Settings"
-        description="Runtime status and FPBPack service configuration."
-        action={<Pill tone={connected ? 'good' : connectionStatus === 'error' ? 'warn' : 'blue'}>
-          {connectionStatus === 'loading' ? 'Loading…' : connected ? 'Connected' : 'Connection failed'}
-        </Pill>}
+        description="Runtime status and FPBPack-owned management settings."
+        action={
+          <Pill tone={connected ? 'good' : connectionStatus === 'error' ? 'warn' : 'blue'}>
+            {connectionStatus === 'loading' ? 'Loading…' : connected ? 'Connected' : 'Connection failed'}
+          </Pill>
+        }
       />
 
-      {connectionError ? <div className="alert alert-warning mb-4 rounded-box py-3 text-sm">{connectionError}</div> : null}
+      {connectionError ? (
+        <div className="alert alert-warning mb-4 rounded-box py-3 text-sm">{connectionError}</div>
+      ) : null}
+      {settingsError ? (
+        <div className="alert alert-error mb-4 rounded-box py-3 text-sm">{settingsError}</div>
+      ) : null}
 
       <div className="grid gap-4 xl:grid-cols-2">
         <section className="panel">
@@ -44,7 +89,12 @@ export default function SettingsPage() {
             ))}
           </dl>
           <div className="border-t border-base-300 p-3">
-            <button className="btn btn-sm btn-ghost" type="button" onClick={() => void refresh()} disabled={connectionStatus === 'loading'}>
+            <button
+              className="btn btn-sm btn-ghost"
+              type="button"
+              onClick={() => void refresh()}
+              disabled={connectionStatus === 'loading'}
+            >
               <RefreshCw size={14} /> Refresh state
             </button>
           </div>
@@ -56,7 +106,9 @@ export default function SettingsPage() {
               <div className="section-label">Runtime</div>
               <h2 className="mt-0.5 text-sm font-semibold">Current backend</h2>
             </div>
-            <Pill tone={state.status.read_only ? 'blue' : 'warn'}>{state.status.read_only ? 'Read only' : state.status.mode}</Pill>
+            <Pill tone={state.status.read_only ? 'blue' : 'warn'}>
+              {state.status.read_only ? 'Read only' : state.status.mode}
+            </Pill>
           </div>
           <dl className="divide-y divide-base-300 text-sm">
             {[
@@ -71,6 +123,48 @@ export default function SettingsPage() {
               </div>
             ))}
           </dl>
+        </section>
+
+        <section className="panel xl:col-span-2">
+          <div className="panel-header">
+            <div>
+              <div className="section-label">Plan &amp; Protect</div>
+              <h2 className="mt-0.5 text-sm font-semibold">History and restore-point retention</h2>
+            </div>
+            <Pill tone="neutral">{savedRetention} retained</Pill>
+          </div>
+          <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-2xl">
+              <p className="text-sm text-base-content/65">
+                Keep the newest plan/history records and their linked restore points.
+              </p>
+              <p className="mt-1 text-xs text-base-content/40">
+                Valid range: 1–100. Reducing this value prunes older completed plan records immediately.
+              </p>
+            </div>
+            <div className="flex items-end gap-2">
+              <label className="form-control w-32">
+                <span className="mb-1 text-xs text-base-content/45">Records</span>
+                <input
+                  className="input input-sm input-bordered w-full"
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={retention}
+                  onChange={(event) => setRetention(Number(event.target.value))}
+                />
+              </label>
+              <button
+                className="btn btn-sm btn-primary"
+                type="button"
+                disabled={saving || retention === savedRetention || retention < 1 || retention > 100}
+                onClick={() => void saveRetention()}
+              >
+                {saving ? <span className="loading loading-spinner loading-xs" /> : <Save size={14} />}
+                Save
+              </button>
+            </div>
+          </div>
         </section>
       </div>
     </>
