@@ -24,6 +24,17 @@ The user merges PRs manually. Do not merge this branch automatically.
 - [x] Confirm the combined CI is green (GUI export, Go test/vet, embedded binary, Docker build, artifact upload).
 - [ ] Mark the separate GUI repository/PR as superseded after the combined branch has been accepted.
 
+## Self-contained serve mode
+
+- [x] Define `serve` as the normal application/GUI mode.
+- [x] Define inventory/update JSON as generated internal cache/debug artifacts, not required inputs.
+- [x] Define migration report as a one-time bootstrap/import format rather than permanent runtime state.
+- [ ] Add durable `state.json` ownership under `--state-dir`.
+- [ ] Make `serve` automatically scan/reconcile the live server.
+- [ ] Make `serve` automatically refresh update discovery and caches.
+- [ ] Add GUI/API-triggered refresh endpoints.
+- [ ] Change Docker defaults to `/server` + `/data` with no pre-generated JSON requirement.
+
 ## Backend / FPBPack completed
 
 - [x] Diagnostics and managed-file drift detection.
