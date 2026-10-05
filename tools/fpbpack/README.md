@@ -160,7 +160,7 @@ FPBPack serves the static GUI and API from one process. **Serve mode is self-con
 
 On normal startup FPBPack loads durable state plus the last valid inventory/update caches and starts the HTTP server immediately. It does **not** automatically query providers or rescan the live mod directories at startup. The first automatic refresh waits for the configured `--refresh-interval` (6h by default), and the GUI can trigger inventory-only, update-only, or full refreshes at any time.
 
-The legacy `migration-report.json` is a one-time bootstrap source only. If no FPBPack state exists yet, `serve` can import an existing migration report and then persists its own `state.json`; subsequent starts no longer require the migration report.
+The legacy `migration-report.json` is a one-time bootstrap source only. If no FPBPack state exists yet, `serve` can import an existing migration report and then persists its own `state.json`; subsequent starts no longer require the migration report. If neither `state.json` nor a migration report exists, the very first startup performs the one-time inventory/provider bootstrap needed to establish accepted state.
 
 Open the same address in a browser, for example `http://tower.local:8787/`. The GUI calls relative `/api/*` routes.
 
@@ -171,7 +171,7 @@ The management API covers discovery, remediation, planning, server control, Appl
 - `GET /healthz`
 - `GET /api/status`, `/api/inventory`, `/api/mods`, `/api/diagnostics`, `/api/updates`
 - `POST /api/refresh`, `POST /api/inventory/refresh`, `POST /api/updates/check`
-- `GET /api/catalog`, `GET /api/logs`
+- `GET /api/catalog`, `POST /api/catalog/preview`, `GET /api/logs`
 - `GET|POST /api/plans`, `GET /api/plans/{id}`
 - `POST /api/placement-plans`
 - `POST /api/plans/{id}/manual-artifact?candidate_key=...`
