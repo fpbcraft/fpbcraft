@@ -78,6 +78,16 @@ export interface UpdateDependency {
   deployment?: Location;
   target?: UpdateRelease;
   dependencies?: UpdateDependency[];
+  changelogs?: UpdateChangelogEntry[];
+}
+
+export interface UpdateChangelogEntry {
+  id: string;
+  number: string;
+  name?: string;
+  published_at?: string;
+  channel?: string;
+  body?: string;
 }
 
 export interface UpdateCandidate {
