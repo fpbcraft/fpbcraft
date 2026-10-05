@@ -81,6 +81,13 @@ export interface UpdateDependency {
   changelogs?: UpdateChangelogEntry[];
 }
 
+export interface UpdateRule {
+  pin_version?: string;
+  ignore_mod?: boolean;
+  ignored_versions?: string[];
+  review_after?: string;
+}
+
 export interface UpdateChangelogEntry {
   id: string;
   number: string;
