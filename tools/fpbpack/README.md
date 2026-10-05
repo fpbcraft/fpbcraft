@@ -177,8 +177,9 @@ The API still has **no live-mod mutation endpoints**. Slice 2 adds only FPBPack-
 - `GET /api/update-rules`
 - `PUT /api/update-rules`
 - `DELETE /api/update-rules?key=...`
+- `GET /api/providers`
 
-The service owns inventory/reconciliation/update refreshes and persists generated cache snapshots under its state directory. The standalone `inventory`, `doctor`, and `updates` commands remain available for scripting and debugging, but are not required for GUI operation. Live-JAR mutation endpoints remain intentionally absent in Slice 1.
+The service owns inventory/reconciliation/update refreshes and persists generated cache snapshots under its state directory. The standalone `inventory`, `doctor`, and `updates` commands remain available for scripting and debugging, but are not required for GUI operation. Live-JAR mutation endpoints remain intentionally absent in Slice 2.
 
 ## Plan & Protect
 
@@ -188,7 +189,7 @@ A plan contains:
 
 - requested updates and mechanically required dependency changes;
 - old/new versions and provider IDs;
-- exact download URLs and SHA-512 hashes;
+- exact download URLs, provider checksums, and normalized SHA-512 hashes after prefetch;
 - explicit `add` / `replace` filesystem operations;
 - warnings and blockers;
 - whether a future Apply requires the server to be stopped;
