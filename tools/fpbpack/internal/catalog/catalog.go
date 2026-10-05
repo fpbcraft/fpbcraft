@@ -170,6 +170,19 @@ func EnsureManagedArtifactIDs(entries []Entry) bool {
 
 func (r *Report) RecalculateSummary() {
 	EnsureManagedArtifactIDs(r.Managed)
+
+	// Placement warnings are derived state. Drop stale warnings that no longer
+	// represent an invalid deployment. In particular,
+	// client_only_server_optional is valid on the server and
+	// server_only_client_optional is valid on the client.
+	validPlacement := r.Placement[:0]
+	for _, warning := range r.Placement {
+		if placementMismatch(warning.Deployment, warning.Environment) {
+			validPlacement = append(validPlacement, warning)
+		}
+	}
+	r.Placement = validPlacement
+
 	summary := r.Summary
 	summary.GeneratedProjects = len(r.Managed)
 	summary.Unresolved = len(r.Unresolved)
