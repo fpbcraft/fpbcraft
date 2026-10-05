@@ -102,11 +102,13 @@ func New(ctx context.Context, options Options) (*Service, error) {
 	if err := service.loadOrBootstrapState(ctx); err != nil {
 		return nil, err
 	}
-	if catalog.EnsureManagedArtifactIDs(service.state.Catalog.Managed) {
-		service.state.Catalog.RecalculateSummary()
+	artifactIDsChanged := catalog.EnsureManagedArtifactIDs(service.state.Catalog.Managed)
+	placementWarningsBefore := len(service.state.Catalog.Placement)
+	service.state.Catalog.RecalculateSummary()
+	if artifactIDsChanged || len(service.state.Catalog.Placement) != placementWarningsBefore {
 		service.state.UpdatedAt = time.Now().UTC()
 		if err := service.persistState(); err != nil {
-			return nil, fmt.Errorf("persist managed artifact identity migration: %w", err)
+			return nil, fmt.Errorf("persist catalog state normalization: %w", err)
 		}
 	}
 	if err := service.loadProviderSecrets(); err != nil {
