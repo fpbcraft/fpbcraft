@@ -12,6 +12,16 @@ import (
 	"time"
 )
 
+type ProviderHTTPError struct {
+	Provider string
+	Status   int
+	Message  string
+}
+
+func (e *ProviderHTTPError) Error() string {
+	return fmt.Sprintf("%s returned HTTP %d: %s", e.Provider, e.Status, e.Message)
+}
+
 type RefreshMode string
 
 const (
@@ -135,12 +145,11 @@ func doJSONWithRetry(
 		message, _ := io.ReadAll(io.LimitReader(response.Body, 4096))
 		_ = response.Body.Close()
 		if !retryableProviderResponse(provider, response.StatusCode, response.Header) || attempt == maxAttempts-1 {
-			return fmt.Errorf(
-				"%s returned HTTP %d: %s",
-				provider,
-				response.StatusCode,
-				strings.TrimSpace(string(message)),
-			)
+			return &ProviderHTTPError{
+				Provider: provider,
+				Status: response.StatusCode,
+				Message: strings.TrimSpace(string(message)),
+			}
 		}
 		if err := waitForRetry(ctx, retryDelay(response.Header, attempt)); err != nil {
 			return err
