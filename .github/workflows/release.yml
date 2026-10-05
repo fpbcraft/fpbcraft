@@ -1,0 +1,195 @@
+name: Semantic Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Semantic version bump when exact version is empty
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      version:
+        description: Optional exact SemVer (required for the first release)
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.27.x"
+          cache: false
+
+      - name: Check release version tooling
+        run: python -m unittest discover -s tests -p "test_release_version.py"
+
+      - name: Resolve release version
+        id: release
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EXACT_VERSION: ${{ inputs.version }}
+          BUMP: ${{ inputs.bump }}
+        run: |
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            version="$(python scripts/release_version.py from-tag "$GITHUB_REF_NAME")"
+            tag="$GITHUB_REF_NAME"
+            create_tag=false
+          else
+            if [[ "$GITHUB_REF_NAME" != "${{ github.event.repository.default_branch }}" ]]; then
+              echo "::error::Manual releases must run from the default branch."
+              exit 1
+            fi
+
+            version="$(python scripts/release_version.py next --bump "$BUMP" --exact "$EXACT_VERSION")"
+            tag="v$version"
+            create_tag=true
+
+            if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+              echo "::error::Release tag $tag already exists; release versions are immutable."
+              exit 1
+            fi
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "create_tag=$create_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Validate quest pack
+        run: python scripts/validate_ftbquests.py
+
+      - name: Install GUI dependencies
+        working-directory: tools/fpbpack/web
+        run: npm install --no-audit --no-fund
+
+      - name: Typecheck GUI
+        working-directory: tools/fpbpack/web
+        run: npm run typecheck
+
+      - name: Build static GUI
+        working-directory: tools/fpbpack/web
+        run: npm run build
+
+      - name: Stage GUI for embedding
+        working-directory: tools/fpbpack
+        run: |
+          find internal/webui/dist -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+          cp -a web/out/. internal/webui/dist/
+
+      - name: Test FPBPack
+        working-directory: tools/fpbpack
+        run: go test ./...
+
+      - name: Vet FPBPack
+        working-directory: tools/fpbpack
+        run: go vet ./...
+
+      - name: Build release assets
+        working-directory: tools/fpbpack
+        env:
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: amd64
+          FPBPACK_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          mkdir -p dist
+          go build -trimpath -ldflags "-s -w -X main.version=${FPBPACK_VERSION}" -o dist/fpbpack-linux-amd64 ./cmd/fpbpack
+          sha256sum dist/fpbpack-linux-amd64 > dist/fpbpack-linux-amd64.sha256
+
+          GOBIN="$PWD/dist" go install github.com/packwiz/packwiz@ef87d964f8cbd52b3b13ea42453ef322290e2b9e
+          mv dist/packwiz dist/packwiz-linux-amd64
+          sha256sum dist/packwiz-linux-amd64 > dist/packwiz-linux-amd64.sha256
+
+          cp fpbpack-sources.json dist/fpbpack-sources.json
+
+      - name: Package quest release asset
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          zip -r "tools/fpbpack/dist/fpbcraft-quests-$VERSION.zip" ftbquests/quests
+          sha256sum "tools/fpbpack/dist/fpbcraft-quests-$VERSION.zip" > "tools/fpbpack/dist/fpbcraft-quests-$VERSION.zip.sha256"
+
+      - name: Upload verified release build
+        uses: actions/upload-artifact@v7
+        with:
+          name: fpbcraft-${{ steps.release.outputs.version }}
+          path: tools/fpbpack/dist/*
+          if-no-files-found: error
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.release.outputs.version }}
+          TAG: ${{ steps.release.outputs.tag }}
+          CREATE_TAG: ${{ steps.release.outputs.create_tag }}
+          TARGET_SHA: ${{ github.sha }}
+        run: |
+          prerelease=()
+          if [[ "$VERSION" == *-* ]]; then
+            prerelease+=(--prerelease)
+          fi
+
+          assets=(
+            tools/fpbpack/dist/fpbpack-linux-amd64
+            tools/fpbpack/dist/fpbpack-linux-amd64.sha256
+            tools/fpbpack/dist/packwiz-linux-amd64
+            tools/fpbpack/dist/packwiz-linux-amd64.sha256
+            tools/fpbpack/dist/fpbpack-sources.json
+            "tools/fpbpack/dist/fpbcraft-quests-$VERSION.zip"
+            "tools/fpbpack/dist/fpbcraft-quests-$VERSION.zip.sha256"
+          )
+
+          if [[ "$CREATE_TAG" == "true" ]]; then
+            gh release create "$TAG" "${assets[@]}" \
+              --target "$TARGET_SHA" \
+              --title "$TAG" \
+              --generate-notes \
+              "${prerelease[@]}"
+          else
+            gh release create "$TAG" "${assets[@]}" \
+              --verify-tag \
+              --title "$TAG" \
+              --generate-notes \
+              "${prerelease[@]}"
+          fi
+
+  docker-release-check:
+    needs: release
+    if: ${{ !contains(needs.release.outputs.version, '-') }}
+    uses: ./.github/workflows/fpbpack-release.yml
+    with:
+      tag: ${{ needs.release.outputs.tag }}
