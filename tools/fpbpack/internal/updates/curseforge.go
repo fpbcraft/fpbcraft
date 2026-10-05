@@ -1,0 +1,261 @@
+package updates
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"html"
+	"io"
+	"net/http"
+	"net/url"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+)
+
+const DefaultCurseForgeAPI = "https://api.curseforge.com/v1"
+
+type CurseForgeClient struct {
+	BaseURL    string
+	APIKey     string
+	HTTPClient *http.Client
+}
+
+type curseForgeMod struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Slug  string `json:"slug"`
+	Links struct {
+		WebsiteURL string `json:"websiteUrl"`
+	} `json:"links"`
+	Logo struct {
+		ThumbnailURL string `json:"thumbnailUrl"`
+	} `json:"logo"`
+}
+
+type curseForgeFile struct {
+	ID           int       `json:"id"`
+	ModID        int       `json:"modId"`
+	IsAvailable  bool      `json:"isAvailable"`
+	DisplayName  string    `json:"displayName"`
+	FileName     string    `json:"fileName"`
+	ReleaseType  int       `json:"releaseType"`
+	FileDate     time.Time `json:"fileDate"`
+	FileLength   int64     `json:"fileLength"`
+	DownloadURL  string    `json:"downloadUrl"`
+	GameVersions []string  `json:"gameVersions"`
+	Hashes       []struct {
+		Value string `json:"value"`
+		Algo  int    `json:"algo"`
+	} `json:"hashes"`
+	Dependencies []struct {
+		ModID        int `json:"modId"`
+		RelationType int `json:"relationType"`
+	} `json:"dependencies"`
+}
+
+type curseForgeModResponse struct {
+	Data curseForgeMod `json:"data"`
+}
+
+type curseForgeFileResponse struct {
+	Data curseForgeFile `json:"data"`
+}
+
+type curseForgeFilesResponse struct {
+	Data []curseForgeFile `json:"data"`
+	Pagination struct {
+		Index       int `json:"index"`
+		PageSize    int `json:"pageSize"`
+		ResultCount int `json:"resultCount"`
+		TotalCount  int `json:"totalCount"`
+	} `json:"pagination"`
+}
+
+type curseForgeStringResponse struct {
+	Data string `json:"data"`
+}
+
+func (client *CurseForgeClient) Validate(ctx context.Context) error {
+	var response struct {
+		Data struct {
+			ID int `json:"id"`
+		} `json:"data"`
+	}
+	if err := client.getJSON(ctx, "/games/432", &response); err != nil {
+		return err
+	}
+	if response.Data.ID != 432 {
+		return fmt.Errorf("CurseForge credential validation returned an unexpected Minecraft game id")
+	}
+	return nil
+}
+
+func (client *CurseForgeClient) GetMod(ctx context.Context, projectID string) (curseForgeMod, error) {
+	var response curseForgeModResponse
+	if err := client.getJSON(ctx, "/mods/"+url.PathEscape(projectID), &response); err != nil {
+		return curseForgeMod{}, err
+	}
+	return response.Data, nil
+}
+
+func (client *CurseForgeClient) GetFile(ctx context.Context, projectID string, fileID uint32) (curseForgeFile, error) {
+	var response curseForgeFileResponse
+	path := "/mods/" + url.PathEscape(projectID) + "/files/" + strconv.FormatUint(uint64(fileID), 10)
+	if err := client.getJSON(ctx, path, &response); err != nil {
+		return curseForgeFile{}, err
+	}
+	return response.Data, nil
+}
+
+func (client *CurseForgeClient) ListFiles(
+	ctx context.Context,
+	projectID string,
+	minecraft string,
+	loader string,
+) ([]curseForgeFile, error) {
+	const pageSize = 50
+	result := make([]curseForgeFile, 0, pageSize)
+	for index := 0; index < 10000; index += pageSize {
+		values := url.Values{}
+		values.Set("gameVersion", minecraft)
+		if loaderType := curseForgeLoaderType(loader); loaderType != 0 {
+			values.Set("modLoaderType", strconv.Itoa(loaderType))
+		}
+		values.Set("index", strconv.Itoa(index))
+		values.Set("pageSize", strconv.Itoa(pageSize))
+
+		var response curseForgeFilesResponse
+		path := "/mods/" + url.PathEscape(projectID) + "/files?" + values.Encode()
+		if err := client.getJSON(ctx, path, &response); err != nil {
+			return nil, err
+		}
+		result = append(result, response.Data...)
+
+		if response.Pagination.TotalCount > 0 {
+			if index+len(response.Data) >= response.Pagination.TotalCount {
+				break
+			}
+		} else if len(response.Data) < pageSize {
+			break
+		}
+		if len(response.Data) == 0 {
+			break
+		}
+	}
+	return result, nil
+}
+
+func (client *CurseForgeClient) DownloadURL(ctx context.Context, projectID string, file curseForgeFile) (string, error) {
+	if strings.TrimSpace(file.DownloadURL) != "" {
+		return file.DownloadURL, nil
+	}
+	var response curseForgeStringResponse
+	path := "/mods/" + url.PathEscape(projectID) + "/files/" + strconv.Itoa(file.ID) + "/download-url"
+	if err := client.getJSON(ctx, path, &response); err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(response.Data) == "" {
+		return "", fmt.Errorf("CurseForge did not provide a download URL for file %d", file.ID)
+	}
+	return response.Data, nil
+}
+
+func (client *CurseForgeClient) Changelog(ctx context.Context, projectID string, fileID int) (string, error) {
+	var response curseForgeStringResponse
+	path := "/mods/" + url.PathEscape(projectID) + "/files/" + strconv.Itoa(fileID) + "/changelog"
+	if err := client.getJSON(ctx, path, &response); err != nil {
+		return "", err
+	}
+	return plainTextChangelog(response.Data), nil
+}
+
+func (client *CurseForgeClient) getJSON(ctx context.Context, path string, target any) error {
+	if strings.TrimSpace(client.APIKey) == "" {
+		return fmt.Errorf("CurseForge API key is not configured")
+	}
+	base := strings.TrimRight(client.BaseURL, "/")
+	if base == "" {
+		base = DefaultCurseForgeAPI
+	}
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, base+path, nil)
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Accept", "application/json")
+	request.Header.Set("x-api-key", client.APIKey)
+	request.Header.Set("User-Agent", "fpbcraft/fpbpack")
+
+	httpClient := client.HTTPClient
+	if httpClient == nil {
+		httpClient = &http.Client{Timeout: 30 * time.Second}
+	}
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return fmt.Errorf("CurseForge request: %w", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		message, _ := io.ReadAll(io.LimitReader(response.Body, 4096))
+		return fmt.Errorf("CurseForge returned HTTP %d: %s", response.StatusCode, strings.TrimSpace(string(message)))
+	}
+	if err := json.NewDecoder(io.LimitReader(response.Body, 32<<20)).Decode(target); err != nil {
+		return fmt.Errorf("decode CurseForge response: %w", err)
+	}
+	return nil
+}
+
+func curseForgeLoaderType(loader string) int {
+	switch strings.ToLower(strings.TrimSpace(loader)) {
+	case "forge":
+		return 1
+	case "fabric":
+		return 4
+	case "quilt":
+		return 5
+	case "neoforge":
+		return 6
+	default:
+		return 0
+	}
+}
+
+func curseForgeReleaseType(value int) string {
+	switch value {
+	case 1:
+		return "release"
+	case 2:
+		return "beta"
+	case 3:
+		return "alpha"
+	default:
+		return "unknown"
+	}
+}
+
+func curseForgeSHA1(file curseForgeFile) string {
+	for _, hash := range file.Hashes {
+		if hash.Algo == 1 {
+			return strings.ToLower(strings.TrimSpace(hash.Value))
+		}
+	}
+	return ""
+}
+
+var htmlTag = regexp.MustCompile(`<[^>]+>`)
+
+func plainTextChangelog(value string) string {
+	value = strings.ReplaceAll(value, "<br>", "\n")
+	value = strings.ReplaceAll(value, "<br/>", "\n")
+	value = strings.ReplaceAll(value, "<br />", "\n")
+	value = strings.ReplaceAll(value, "</p>", "\n\n")
+	value = strings.ReplaceAll(value, "</li>", "\n")
+	value = htmlTag.ReplaceAllString(value, "")
+	value = html.UnescapeString(value)
+	lines := strings.Split(value, "\n")
+	for index := range lines {
+		lines[index] = strings.TrimSpace(lines[index])
+	}
+	return strings.TrimSpace(strings.Join(lines, "\n"))
+}

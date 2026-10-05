@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -17,7 +16,10 @@ import (
 	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
 
-const StateSchemaVersion = 1
+const (
+	StateSchemaVersion = 1
+	DefaultRetentionCount = 20
+)
 
 type Options struct {
 	ServerRoot      string
@@ -26,26 +28,51 @@ type Options struct {
 	ClientModsPath  string
 	Minecraft       string
 	Loader          string
-	ModrinthBaseURL string
-	BootstrapReport string
+	ModrinthBaseURL  string
+	CurseForgeBaseURL string
+	CurseForgeAPIKey string
+	GitHubBaseURL     string
+	GitHubToken       string
+	BootstrapReport  string
+}
+
+type RuntimeSettings struct {
+	RetentionCount int `json:"retention_count"`
+}
+
+type UpdateRule struct {
+	PinVersion      string     `json:"pin_version,omitempty"`
+	IgnoreMod       bool       `json:"ignore_mod,omitempty"`
+	IgnoredVersions []string   `json:"ignored_versions,omitempty"`
+	ReviewAfter     *time.Time `json:"review_after,omitempty"`
 }
 
 type State struct {
-	SchemaVersion int            `json:"schema_version"`
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     time.Time      `json:"updated_at"`
-	ImportedFrom  string         `json:"imported_from,omitempty"`
-	Catalog       catalog.Report `json:"catalog"`
+	SchemaVersion int             `json:"schema_version"`
+	CreatedAt     time.Time       `json:"created_at"`
+	UpdatedAt     time.Time       `json:"updated_at"`
+	ImportedFrom  string          `json:"imported_from,omitempty"`
+	Settings      RuntimeSettings       `json:"settings"`
+	UpdateRules   map[string]UpdateRule `json:"update_rules,omitempty"`
+	Catalog       catalog.Report        `json:"catalog"`
+}
+
+type RefreshStatus struct {
+	Refreshing  bool       `json:"refreshing"`
+	LastSuccess *time.Time `json:"last_success,omitempty"`
+	LastError   string     `json:"last_error,omitempty"`
 }
 
 type Service struct {
-	mu        sync.RWMutex
-	refreshMu sync.Mutex
-	options   Options
-	state     State
-	snapshot  management.Snapshot
-	updates   updatecheck.Report
-	hasUpdate bool
+	mu            sync.RWMutex
+	refreshMu     sync.Mutex
+	options       Options
+	state         State
+	snapshot      management.Snapshot
+	updates       updatecheck.Report
+	hasUpdate     bool
+	refreshStatus RefreshStatus
+	secrets       ProviderSecrets
 }
 
 func New(ctx context.Context, options Options) (*Service, error) {
@@ -64,10 +91,33 @@ func New(ctx context.Context, options Options) (*Service, error) {
 	if err := service.loadOrBootstrapState(ctx); err != nil {
 		return nil, err
 	}
-	if err := service.Refresh(ctx); err != nil {
-		return nil, fmt.Errorf("initial refresh: %w", err)
+	if err := service.loadProviderSecrets(); err != nil {
+		return nil, err
 	}
+	if service.state.Settings.RetentionCount == 0 {
+		service.state.Settings.RetentionCount = DefaultRetentionCount
+		service.state.UpdatedAt = time.Now().UTC()
+		if err := service.persistState(); err != nil {
+			return nil, fmt.Errorf("persist default settings: %w", err)
+		}
+	}
+	service.loadRuntimeCaches()
 	return service, nil
+}
+
+func (s *Service) loadRuntimeCaches() {
+	var inv inventory.Inventory
+	if err := readJSON(filepath.Join(s.options.StateDir, "inventory.json"), &inv); err == nil &&
+		inv.SchemaVersion == inventory.SchemaVersion {
+		s.snapshot = management.BuildSnapshot(inv, s.state.Catalog)
+	}
+
+	var report updatecheck.Report
+	if err := readJSON(filepath.Join(s.options.StateDir, "updates.json"), &report); err == nil {
+		s.applyUpdateRules(&report)
+		s.updates = report
+		s.hasUpdate = true
+	}
 }
 
 func normalizeOptions(options *Options) {
@@ -94,6 +144,32 @@ func (s *Service) Snapshot() (management.Snapshot, error) {
 	return s.snapshot, nil
 }
 
+func (s *Service) RefreshStatus() RefreshStatus {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.refreshStatus
+}
+
+func (s *Service) beginRefresh() {
+	s.mu.Lock()
+	s.refreshStatus.Refreshing = true
+	s.refreshStatus.LastError = ""
+	s.mu.Unlock()
+}
+
+func (s *Service) finishRefresh(err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.refreshStatus.Refreshing = false
+	if err != nil {
+		s.refreshStatus.LastError = err.Error()
+		return
+	}
+	now := time.Now().UTC()
+	s.refreshStatus.LastSuccess = &now
+	s.refreshStatus.LastError = ""
+}
+
 func (s *Service) Updates() (updatecheck.Report, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -103,9 +179,11 @@ func (s *Service) Updates() (updatecheck.Report, error) {
 	return s.updates, nil
 }
 
-func (s *Service) Refresh(ctx context.Context) error {
+func (s *Service) Refresh(ctx context.Context) (err error) {
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
+	s.beginRefresh()
+	defer func() { s.finishRefresh(err) }()
 
 	inv, err := s.scanInventory(ctx)
 	if err != nil {
@@ -122,10 +200,18 @@ func (s *Service) Refresh(ctx context.Context) error {
 		Minecraft:       s.options.Minecraft,
 		Loader:          s.options.Loader,
 		ModrinthBaseURL: s.options.ModrinthBaseURL,
+		CurseForgeBaseURL: s.options.CurseForgeBaseURL,
+		CurseForgeAPIKey: func() string {
+			key, _ := s.effectiveCurseForgeAPIKey()
+			return key
+		}(),
+		GitHubBaseURL: s.options.GitHubBaseURL,
+		GitHubToken: s.options.GitHubToken,
 	})
-	if err := updateCtx.Err(); err != nil && !errors.Is(err, context.Canceled) {
+	if err := updateCtx.Err(); err != nil {
 		return fmt.Errorf("update discovery: %w", err)
 	}
+	s.applyUpdateRules(&report)
 	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), report); err != nil {
 		return fmt.Errorf("write update cache: %w", err)
 	}
@@ -138,9 +224,11 @@ func (s *Service) Refresh(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) RefreshInventory(ctx context.Context) error {
+func (s *Service) RefreshInventory(ctx context.Context) (err error) {
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
+	s.beginRefresh()
+	defer func() { s.finishRefresh(err) }()
 
 	inv, err := s.scanInventory(ctx)
 	if err != nil {
@@ -156,9 +244,11 @@ func (s *Service) RefreshInventory(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) CheckUpdates(ctx context.Context) error {
+func (s *Service) CheckUpdates(ctx context.Context) (err error) {
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
+	s.beginRefresh()
+	defer func() { s.finishRefresh(err) }()
 
 	updateCtx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
@@ -166,10 +256,18 @@ func (s *Service) CheckUpdates(ctx context.Context) error {
 		Minecraft:       s.options.Minecraft,
 		Loader:          s.options.Loader,
 		ModrinthBaseURL: s.options.ModrinthBaseURL,
+		CurseForgeBaseURL: s.options.CurseForgeBaseURL,
+		CurseForgeAPIKey: func() string {
+			key, _ := s.effectiveCurseForgeAPIKey()
+			return key
+		}(),
+		GitHubBaseURL: s.options.GitHubBaseURL,
+		GitHubToken: s.options.GitHubToken,
 	})
-	if err := updateCtx.Err(); err != nil && !errors.Is(err, context.Canceled) {
+	if err := updateCtx.Err(); err != nil {
 		return fmt.Errorf("update discovery: %w", err)
 	}
+	s.applyUpdateRules(&report)
 	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), report); err != nil {
 		return fmt.Errorf("write update cache: %w", err)
 	}
@@ -226,6 +324,7 @@ func (s *Service) loadOrBootstrapState(ctx context.Context) error {
 			CreatedAt:     now,
 			UpdatedAt:     now,
 			ImportedFrom:  reportPath,
+			Settings:      RuntimeSettings{RetentionCount: DefaultRetentionCount},
 			Catalog:       report,
 		}
 		return s.persistState()
@@ -247,6 +346,7 @@ func (s *Service) loadOrBootstrapState(ctx context.Context) error {
 		SchemaVersion: StateSchemaVersion,
 		CreatedAt:     now,
 		UpdatedAt:     now,
+		Settings:      RuntimeSettings{RetentionCount: DefaultRetentionCount},
 		Catalog:       result.Report,
 	}
 	return s.persistState()

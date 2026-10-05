@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/doctor"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/planning"
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/service"
 	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
 
@@ -137,32 +140,328 @@ func TestWebHandlerIsServedWithoutShadowingAPI(t *testing.T) {
 	}
 }
 
-func TestRefreshEndpointsInvokeServiceCallbacks(t *testing.T) {
-	refreshCalls := 0
-	updateCalls := 0
+func TestRefreshEndpointsRunOnServerContext(t *testing.T) {
+	refreshCalled := make(chan struct{}, 1)
+	updateCalled := make(chan struct{}, 1)
+	serverCtx, cancelServer := context.WithCancel(context.Background())
+	defer cancelServer()
+
 	handler := NewHandlerWithOptions(
 		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
 		"dev",
 		ServerOptions{
-			Refresh: func(context.Context) error {
-				refreshCalls++
+			BackgroundContext: serverCtx,
+			Refresh: func(ctx context.Context) error {
+				if ctx.Err() != nil {
+					t.Fatalf("refresh received cancelled server context: %v", ctx.Err())
+				}
+				refreshCalled <- struct{}{}
 				return nil
 			},
-			CheckUpdates: func(context.Context) error {
-				updateCalls++
+			CheckUpdates: func(ctx context.Context) error {
+				if ctx.Err() != nil {
+					t.Fatalf("update refresh received cancelled server context: %v", ctx.Err())
+				}
+				updateCalled <- struct{}{}
 				return nil
 			},
 		},
 	)
 
-	for _, route := range []string{"/api/refresh", "/api/updates/check"} {
+	tests := []struct {
+		route string
+		called <-chan struct{}
+	}{
+		{route: "/api/refresh", called: refreshCalled},
+		{route: "/api/updates/check", called: updateCalled},
+	}
+	for _, test := range tests {
+		requestCtx, cancelRequest := context.WithCancel(context.Background())
+		cancelRequest()
 		recorder := httptest.NewRecorder()
-		handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodPost, route, nil))
+		handler.ServeHTTP(
+			recorder,
+			httptest.NewRequest(http.MethodPost, test.route, nil).WithContext(requestCtx),
+		)
+		if recorder.Code != http.StatusAccepted {
+			t.Fatalf("%s code = %d, want 202", test.route, recorder.Code)
+		}
+		select {
+		case <-test.called:
+		case <-time.After(time.Second):
+			t.Fatalf("%s background refresh did not run", test.route)
+		}
+	}
+}
+
+func TestRefreshEndpointsDeduplicateRunningJob(t *testing.T) {
+	started := make(chan struct{}, 1)
+	release := make(chan struct{})
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			Refresh: func(context.Context) error {
+				started <- struct{}{}
+				<-release
+				return nil
+			},
+		},
+	)
+
+	first := httptest.NewRecorder()
+	handler.ServeHTTP(first, httptest.NewRequest(http.MethodPost, "/api/refresh", nil))
+	if first.Code != http.StatusAccepted {
+		t.Fatalf("first refresh = %d", first.Code)
+	}
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("first refresh did not start")
+	}
+
+	second := httptest.NewRecorder()
+	handler.ServeHTTP(second, httptest.NewRequest(http.MethodPost, "/api/refresh", nil))
+	if second.Code != http.StatusAccepted {
+		t.Fatalf("second refresh = %d", second.Code)
+	}
+	if !strings.Contains(second.Body.String(), "already_refreshing") {
+		t.Fatalf("second response = %s", second.Body.String())
+	}
+	close(release)
+}
+
+func TestPlanEndpointsCreateAndReadPlans(t *testing.T) {
+	created := planning.Plan{ID: "plan-0123456789abcdef", Status: planning.StatusReady}
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			CreatePlan: func(_ context.Context, keys []string) (planning.Plan, error) {
+				if len(keys) != 1 || keys[0] != "modrinth:create" {
+					t.Fatalf("unexpected candidate keys: %+v", keys)
+				}
+				return created, nil
+			},
+			Plan: func(id string) (planning.Plan, error) {
+				if id != created.ID {
+					return planning.Plan{}, planning.ErrNotFound
+				}
+				return created, nil
+			},
+			Plans: func() ([]planning.Summary, error) {
+				return []planning.Summary{created.Summary()}, nil
+			},
+			History: func() ([]planning.HistoryEvent, error) {
+				return []planning.HistoryEvent{created.HistoryEvent()}, nil
+			},
+		},
+	)
+
+	createRecorder := httptest.NewRecorder()
+	handler.ServeHTTP(
+		createRecorder,
+		httptest.NewRequest(http.MethodPost, "/api/plans", strings.NewReader(`{"candidate_keys":["modrinth:create"]}`)),
+	)
+	if createRecorder.Code != http.StatusCreated {
+		t.Fatalf("create code = %d, want 201: %s", createRecorder.Code, createRecorder.Body.String())
+	}
+
+	for _, route := range []string{"/api/plans", "/api/plans/" + created.ID, "/api/history"} {
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, route, nil))
 		if recorder.Code != http.StatusOK {
 			t.Fatalf("%s code = %d, want 200", route, recorder.Code)
 		}
 	}
-	if refreshCalls != 1 || updateCalls != 1 {
-		t.Fatalf("refresh calls = %d, update calls = %d", refreshCalls, updateCalls)
+}
+
+func TestRetentionSettingsEndpointsReadAndUpdate(t *testing.T) {
+	current := service.RuntimeSettings{RetentionCount: 20}
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			Retention: func() service.RuntimeSettings { return current },
+			UpdateRetention: func(value service.RuntimeSettings) (service.RuntimeSettings, error) {
+				current = value
+				return current, nil
+			},
+		},
+	)
+
+	get := httptest.NewRecorder()
+	handler.ServeHTTP(get, httptest.NewRequest(http.MethodGet, "/api/settings", nil))
+	if get.Code != http.StatusOK {
+		t.Fatalf("GET settings = %d", get.Code)
+	}
+
+	put := httptest.NewRecorder()
+	handler.ServeHTTP(put, httptest.NewRequest(http.MethodPut, "/api/settings", strings.NewReader(`{"retention_count":12}`)))
+	if put.Code != http.StatusOK {
+		t.Fatalf("PUT settings = %d: %s", put.Code, put.Body.String())
+	}
+	if current.RetentionCount != 12 {
+		t.Fatalf("retention = %d, want 12", current.RetentionCount)
+	}
+}
+
+func TestUpdateRuleEndpoints(t *testing.T) {
+	rules := map[string]service.UpdateRule{}
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			Rules: func() map[string]service.UpdateRule { return rules },
+			SetRule: func(key string, rule service.UpdateRule) (service.UpdateRule, error) {
+				rules[key] = rule
+				return rule, nil
+			},
+			ClearRule: func(key string) error {
+				delete(rules, key)
+				return nil
+			},
+		},
+	)
+
+	put := httptest.NewRecorder()
+	handler.ServeHTTP(
+		put,
+		httptest.NewRequest(
+			http.MethodPut,
+			"/api/update-rules",
+			strings.NewReader(`{"key":"modrinth:test","rule":{"ignore_mod":true}}`),
+		),
+	)
+	if put.Code != http.StatusOK {
+		t.Fatalf("PUT rule = %d: %s", put.Code, put.Body.String())
+	}
+	if !rules["modrinth:test"].IgnoreMod {
+		t.Fatal("rule was not stored")
+	}
+
+	get := httptest.NewRecorder()
+	handler.ServeHTTP(get, httptest.NewRequest(http.MethodGet, "/api/update-rules", nil))
+	if get.Code != http.StatusOK {
+		t.Fatalf("GET rules = %d", get.Code)
+	}
+
+	del := httptest.NewRecorder()
+	handler.ServeHTTP(
+		del,
+		httptest.NewRequest(http.MethodDelete, "/api/update-rules?key=modrinth%3Atest", nil),
+	)
+	if del.Code != http.StatusOK {
+		t.Fatalf("DELETE rule = %d: %s", del.Code, del.Body.String())
+	}
+	if _, ok := rules["modrinth:test"]; ok {
+		t.Fatal("rule was not cleared")
+	}
+}
+
+func TestStatusIncludesRefreshStatus(t *testing.T) {
+	now := time.Date(2026, 10, 5, 14, 0, 0, 0, time.UTC)
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			RefreshStatus: func() service.RefreshStatus {
+				return service.RefreshStatus{Refreshing: true, LastSuccess: &now}
+			},
+		},
+	)
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/status", nil))
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d", recorder.Code)
+	}
+	var payload struct {
+		Refresh service.RefreshStatus `json:"refresh"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatal(err)
+	}
+	if !payload.Refresh.Refreshing || payload.Refresh.LastSuccess == nil {
+		t.Fatalf("unexpected refresh payload: %+v", payload.Refresh)
+	}
+}
+
+func TestProvidersEndpoint(t *testing.T) {
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			Providers: func() []service.ProviderStatus {
+				return []service.ProviderStatus{{ID: "modrinth", Label: "Modrinth", Status: "ready"}}
+			},
+		},
+	)
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/api/providers", nil))
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("providers = %d: %s", recorder.Code, recorder.Body.String())
+	}
+}
+
+func TestProviderCredentialEndpointsNeverReturnSecret(t *testing.T) {
+	status := service.ProviderStatus{
+		ID: "curseforge",
+		Label: "CurseForge",
+		Status: "ready",
+		CredentialConfigurable: true,
+		CredentialSource: "saved",
+	}
+	var received string
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			SetProviderCredential: func(_ context.Context, provider, key string) (service.ProviderStatus, error) {
+				if provider != "curseforge" {
+					t.Fatalf("provider = %q", provider)
+				}
+				received = key
+				return status, nil
+			},
+			ClearProviderCredential: func(provider string) (service.ProviderStatus, error) {
+				if provider != "curseforge" {
+					t.Fatalf("provider = %q", provider)
+				}
+				return service.ProviderStatus{
+					ID: "curseforge",
+					Label: "CurseForge",
+					Status: "needs_configuration",
+					CredentialConfigurable: true,
+				}, nil
+			},
+		},
+	)
+
+	put := httptest.NewRecorder()
+	handler.ServeHTTP(
+		put,
+		httptest.NewRequest(
+			http.MethodPut,
+			"/api/providers/curseforge/credentials",
+			strings.NewReader(`{"api_key":"super-secret"}`),
+		),
+	)
+	if put.Code != http.StatusOK {
+		t.Fatalf("PUT credential = %d: %s", put.Code, put.Body.String())
+	}
+	if received != "super-secret" {
+		t.Fatalf("received key = %q", received)
+	}
+	if strings.Contains(put.Body.String(), "super-secret") {
+		t.Fatal("provider credential leaked in API response")
+	}
+
+	del := httptest.NewRecorder()
+	handler.ServeHTTP(
+		del,
+		httptest.NewRequest(http.MethodDelete, "/api/providers/curseforge/credentials", nil),
+	)
+	if del.Code != http.StatusOK {
+		t.Fatalf("DELETE credential = %d: %s", del.Code, del.Body.String())
 	}
 }

@@ -112,6 +112,8 @@ func runServe(args []string) int {
 		Minecraft:       *minecraft,
 		Loader:          *loader,
 		ModrinthBaseURL: *modrinthAPI,
+		CurseForgeAPIKey: strings.TrimSpace(os.Getenv("FPBPACK_CURSEFORGE_API_KEY")),
+		GitHubToken: strings.TrimSpace(os.Getenv("FPBPACK_GITHUB_TOKEN")),
 		BootstrapReport: *bootstrapReport,
 	})
 	if err != nil {
@@ -130,6 +132,20 @@ func runServe(args []string) int {
 			Updates:      app.Updates,
 			Refresh:      app.Refresh,
 			CheckUpdates: app.CheckUpdates,
+			CreatePlan:   app.CreatePlan,
+			Plans:        app.Plans,
+			Plan:         app.Plan,
+			History:      app.History,
+			Retention:    app.Settings,
+			UpdateRetention: app.UpdateSettings,
+			Rules:        app.Rules,
+			SetRule:      app.SetRule,
+			ClearRule:    app.ClearRule,
+			RefreshStatus: app.RefreshStatus,
+			Providers:     app.ProviderStatuses,
+			SetProviderCredential: app.SetProviderCredential,
+			ClearProviderCredential: app.ClearProviderCredential,
+			BackgroundContext: ctx,
 			Web:          webHandler,
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
@@ -138,6 +154,12 @@ func runServe(args []string) int {
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- server.ListenAndServe()
+	}()
+
+	go func() {
+		if err := app.Refresh(ctx); err != nil && ctx.Err() == nil {
+			fmt.Fprintf(os.Stderr, "initial background refresh failed: %v\n", err)
+		}
 	}()
 
 	if *refreshInterval > 0 {
@@ -158,6 +180,7 @@ func runServe(args []string) int {
 	}
 
 	fmt.Printf("FPBPack listening on http://%s (GUI + read-only API)\n", *listen)
+	fmt.Println("Initial inventory/update refresh is running in the background.")
 	fmt.Printf("Server root: %s\n", *serverRoot)
 	fmt.Printf("State dir:   %s\n", *stateDir)
 

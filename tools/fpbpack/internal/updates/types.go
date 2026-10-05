@@ -29,17 +29,32 @@ type Release struct {
 	Channel     string    `json:"channel,omitempty"`
 	Filename    string    `json:"filename,omitempty"`
 	URL         string    `json:"url,omitempty"`
+	SHA1        string    `json:"sha1,omitempty"`
+	SHA256      string    `json:"sha256,omitempty"`
 	SHA512      string    `json:"sha512,omitempty"`
 }
 
 type Dependency struct {
-	Provider         string `json:"provider"`
-	ProjectID        string `json:"project_id,omitempty"`
-	VersionID        string `json:"version_id,omitempty"`
-	Type             string `json:"type"`
-	Action           string `json:"action"`
-	InstalledVersion string `json:"installed_version,omitempty"`
-	TargetVersion    string `json:"target_version,omitempty"`
+	Provider         string             `json:"provider"`
+	ProjectID        string             `json:"project_id,omitempty"`
+	VersionID        string             `json:"version_id,omitempty"`
+	Name             string             `json:"name,omitempty"`
+	Type             string             `json:"type"`
+	Action           string             `json:"action"`
+	InstalledVersion string             `json:"installed_version,omitempty"`
+	TargetVersion    string             `json:"target_version,omitempty"`
+	Deployment       inventory.Location `json:"deployment,omitempty"`
+	Target           *Release           `json:"target,omitempty"`
+	Dependencies     []Dependency       `json:"dependencies,omitempty"`
+}
+
+type ChangelogEntry struct {
+	ID          string    `json:"id"`
+	Number      string    `json:"number"`
+	Name        string    `json:"name,omitempty"`
+	PublishedAt time.Time `json:"published_at,omitempty"`
+	Channel     string    `json:"channel,omitempty"`
+	Body        string    `json:"body,omitempty"`
 }
 
 type RejectedVersion struct {
@@ -59,9 +74,12 @@ type Candidate struct {
 	Deployment     inventory.Location `json:"deployment"`
 	Installed      Release            `json:"installed"`
 	Target         *Release           `json:"target,omitempty"`
-	Classification Classification     `json:"classification"`
+	Classification     Classification     `json:"classification"`
+	BaseClassification Classification     `json:"base_classification,omitempty"`
 	Reasons        []Reason           `json:"reasons,omitempty"`
 	Dependencies   []Dependency       `json:"dependencies,omitempty"`
+	Changelogs     []ChangelogEntry   `json:"changelogs,omitempty"`
+	RequiredBy     []string           `json:"required_by,omitempty"`
 	Rejected       []RejectedVersion  `json:"rejected,omitempty"`
 }
 

@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/catalog"
@@ -14,10 +15,14 @@ import (
 )
 
 type Options struct {
-	Minecraft       string
-	Loader          string
-	ModrinthBaseURL string
-	HTTPClient      *http.Client
+	Minecraft        string
+	Loader           string
+	ModrinthBaseURL  string
+	CurseForgeBaseURL string
+	CurseForgeAPIKey string
+	GitHubBaseURL     string
+	GitHubToken       string
+	HTTPClient       *http.Client
 }
 
 func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
@@ -35,11 +40,15 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 	}
 
 	installedModrinth := map[string]catalog.Entry{}
+	installedCurseForge := map[string]catalog.Entry{}
 	projectIDs := make([]string, 0)
 	for _, entry := range cat.Managed {
-		if entry.Provider == "modrinth" {
+		switch entry.Provider {
+		case "modrinth":
 			installedModrinth[entry.ProjectID] = entry
 			projectIDs = append(projectIDs, entry.ProjectID)
+		case "curseforge":
+			installedCurseForge[entry.ProjectID] = entry
 		}
 	}
 
@@ -48,46 +57,90 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 		client.HTTPClient = opts.HTTPClient
 	}
 	projects, projectErr := client.ListProjects(ctx, projectIDs)
+	curseForgeClient := &CurseForgeClient{
+		BaseURL: opts.CurseForgeBaseURL,
+		APIKey: opts.CurseForgeAPIKey,
+		HTTPClient: opts.HTTPClient,
+	}
+	gitHubClient := &GitHubClient{
+		BaseURL: opts.GitHubBaseURL,
+		Token: opts.GitHubToken,
+		HTTPClient: opts.HTTPClient,
+	}
 
-	for _, entry := range cat.Managed {
-		switch entry.Provider {
-		case "modrinth":
-			candidate := discoverModrinthCandidate(ctx, client, entry, projects[entry.ProjectID], installedModrinth, opts)
-			if projectErr != nil {
-				candidate.Reasons = append(candidate.Reasons, Reason{
-					Code: "project_metadata_unavailable",
-					Message: "Project metadata could not be refreshed; installed identity was retained.",
-				})
+	candidates := make([]Candidate, len(cat.Managed))
+	const providerConcurrency = 6
+	semaphore := make(chan struct{}, providerConcurrency)
+	var wait sync.WaitGroup
+
+	for index, entry := range cat.Managed {
+		index, entry := index, entry
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			select {
+			case semaphore <- struct{}{}:
+				defer func() { <-semaphore }()
+			case <-ctx.Done():
+				candidates[index] = blockedProviderCandidate(
+					entry,
+					"provider_discovery_cancelled",
+					"Update discovery was cancelled before this provider could be checked.",
+				)
+				return
 			}
-			report.Candidates = append(report.Candidates, candidate)
-		case "curseforge", "github":
-			report.Candidates = append(report.Candidates, Candidate{
-				Key:            entry.Provider + ":" + entry.ProjectID,
-				Provider:       entry.Provider,
-				ProjectID:      entry.ProjectID,
-				Name:           entry.Name,
-				Side:           entry.Side,
-				Deployment:     entry.Deployment,
-				Installed:      installedRelease(entry),
-				Classification: ClassificationBlocked,
-				Reasons: []Reason{{
-					Code: "provider_discovery_pending",
-					Message: "Update discovery for this provider is not implemented yet.",
-				}},
-			})
-		default:
-			report.Candidates = append(report.Candidates, Candidate{
-				Key:            entry.Provider + ":" + entry.ProjectID,
-				Provider:       entry.Provider,
-				ProjectID:      entry.ProjectID,
-				Name:           entry.Name,
-				Side:           entry.Side,
-				Deployment:     entry.Deployment,
-				Installed:      installedRelease(entry),
-				Classification: ClassificationBlocked,
-				Reasons: []Reason{{Code: "unsupported_provider", Message: "No update provider is registered for this managed artifact."}},
-			})
-		}
+
+			switch entry.Provider {
+			case "modrinth":
+				candidate := discoverModrinthCandidate(ctx, client, entry, projects[entry.ProjectID], installedModrinth, opts)
+				if projectErr != nil {
+					candidate.Reasons = append(candidate.Reasons, Reason{
+						Code: "project_metadata_unavailable",
+						Message: "Project metadata could not be refreshed; installed identity was retained.",
+					})
+				}
+				candidates[index] = candidate
+			case "curseforge":
+				if strings.TrimSpace(opts.CurseForgeAPIKey) == "" {
+					candidates[index] = blockedProviderCandidate(
+						entry,
+						"curseforge_api_key_missing",
+						"CurseForge update discovery requires FPBPACK_CURSEFORGE_API_KEY.",
+					)
+				} else {
+					candidates[index] = discoverCurseForgeCandidate(
+						ctx,
+						curseForgeClient,
+						entry,
+						installedCurseForge,
+						opts,
+					)
+				}
+			case "github":
+				if strings.TrimSpace(entry.Repository) == "" && strings.TrimSpace(entry.ProjectID) == "" {
+					candidates[index] = blockedProviderCandidate(
+						entry,
+						"github_source_incomplete",
+						"GitHub release discovery requires a verified repository source.",
+					)
+				} else {
+					candidates[index] = discoverGitHubCandidate(ctx, gitHubClient, entry)
+				}
+			default:
+				candidates[index] = blockedProviderCandidate(
+					entry,
+					"unsupported_provider",
+					"No update provider is registered for this managed artifact.",
+				)
+			}
+		}()
+	}
+	wait.Wait()
+	report.Candidates = append(report.Candidates, candidates...)
+
+	populateReverseDependencies(report.Candidates)
+	for index := range report.Candidates {
+		report.Candidates[index].BaseClassification = report.Candidates[index].Classification
 	}
 
 	sort.Slice(report.Candidates, func(i, j int) bool {
@@ -98,6 +151,74 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 	})
 	report.RecalculateSummary()
 	return report
+}
+
+func populateReverseDependencies(candidates []Candidate) {
+	byKey := make(map[string]int, len(candidates))
+	for index, candidate := range candidates {
+		byKey[candidate.Provider+":"+candidate.ProjectID] = index
+	}
+	for _, candidate := range candidates {
+		appendRequiredBy(candidates, byKey, candidate.Name, candidate.Dependencies)
+	}
+	for index := range candidates {
+		candidates[index].RequiredBy = normalizeNames(candidates[index].RequiredBy)
+	}
+}
+
+func appendRequiredBy(candidates []Candidate, byKey map[string]int, owner string, dependencies []Dependency) {
+	for _, dependency := range dependencies {
+		if dependency.Type != "required" {
+			continue
+		}
+		if index, ok := byKey[dependency.Provider+":"+dependency.ProjectID]; ok && owner != "" {
+			candidates[index].RequiredBy = append(candidates[index].RequiredBy, owner)
+		}
+		nextOwner := dependency.Name
+		if nextOwner == "" {
+			nextOwner = dependency.ProjectID
+		}
+		appendRequiredBy(candidates, byKey, nextOwner, dependency.Dependencies)
+	}
+}
+
+func normalizeNames(values []string) []string {
+	seen := map[string]struct{}{}
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	sort.Strings(result)
+	return result
+}
+
+func blockedProviderCandidate(entry catalog.Entry, code, message string) Candidate {
+	candidate := Candidate{
+		Key:            entry.Provider + ":" + entry.ProjectID,
+		Provider:       entry.Provider,
+		ProjectID:      entry.ProjectID,
+		Name:           entry.Name,
+		Side:           entry.Side,
+		Deployment:     entry.Deployment,
+		Installed:      installedRelease(entry),
+		Classification: ClassificationBlocked,
+		Reasons:        []Reason{{Code: code, Message: message}},
+	}
+	switch entry.Provider {
+	case "github":
+		if entry.Repository != "" {
+			candidate.ProjectURL = "https://github.com/" + entry.Repository
+		}
+	}
+	return candidate
 }
 
 func discoverModrinthCandidate(
@@ -177,6 +298,7 @@ func discoverModrinthCandidate(
 	target := valid[0]
 	release := releaseFromModrinth(target)
 	candidate.Target = &release
+	candidate.Changelogs = changelogEntries(valid)
 	candidate.Classification = ClassificationSafe
 
 	if target.VersionType != "" && target.VersionType != "release" {
@@ -200,10 +322,41 @@ func discoverModrinthCandidate(
 		})
 	}
 
+	resolver := dependencyResolver{
+		ctx:       ctx,
+		client:    client,
+		installed: installed,
+		opts:      opts,
+	}
 	for _, dependency := range target.Dependencies {
-		candidate.Dependencies = append(candidate.Dependencies, classifyDependency(dependency, installed, &candidate))
+		candidate.Dependencies = append(
+			candidate.Dependencies,
+			resolver.resolve(dependency, entry.Deployment, &candidate, map[string]bool{}),
+		)
 	}
 	return candidate
+}
+
+func changelogEntries(versions []modrinthVersion) []ChangelogEntry {
+	if len(versions) == 0 {
+		return nil
+	}
+	ordered := append([]modrinthVersion(nil), versions...)
+	sort.Slice(ordered, func(i, j int) bool {
+		return ordered[i].DatePublished.Before(ordered[j].DatePublished)
+	})
+	result := make([]ChangelogEntry, 0, len(ordered))
+	for _, version := range ordered {
+		result = append(result, ChangelogEntry{
+			ID:          version.ID,
+			Number:      version.VersionNumber,
+			Name:        version.Name,
+			PublishedAt: version.DatePublished,
+			Channel:     version.VersionType,
+			Body:        strings.TrimSpace(version.Changelog),
+		})
+	}
+	return result
 }
 
 func rejectionReasons(version modrinthVersion, minecraft, loader string) []Reason {
@@ -220,7 +373,19 @@ func rejectionReasons(version modrinthVersion, minecraft, loader string) []Reaso
 	return reasons
 }
 
-func classifyDependency(dep modrinthDependency, installed map[string]catalog.Entry, candidate *Candidate) Dependency {
+type dependencyResolver struct {
+	ctx       context.Context
+	client    *ModrinthClient
+	installed map[string]catalog.Entry
+	opts      Options
+}
+
+func (r dependencyResolver) resolve(
+	dep modrinthDependency,
+	parentDeployment inventory.Location,
+	candidate *Candidate,
+	visiting map[string]bool,
+) Dependency {
 	result := Dependency{
 		Provider:  "modrinth",
 		ProjectID: dep.ProjectID,
@@ -228,7 +393,24 @@ func classifyDependency(dep modrinthDependency, installed map[string]catalog.Ent
 		Type:      dep.DependencyType,
 		Action:    "none",
 	}
-	if dep.ProjectID == "" {
+
+	var exact *modrinthVersion
+	if result.ProjectID == "" && dep.VersionID != "" {
+		version, err := r.client.GetVersion(r.ctx, dep.VersionID)
+		if err != nil {
+			if dep.DependencyType == "required" {
+				result.Action = "unresolved"
+				promote(candidate, ClassificationBlocked, Reason{
+					Code: "required_dependency_lookup_failed",
+					Message: "A required dependency version could not be resolved: " + err.Error(),
+				})
+			}
+			return result
+		}
+		exact = &version
+		result.ProjectID = version.ProjectID
+	}
+	if result.ProjectID == "" {
 		if dep.DependencyType == "required" {
 			result.Action = "unresolved"
 			promote(candidate, ClassificationBlocked, Reason{
@@ -239,30 +421,94 @@ func classifyDependency(dep modrinthDependency, installed map[string]catalog.Ent
 		return result
 	}
 
-	installedEntry, exists := installed[dep.ProjectID]
+	installedEntry, exists := r.installed[result.ProjectID]
 	if exists {
 		result.InstalledVersion = installedEntry.VersionID
+		result.Name = installedEntry.Name
+		result.Deployment = installedEntry.Deployment
+	}
+	if result.Name == "" {
+		result.Name = result.ProjectID
 	}
 
 	switch dep.DependencyType {
 	case "required":
-		if !exists {
+		if dep.VersionID == "" && exists {
+			result.Action = "satisfied"
+			return result
+		}
+
+		target, err := r.resolveTarget(dep, result.ProjectID, exact)
+		if err != nil {
+			result.Action = "unresolved"
+			promote(candidate, ClassificationBlocked, Reason{
+				Code: "required_dependency_unresolved",
+				Message: err.Error(),
+			})
+			return result
+		}
+		if target.ProjectID != result.ProjectID {
+			result.Action = "unresolved"
+			promote(candidate, ClassificationBlocked, Reason{
+				Code: "required_dependency_project_mismatch",
+				Message: "A required dependency version belongs to a different Modrinth project.",
+			})
+			return result
+		}
+		if rejected := rejectionReasons(target, r.opts.Minecraft, r.opts.Loader); len(rejected) > 0 {
+			result.Action = "unresolved"
+			promote(candidate, ClassificationBlocked, Reason{
+				Code: "required_dependency_incompatible",
+				Message: "A required dependency target is not compatible with the configured Minecraft version and loader.",
+			})
+			return result
+		}
+
+		release := releaseFromModrinth(target)
+		result.Target = &release
+		result.TargetVersion = target.ID
+		if result.Deployment == "" {
+			result.Deployment = dependencyDeployment(target.Environment, parentDeployment)
+		}
+
+		if exists && installedEntry.VersionID == target.ID {
+			result.Action = "satisfied"
+			return result
+		}
+		if exists {
+			result.Action = "update"
+			promote(candidate, ClassificationReview, Reason{
+				Code: "required_dependency_update",
+				Message: "The target release requires an update to an installed dependency.",
+			})
+		} else {
 			result.Action = "add"
-			result.TargetVersion = dep.VersionID
 			promote(candidate, ClassificationReview, Reason{
 				Code: "required_dependency_addition",
 				Message: "The target release requires an additional Modrinth project.",
 			})
-		} else if dep.VersionID != "" && installedEntry.VersionID != dep.VersionID {
-			result.Action = "update"
-			result.TargetVersion = dep.VersionID
-			promote(candidate, ClassificationReview, Reason{
-				Code: "required_dependency_update",
-				Message: "The target release requires a different version of an installed dependency.",
-			})
-		} else {
-			result.Action = "satisfied"
 		}
+
+		if target.VersionType != "" && target.VersionType != "release" {
+			promote(candidate, ClassificationReview, Reason{
+				Code: "required_dependency_prerelease",
+				Message: "A required dependency resolves to a " + target.VersionType + " release.",
+			})
+		}
+
+		visitKey := result.ProjectID + ":" + target.ID
+		if visiting[visitKey] {
+			return result
+		}
+		visiting[visitKey] = true
+		for _, nested := range target.Dependencies {
+			result.Dependencies = append(
+				result.Dependencies,
+				r.resolve(nested, result.Deployment, candidate, visiting),
+			)
+		}
+		delete(visiting, visitKey)
+
 	case "incompatible":
 		if exists {
 			result.Action = "conflict"
@@ -277,6 +523,62 @@ func classifyDependency(dep modrinthDependency, installed map[string]catalog.Ent
 		result.Action = "embedded"
 	}
 	return result
+}
+
+func (r dependencyResolver) resolveTarget(
+	dep modrinthDependency,
+	projectID string,
+	exact *modrinthVersion,
+) (modrinthVersion, error) {
+	if exact != nil {
+		return *exact, nil
+	}
+	if dep.VersionID != "" {
+		version, err := r.client.GetVersion(r.ctx, dep.VersionID)
+		if err != nil {
+			return modrinthVersion{}, fmt.Errorf("required dependency %s version %s could not be loaded: %w", projectID, dep.VersionID, err)
+		}
+		return version, nil
+	}
+
+	versions, err := r.client.ListVersions(r.ctx, projectID)
+	if err != nil {
+		return modrinthVersion{}, fmt.Errorf("required dependency %s versions could not be loaded: %w", projectID, err)
+	}
+	compatible := make([]modrinthVersion, 0, len(versions))
+	for _, version := range versions {
+		if len(rejectionReasons(version, r.opts.Minecraft, r.opts.Loader)) == 0 {
+			compatible = append(compatible, version)
+		}
+	}
+	if len(compatible) == 0 {
+		return modrinthVersion{}, fmt.Errorf(
+			"required dependency %s has no listed version compatible with Minecraft %s and %s",
+			projectID,
+			r.opts.Minecraft,
+			r.opts.Loader,
+		)
+	}
+	sort.Slice(compatible, func(i, j int) bool {
+		return compatible[i].DatePublished.After(compatible[j].DatePublished)
+	})
+	for _, version := range compatible {
+		if version.VersionType == "" || version.VersionType == "release" {
+			return version, nil
+		}
+	}
+	return compatible[0], nil
+}
+
+func dependencyDeployment(environment string, fallback inventory.Location) inventory.Location {
+	switch environment {
+	case "client_only", "singleplayer_only":
+		return inventory.LocationClient
+	case "server_only", "dedicated_server_only":
+		return inventory.LocationServer
+	default:
+		return fallback
+	}
 }
 
 func releaseFromModrinth(version modrinthVersion) Release {
@@ -301,7 +603,18 @@ func releaseFromModrinth(version modrinthVersion) Release {
 }
 
 func installedRelease(entry catalog.Entry) Release {
-	return Release{ID: entry.VersionID, Name: entry.Name, Filename: entry.Filename, URL: entry.URL, SHA512: entry.SHA512}
+	id := entry.VersionID
+	if entry.Provider == "curseforge" && entry.FileID != 0 {
+		id = strconv.FormatUint(uint64(entry.FileID), 10)
+	}
+	return Release{
+		ID: id,
+		Name: entry.Name,
+		Filename: entry.Filename,
+		URL: entry.URL,
+		SHA1: entry.SHA1,
+		SHA512: entry.SHA512,
+	}
 }
 
 func strictEnvironmentMismatch(deployment inventory.Location, environment string) bool {

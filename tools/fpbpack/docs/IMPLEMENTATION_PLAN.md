@@ -1,6 +1,6 @@
 # FPBPack — Implementation Plan
 
-Status: **in progress — Slice 1**
+Status: **in progress — Slice 2 (Plan & Protect)**
 
 Progress log: [IMPLEMENTATION_PROGRESS.md](./IMPLEMENTATION_PROGRESS.md)
 
@@ -276,6 +276,33 @@ This should already be useful enough to replace manual browsing of Modrinth/Curs
 
 # Slice 2 — Plan & Protect
 
+## Implementation status
+
+PR #10 deliberately completes the unfinished decision/review work from Slice 1 **inside Slice 2** rather than carrying it forward.
+
+Implemented/current scope includes:
+
+- fast serve-first startup from durable caches with background inventory/provider refresh;
+- bounded-concurrency provider discovery;
+- Modrinth update/dependency/changelog discovery;
+- CurseForge update/changelog/dependency discovery through the official API when configured;
+- verified GitHub release discovery for explicitly mapped GitHub sources;
+- project links/icons and full/intermediate changelogs;
+- reverse-dependency visibility;
+- durable pin-current / ignore-version / ignore-mod / review-later rules;
+- compact Updates decision UI and responsive Mods detail surface;
+- persisted deterministic plans;
+- recursive exact dependency closure where provider metadata supports it;
+- exact add/replace operations;
+- target artifact prefetch + provider-checksum verification normalized to SHA-512;
+- verified restore points for affected current JARs;
+- structured plan history;
+- configurable fixed retention;
+- Updates → Review → History GUI flow;
+- Tailwind 4 + daisyUI 5 visual-system refresh.
+
+Apply remains deliberately unavailable.
+
 ## Goal
 
 Make a selected update batch deterministic, reviewable, persistent, and safe before allowing actual application.
@@ -431,6 +458,12 @@ Avoid turning Settings into a dump of implementation metadata.
 
 Slice 2 is complete when:
 
+- the app starts promptly from cached state and refreshes provider data without blocking HTTP startup;
+- Modrinth/CurseForge/verified-GitHub sources expose useful project/update metadata where safely available;
+- changelogs and provider links can be reviewed in-app;
+- persistent pin/ignore/review-later rules work;
+- dependency and reverse-dependency relationships are visible;
+- the Mods detail surface has desktop/mobile parity for decision-making;
 - a set of updates can be selected;
 - dependency changes are automatically included;
 - a complete deterministic plan is produced;

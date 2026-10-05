@@ -32,6 +32,10 @@ func TestDiscoverClassifiesCompatibleUpdateAndDependencyChange(t *testing.T) {
 			_ = json.NewEncoder(w).Encode([]map[string]any{
 				versionJSON("dep-old", "p2", "1.0.0", "release", "2026-01-01T00:00:00Z", []string{"1.21.1"}, []string{"neoforge"}, nil),
 			})
+		case r.URL.Path == "/version/dep-new":
+			_ = json.NewEncoder(w).Encode(
+				versionJSON("dep-new", "p2", "1.1.0", "release", "2026-02-01T00:00:00Z", []string{"1.21.1"}, []string{"neoforge"}, nil),
+			)
 		default:
 			http.NotFound(w, r)
 		}
@@ -64,8 +68,63 @@ func TestDiscoverClassifiesCompatibleUpdateAndDependencyChange(t *testing.T) {
 	if len(candidate.Dependencies) != 1 || candidate.Dependencies[0].Action != "update" {
 		t.Fatalf("unexpected dependency classification: %+v", candidate.Dependencies)
 	}
+	if candidate.Dependencies[0].Target == nil || candidate.Dependencies[0].Target.ID != "dep-new" {
+		t.Fatalf("dependency target was not resolved: %+v", candidate.Dependencies[0])
+	}
 	if len(candidate.Rejected) != 1 || candidate.Rejected[0].ID != "v3" {
 		t.Fatalf("expected incompatible newer version to be preserved: %+v", candidate.Rejected)
+	}
+}
+
+func TestDiscoverResolvesProjectOnlyRequiredDependencyRecursively(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.URL.Path == "/projects":
+			_ = json.NewEncoder(w).Encode([]map[string]any{{"id": "p1", "title": "Example"}})
+		case r.URL.Path == "/project/p1/version":
+			_ = json.NewEncoder(w).Encode([]map[string]any{
+				versionJSON("v2", "p1", "1.1.0", "release", "2026-02-01T00:00:00Z", []string{"1.21.1"}, []string{"neoforge"}, []map[string]any{
+					{"project_id": "p2", "dependency_type": "required"},
+				}),
+				versionJSON("v1", "p1", "1.0.0", "release", "2026-01-01T00:00:00Z", []string{"1.21.1"}, []string{"neoforge"}, nil),
+			})
+		case r.URL.Path == "/project/p2/version":
+			_ = json.NewEncoder(w).Encode([]map[string]any{
+				versionJSON("p2-v1", "p2", "2.0.0", "release", "2026-02-02T00:00:00Z", []string{"1.21.1"}, []string{"neoforge"}, []map[string]any{
+					{"project_id": "p3", "version_id": "p3-v1", "dependency_type": "required"},
+				}),
+			})
+		case r.URL.Path == "/version/p3-v1":
+			_ = json.NewEncoder(w).Encode(
+				versionJSON("p3-v1", "p3", "3.0.0", "release", "2026-02-03T00:00:00Z", []string{"1.21.1"}, []string{"neoforge"}, nil),
+			)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	report := Discover(context.Background(), catalog.Report{
+		Managed: []catalog.Entry{modrinthEntry("p1", "v1", "Example")},
+	}, Options{
+		Minecraft: "1.21.1", Loader: "neoforge", ModrinthBaseURL: server.URL, HTTPClient: server.Client(),
+	})
+
+	if report.Summary.Review != 1 {
+		t.Fatalf("expected dependency addition to require review: %+v", report.Summary)
+	}
+	candidate := report.Candidates[0]
+	if len(candidate.Dependencies) != 1 {
+		t.Fatalf("unexpected dependencies: %+v", candidate.Dependencies)
+	}
+	dep := candidate.Dependencies[0]
+	if dep.Action != "add" || dep.Target == nil || dep.Target.ID != "p2-v1" {
+		t.Fatalf("project-only dependency was not resolved: %+v", dep)
+	}
+	if len(dep.Dependencies) != 1 || dep.Dependencies[0].Action != "add" ||
+		dep.Dependencies[0].Target == nil || dep.Dependencies[0].Target.ID != "p3-v1" {
+		t.Fatalf("nested dependency closure was not resolved: %+v", dep.Dependencies)
 	}
 }
 

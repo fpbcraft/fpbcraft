@@ -1,90 +1,419 @@
 'use client';
 
-import {EmptyState, PageHeader, Pill} from '@/components/ui';
+import {useEffect, useMemo, useState} from 'react';
+import {useRouter} from 'next/navigation';
+import {Clock3, ExternalLink, MoreHorizontal, Pin, RefreshCw, RotateCcw, XCircle} from 'lucide-react';
+import {PageHeader, Pill, formatDate} from '@/components/ui';
 import {useManagement} from '@/components/management-provider';
+import type {UpdateCandidate, UpdateClassification, UpdatePlan, UpdateRule} from '@/lib/management';
+import {api} from '@/lib/api';
+
+const groups: Array<{
+  classification: UpdateClassification;
+  title: string;
+  tone: 'good' | 'warn' | 'bad' | 'neutral';
+}> = [
+  {classification: 'safe', title: 'Safe', tone: 'good'},
+  {classification: 'review', title: 'Review', tone: 'warn'},
+  {classification: 'blocked', title: 'Blocked', tone: 'bad'},
+  {classification: 'ignored', title: 'Ignored', tone: 'neutral'},
+];
+
+function CandidateRow({
+  candidate,
+  selected,
+  onToggle,
+  rule,
+  onRule,
+  onClearRule,
+}: {
+  candidate: UpdateCandidate;
+  selected: boolean;
+  onToggle: () => void;
+  rule?: UpdateRule;
+  onRule: (rule: UpdateRule) => void;
+  onClearRule: () => void;
+}) {
+  const selectable = candidate.classification === 'safe' || candidate.classification === 'review';
+  const changelogs = candidate.changelogs ?? [];
+
+  return (
+    <div className="border-t border-base-300 first:border-t-0">
+      <div className="flex min-h-14 items-center gap-3 px-4 py-3">
+        <input
+          type="checkbox"
+          className="checkbox checkbox-sm"
+          checked={selected}
+          disabled={!selectable}
+          onChange={onToggle}
+          aria-label={'Select ' + candidate.name}
+        />
+
+        {candidate.icon_url ? (
+          <img
+            src={candidate.icon_url}
+            alt=""
+            className="size-8 shrink-0 rounded-md border border-base-300 bg-base-200 object-cover"
+          />
+        ) : (
+          <div className="grid size-8 shrink-0 place-items-center rounded-md border border-base-300 bg-base-200 text-xs font-semibold text-base-content/45">
+            {candidate.name.slice(0, 1).toUpperCase()}
+          </div>
+        )}
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="truncate text-sm font-medium">{candidate.name}</span>
+            {candidate.target?.channel && candidate.target.channel !== 'release' ? (
+              <Pill tone="warn">{candidate.target.channel}</Pill>
+            ) : null}
+          </div>
+
+          <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-base-content/45">
+            <span>
+              {candidate.installed.number || candidate.installed.name || 'installed'} →{' '}
+              {candidate.target?.number ?? '—'}
+            </span>
+            <span>{candidate.provider}</span>
+            {candidate.target?.published_at ? <span>{formatDate(candidate.target.published_at)}</span> : null}
+          </div>
+
+          {candidate.reasons?.length ? (
+            <div className="mt-1 text-xs text-base-content/50">{candidate.reasons[0].message}</div>
+          ) : null}
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1">
+          {candidate.dependencies?.some(
+            (dependency) => dependency.action !== 'none' && dependency.action !== 'satisfied',
+          ) ? (
+            <Pill tone="blue">dependency</Pill>
+          ) : null}
+
+          {rule?.pin_version ? <Pill tone="neutral">pinned</Pill> : null}
+          {rule?.ignore_mod ? <Pill tone="neutral">ignored</Pill> : null}
+          {rule?.review_after ? <Pill tone="neutral">later</Pill> : null}
+
+          {candidate.project_url ? (
+            <a
+              className="btn btn-xs btn-ghost"
+              href={candidate.project_url}
+              target="_blank"
+              rel="noreferrer"
+              title={'Open ' + candidate.name + ' on ' + candidate.provider}
+            >
+              {candidate.provider === 'modrinth'
+                ? 'Modrinth'
+                : candidate.provider === 'curseforge'
+                  ? 'CurseForge'
+                  : 'Project'}
+              <ExternalLink size={12} />
+            </a>
+          ) : null}
+
+          <details className="dropdown dropdown-end">
+            <summary className="btn btn-xs btn-ghost list-none px-2" aria-label={'Actions for ' + candidate.name}>
+              <MoreHorizontal size={14} />
+            </summary>
+            <ul className="menu dropdown-content z-20 mt-1 w-52 rounded-box border border-base-300 bg-base-100 p-1 text-xs shadow-lg">
+              <li>
+                <button
+                  type="button"
+                  disabled={!candidate.installed.id}
+                  onClick={() =>
+                    onRule({
+                      ...rule,
+                      pin_version: candidate.installed.id,
+                      ignore_mod: false,
+                      review_after: undefined,
+                    })
+                  }
+                >
+                  <Pin size={13} /> Pin current version
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  disabled={!candidate.target?.id}
+                  onClick={() =>
+                    onRule({
+                      ...rule,
+                      ignored_versions: Array.from(
+                        new Set([...(rule?.ignored_versions ?? []), candidate.target?.id ?? '']),
+                      ).filter(Boolean),
+                      review_after: undefined,
+                    })
+                  }
+                >
+                  <XCircle size={13} /> Ignore this version
+                </button>
+              </li>
+              <li>
+                <button type="button" onClick={() => onRule({...rule, ignore_mod: true, review_after: undefined})}>
+                  <XCircle size={13} /> Ignore this mod
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() =>
+                    onRule({
+                      ...rule,
+                      review_after: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                    })
+                  }
+                >
+                  <Clock3 size={13} /> Review in 7 days
+                </button>
+              </li>
+              {rule ? (
+                <li>
+                  <button type="button" onClick={onClearRule}>
+                    <RotateCcw size={13} /> Clear rule
+                  </button>
+                </li>
+              ) : null}
+            </ul>
+          </details>
+        </div>
+      </div>
+
+      {candidate.target ? (
+        <details className="group border-t border-base-300/60 bg-base-200/25">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-2 text-xs font-medium text-base-content/60 hover:text-base-content">
+            <span>
+              What changed
+              {changelogs.length > 1 ? ' · ' + changelogs.length + ' releases' : ''}
+            </span>
+            <span className="text-[0.68rem] font-normal text-base-content/35 group-open:hidden">Show</span>
+            <span className="hidden text-[0.68rem] font-normal text-base-content/35 group-open:inline">Hide</span>
+          </summary>
+
+          <div className="border-t border-base-300/60 px-4 py-3">
+            {changelogs.length ? (
+              <div className="space-y-4">
+                {changelogs.map((entry) => (
+                  <section key={entry.id}>
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      <h3 className="text-xs font-semibold">
+                        {entry.number || entry.name || entry.id}
+                      </h3>
+                      {entry.name && entry.name !== entry.number ? (
+                        <span className="text-xs text-base-content/45">{entry.name}</span>
+                      ) : null}
+                      {entry.published_at ? (
+                        <span className="text-[0.68rem] text-base-content/35">
+                          {formatDate(entry.published_at)}
+                        </span>
+                      ) : null}
+                    </div>
+                    {entry.body ? (
+                      <div className="mt-1 whitespace-pre-wrap text-xs leading-5 text-base-content/65">
+                        {entry.body}
+                      </div>
+                    ) : (
+                      <div className="mt-1 text-xs italic text-base-content/35">
+                        No changelog was provided for this release.
+                      </div>
+                    )}
+                  </section>
+                ))}
+              </div>
+            ) : (
+              <div className="text-xs text-base-content/40">
+                No changelog data is available from {candidate.provider} for this update.
+              </div>
+            )}
+          </div>
+        </details>
+      ) : null}
+    </div>
+  );
+}
 
 export default function UpdatesPage() {
-  const {state} = useManagement();
+  const {state, reload, checkUpdates} = useManagement();
+  const router = useRouter();
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [checking, setChecking] = useState(false);
+  const [creatingPlan, setCreatingPlan] = useState(false);
+  const [planError, setPlanError] = useState<string | null>(null);
+  const [rules, setRules] = useState<Record<string, UpdateRule>>({});
+  const [ruleError, setRuleError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api<{rules: Record<string, UpdateRule>}>('/api/update-rules')
+      .then((response) => setRules(response.rules))
+      .catch((error: unknown) => {
+        setRuleError(error instanceof Error ? error.message : String(error));
+      });
+  }, []);
+
+  const applyRule = async (key: string, rule: UpdateRule) => {
+    setRuleError(null);
+    try {
+      await api<{key: string; rule: UpdateRule}>('/api/update-rules', {
+        method: 'PUT',
+        body: JSON.stringify({key, rule}),
+      });
+      setRules((current) => ({...current, [key]: rule}));
+      setSelected((current) => {
+        const next = new Set(current);
+        next.delete(key);
+        return next;
+      });
+      await reload();
+    } catch (error: unknown) {
+      setRuleError(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const clearRule = async (key: string) => {
+    setRuleError(null);
+    try {
+      await api<{status: string}>('/api/update-rules?key=' + encodeURIComponent(key), {
+        method: 'DELETE',
+      });
+      setRules((current) => {
+        const next = {...current};
+        delete next[key];
+        return next;
+      });
+      await reload();
+    } catch (error: unknown) {
+      setRuleError(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const selectableSafe = useMemo(
+    () => state.updates.candidates.filter((candidate) => candidate.classification === 'safe'),
+    [state.updates.candidates],
+  );
+
+  const toggle = (key: string) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const check = async () => {
+    setChecking(true);
+    try {
+      await checkUpdates();
+      setSelected(new Set());
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const createPlan = async () => {
+    if (selected.size === 0) return;
+    setCreatingPlan(true);
+    setPlanError(null);
+    try {
+      const plan = await api<UpdatePlan>('/api/plans', {
+        method: 'POST',
+        body: JSON.stringify({candidate_keys: [...selected]}),
+      });
+      router.push('/review?id=' + encodeURIComponent(plan.id));
+    } catch (error: unknown) {
+      setPlanError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setCreatingPlan(false);
+    }
+  };
 
   return (
     <>
       <PageHeader
-        eyebrow="Discover"
-        title="Updates"
-        description="Provider-aware candidates will be classified here before any live changes are allowed."
-        action={<Pill tone="blue">Read only</Pill>}
+        eyebrow="Updates"
+        title="Review candidates"
+        description="Choose update candidates. Nothing on this page can modify live mod files."
+        action={
+          <div className="flex gap-2">
+            <button className="btn btn-sm btn-ghost" type="button" onClick={() => void check()} disabled={checking}>
+              <RefreshCw size={14} className={checking ? 'animate-spin' : ''} />
+              Check updates
+            </button>
+            <button
+              className="btn btn-sm btn-primary"
+              type="button"
+              disabled={selectableSafe.length === 0}
+              onClick={() => setSelected(new Set(selectableSafe.map((candidate) => candidate.key)))}
+            >
+              Select safe
+            </button>
+          </div>
+        }
       />
 
       {state.diagnostics.summary.blocking > 0 ? (
-        <section className="notice notice-warn">
-          <strong>
+        <div className="alert alert-warning mb-4 rounded-box py-3 text-sm">
+          <span>
             {state.diagnostics.summary.blocking} blocking diagnostic
-            {state.diagnostics.summary.blocking === 1 ? '' : 's'}
-          </strong>
-          <p>
-            Managed-file drift or unresolved catalog state must be reconciled before
-            future updates can be considered safe.
-          </p>
-        </section>
+            {state.diagnostics.summary.blocking === 1 ? '' : 's'} will prevent plan readiness.
+          </span>
+        </div>
       ) : null}
 
-      <section className="two-column">
-        <article className="panel">
-          <div className="panel-heading">
-            <div>
-              <span className="eyebrow">Safe</span>
-              <h2>Recommended</h2>
-            </div>
-            <Pill tone="good">0</Pill>
-          </div>
-          <EmptyState title="No candidate data yet">
-            Provider-aware update discovery is the next FPBPack service being added.
-          </EmptyState>
-        </article>
+      {planError ? <div className="alert alert-error mb-4 rounded-box py-3 text-sm">{planError}</div> : null}
+      {ruleError ? <div className="alert alert-error mb-4 rounded-box py-3 text-sm">{ruleError}</div> : null}
 
-        <article className="panel">
-          <div className="panel-heading">
-            <div>
-              <span className="eyebrow">Review</span>
-              <h2>Needs review</h2>
-            </div>
-            <Pill tone="warn">0</Pill>
-          </div>
-          <EmptyState title="No candidate data yet">
-            Major jumps, pre-releases, and dependency-driven changes will appear here.
-          </EmptyState>
-        </article>
-      </section>
+      <div className="mb-4 flex items-center justify-between rounded-box border border-base-300 bg-base-100 px-4 py-3">
+        <div>
+          <div className="text-sm font-medium">{selected.size} selected</div>
+          <div className="text-xs text-base-content/45">Safe and review candidates can be included in a plan.</div>
+        </div>
+        <button
+          className="btn btn-sm btn-primary"
+          type="button"
+          disabled={selected.size === 0 || creatingPlan}
+          onClick={() => void createPlan()}
+        >
+          {creatingPlan ? <span className="loading loading-spinner loading-xs" /> : null}
+          Review plan
+        </button>
+      </div>
 
-      <section className="two-column">
-        <article className="panel">
-          <div className="panel-heading">
-            <div>
-              <span className="eyebrow">Blocked</span>
-              <h2>Cannot update safely</h2>
-            </div>
-            <Pill tone="bad">0</Pill>
-          </div>
-          <EmptyState title="No candidate data yet">
-            Incompatible loaders, Minecraft versions, and unresolved dependencies will
-            be preserved here for diagnostics.
-          </EmptyState>
-        </article>
-
-        <article className="panel">
-          <div className="panel-heading">
-            <div>
-              <span className="eyebrow">Ignored</span>
-              <h2>Pinned and ignored</h2>
-            </div>
-            <Pill tone="neutral">{state.status.unmanaged}</Pill>
-          </div>
-          <EmptyState title="No update rules yet">
-            Explicitly unmanaged artifacts are already excluded. Persistent pin and
-            ignore rules are still pending.
-          </EmptyState>
-        </article>
-      </section>
+      <div className="grid gap-4 xl:grid-cols-2">
+        {groups.map((group) => {
+          const candidates = state.updates.candidates.filter(
+            (candidate) => candidate.classification === group.classification,
+          );
+          return (
+            <section className="panel min-w-0" key={group.classification}>
+              <div className="panel-header">
+                <div>
+                  <div className="section-label">{group.classification}</div>
+                  <h2 className="mt-0.5 text-sm font-semibold">{group.title}</h2>
+                </div>
+                <Pill tone={group.tone}>{candidates.length}</Pill>
+              </div>
+              {candidates.length ? (
+                <div>
+                  {candidates.map((candidate) => (
+                    <CandidateRow
+                      key={candidate.key}
+                      candidate={candidate}
+                      selected={selected.has(candidate.key)}
+                      onToggle={() => toggle(candidate.key)}
+                      rule={rules[candidate.key]}
+                      onRule={(rule) => void applyRule(candidate.key, rule)}
+                      onClearRule={() => void clearRule(candidate.key)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="px-4 py-7 text-center text-xs text-base-content/40">No candidates</div>
+              )}
+            </section>
+          );
+        })}
+      </div>
     </>
   );
 }

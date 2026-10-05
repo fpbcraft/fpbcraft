@@ -11,10 +11,12 @@ import {
 } from 'react';
 import {
   emptyManagementState,
+  emptyUpdateReport,
   type DiagnosticReport,
   type ManagementMod,
   type ManagementState,
   type ManagementStatus,
+  type UpdateReport,
 } from '@/lib/management';
 
 type ConnectionStatus = 'loading' | 'connected' | 'error';
@@ -23,15 +25,18 @@ interface ManagementContextValue {
   state: ManagementState;
   connectionStatus: ConnectionStatus;
   connectionError: string | null;
+  reload: (options?: {silent?: boolean}) => Promise<void>;
   refresh: () => Promise<void>;
+  checkUpdates: () => Promise<void>;
 }
 
 const ManagementContext = createContext<ManagementContextValue | null>(null);
 
-async function fetchApi<T>(path: string): Promise<T> {
+async function fetchApi<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     cache: 'no-store',
-    headers: {Accept: 'application/json'},
+    headers: {Accept: 'application/json', ...(init?.headers ?? {})},
+    ...init,
   });
   if (!response.ok) {
     throw new Error(path + ' returned HTTP ' + response.status);
@@ -46,23 +51,37 @@ async function loadManagementState(): Promise<ManagementState> {
     fetchApi<DiagnosticReport>('/api/diagnostics'),
   ]);
 
+  let updates = emptyUpdateReport();
+  const errors: string[] = [];
+  try {
+    updates = await fetchApi<UpdateReport>('/api/updates');
+  } catch {
+    if (status.refresh?.last_error) {
+      errors.push('Background refresh failed: ' + status.refresh.last_error);
+    } else {
+      errors.push('Update discovery is still refreshing; cached update data is not available yet.');
+    }
+  }
+
   return {
     status,
     mods: modsResponse.mods,
     diagnostics,
+    updates,
     source: 'api',
-    errors: [],
+    errors,
   };
 }
 
 export function ManagementProvider({children}: {children: ReactNode}) {
   const [state, setState] = useState<ManagementState>(() => emptyManagementState());
-  const [connectionStatus, setConnectionStatus] =
-    useState<ConnectionStatus>('loading');
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('loading');
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    setConnectionStatus('loading');
+  const reload = useCallback(async (options?: {silent?: boolean}) => {
+    if (!options?.silent) {
+      setConnectionStatus('loading');
+    }
     setConnectionError(null);
     try {
       setState(await loadManagementState());
@@ -77,20 +96,39 @@ export function ManagementProvider({children}: {children: ReactNode}) {
     }
   }, []);
 
+  const refresh = useCallback(async () => {
+    await fetchApi<{status: string}>('/api/refresh', {method: 'POST'});
+    await reload();
+  }, [reload]);
+
+  const checkUpdates = useCallback(async () => {
+    await fetchApi<{status: string}>('/api/updates/check', {method: 'POST'});
+    await reload();
+  }, [reload]);
+
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    void reload();
+  }, [reload]);
+
+  useEffect(() => {
+    const shouldPoll =
+      state.status.refresh?.refreshing ||
+      state.errors.some((message) => message.includes('still refreshing'));
+    if (!shouldPoll) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      void reload({silent: true});
+    }, 2500);
+    return () => window.clearTimeout(timer);
+  }, [state.status.refresh?.refreshing, state.errors, reload]);
 
   const value = useMemo(
-    () => ({state, connectionStatus, connectionError, refresh}),
-    [state, connectionStatus, connectionError, refresh],
+    () => ({state, connectionStatus, connectionError, reload, refresh, checkUpdates}),
+    [state, connectionStatus, connectionError, reload, refresh, checkUpdates],
   );
 
-  return (
-    <ManagementContext.Provider value={value}>
-      {children}
-    </ManagementContext.Provider>
-  );
+  return <ManagementContext.Provider value={value}>{children}</ManagementContext.Provider>;
 }
 
 export function useManagement() {
