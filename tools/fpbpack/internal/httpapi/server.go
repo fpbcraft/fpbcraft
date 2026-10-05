@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -39,6 +41,7 @@ type CraftyCredentialClearer func() (service.CraftyStatus, error)
 type ServerControl func(context.Context) (service.CraftyStatus, error)
 type PlanApplier func(context.Context, string) (service.ApplyResult, error)
 type BackupRestorer func(context.Context, string) (service.RestoreResult, error)
+type ManualArtifactAccepter func(context.Context, string, string, io.Reader) (planning.Plan, error)
 
 type ServerOptions struct {
 	Updates      UpdatesLoader
@@ -67,6 +70,7 @@ type ServerOptions struct {
 	StopServer    ServerControl
 	ApplyPlan     PlanApplier
 	RestoreBackup BackupRestorer
+	AcceptManualArtifact ManualArtifactAccepter
 	BackgroundContext context.Context
 	Web          http.Handler
 }
@@ -99,6 +103,7 @@ type Server struct {
 	stopServer     ServerControl
 	applyPlan      PlanApplier
 	restoreBackup  BackupRestorer
+	acceptManualArtifact ManualArtifactAccepter
 	backgroundCtx context.Context
 	backgroundMu sync.Mutex
 	backgroundRefresh bool
@@ -134,6 +139,7 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 		stopServer: opts.StopServer,
 		applyPlan: opts.ApplyPlan,
 		restoreBackup: opts.RestoreBackup,
+		acceptManualArtifact: opts.AcceptManualArtifact,
 		backgroundCtx: backgroundCtx,
 		version: version,
 	}
@@ -167,6 +173,7 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("POST /api/server/start", server.startMinecraftServer)
 	mux.HandleFunc("POST /api/server/stop", server.stopMinecraftServer)
 	mux.HandleFunc("POST /api/plans/{id}/apply", server.applyPlanHandler)
+	mux.HandleFunc("POST /api/plans/{id}/manual-artifact", server.acceptManualArtifactHandler)
 	mux.HandleFunc("POST /api/backups/{id}/restore", server.restoreBackupHandler)
 	if opts.Web != nil {
 		mux.Handle("/", opts.Web)
@@ -647,6 +654,24 @@ func (s *Server) applyPlanHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *Server) acceptManualArtifactHandler(w http.ResponseWriter, r *http.Request) {
+	if s.acceptManualArtifact == nil {
+		writeError(w, http.StatusServiceUnavailable, "manual artifact verification is not configured")
+		return
+	}
+	candidateKey := strings.TrimSpace(r.URL.Query().Get("candidate_key"))
+	if candidateKey == "" {
+		writeError(w, http.StatusBadRequest, "candidate_key is required")
+		return
+	}
+	plan, err := s.acceptManualArtifact(r.Context(), r.PathValue("id"), candidateKey, r.Body)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, plan)
 }
 
 func (s *Server) restoreBackupHandler(w http.ResponseWriter, r *http.Request) {
