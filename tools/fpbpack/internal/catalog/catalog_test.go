@@ -146,3 +146,35 @@ func TestPlacementMismatchOnlyFlagsStrictSideViolations(t *testing.T) {
 func mr(project, version, number, environment string) *inventory.ModrinthMatch {
 	return &inventory.ModrinthMatch{ProjectID: project, VersionID: version, VersionNumber: number, VersionName: project + " " + number, Filename: project + ".jar", URL: "https://cdn.example/" + project + ".jar", Environment: environment}
 }
+
+
+func TestManagedArtifactKeysAllowMultipleJarsFromSameProject(t *testing.T) {
+	entries := []Entry{
+		{
+			Provider: "github", ProjectID: "fpbcraft/player-history-mc",
+			Filename: "player-history-recorder.jar", SHA512: "recorder",
+			SourcePaths: []Source{{Location: inventory.LocationServer, Path: "mods/player-history-recorder.jar"}},
+		},
+		{
+			Provider: "github", ProjectID: "fpbcraft/player-history-mc",
+			Filename: "player-history-bluemap.jar", SHA512: "bluemap",
+			SourcePaths: []Source{{Location: inventory.LocationServer, Path: "mods/player-history-bluemap.jar"}},
+		},
+	}
+	if !EnsureManagedArtifactIDs(entries) {
+		t.Fatal("expected artifact IDs to be assigned")
+	}
+	if entries[0].ArtifactID == "" || entries[1].ArtifactID == "" {
+		t.Fatalf("missing artifact IDs: %+v", entries)
+	}
+	if EntryKey(entries[0]) == EntryKey(entries[1]) {
+		t.Fatalf("artifact keys collided: %q", EntryKey(entries[0]))
+	}
+	first := []string{entries[0].ArtifactID, entries[1].ArtifactID}
+	if EnsureManagedArtifactIDs(entries) {
+		t.Fatal("stable artifact IDs should not be rewritten")
+	}
+	if entries[0].ArtifactID != first[0] || entries[1].ArtifactID != first[1] {
+		t.Fatalf("artifact IDs changed: %+v", entries)
+	}
+}
