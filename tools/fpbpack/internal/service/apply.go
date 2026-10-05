@@ -42,6 +42,13 @@ type stagedPlanOperation struct {
 }
 
 func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyResult, err error) {
+	defer func() {
+		if err != nil {
+			s.logEvent("error", "apply", fmt.Sprintf("Apply %s failed: %v", planID, err))
+		} else if result.Status != "" {
+			s.logEvent("info", "apply", result.Summary)
+		}
+	}()
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
 	s.catalogMu.Lock()
@@ -195,6 +202,13 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 }
 
 func (s *Service) RestoreBackup(ctx context.Context, backupID string) (result RestoreResult, err error) {
+	defer func() {
+		if err != nil {
+			s.logEvent("error", "restore", fmt.Sprintf("Restore %s failed: %v", backupID, err))
+		} else if result.Status != "" {
+			s.logEvent("info", "restore", result.Summary)
+		}
+	}()
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
 	s.catalogMu.Lock()
