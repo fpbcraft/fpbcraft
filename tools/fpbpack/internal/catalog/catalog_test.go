@@ -180,23 +180,29 @@ func TestManagedArtifactKeysAllowMultipleJarsFromSameProject(t *testing.T) {
 }
 
 
-func TestRecalculateSummaryDropsOptionalPlacementWarnings(t *testing.T) {
+func TestRecalculateSummaryRebuildsOnlyStrictPlacementWarnings(t *testing.T) {
 	report := Report{
-		Placement: []PlacementWarning{
+		Placement: []PlacementWarning{{
+			ProjectID: "stale",
+			Environment: "client_only",
+			Deployment: inventory.LocationServer,
+			Filename: "stale.jar",
+		}},
+		Managed: []Entry{
 			{
-				ProjectID: "client-optional",
+				Provider: "modrinth", ProjectID: "client-optional",
 				Environment: "client_only_server_optional",
 				Deployment: inventory.LocationServer,
 				Filename: "client-optional.jar",
 			},
 			{
-				ProjectID: "server-optional",
+				Provider: "modrinth", ProjectID: "server-optional",
 				Environment: "server_only_client_optional",
 				Deployment: inventory.LocationClient,
 				Filename: "server-optional.jar",
 			},
 			{
-				ProjectID: "strict-client",
+				Provider: "modrinth", ProjectID: "strict-client",
 				Environment: "client_only",
 				Deployment: inventory.LocationServer,
 				Filename: "strict-client.jar",
