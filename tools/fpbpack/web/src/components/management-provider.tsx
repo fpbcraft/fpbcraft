@@ -11,6 +11,7 @@ import {
 } from 'react';
 import {
   emptyManagementState,
+  emptyUpdateReport,
   type DiagnosticReport,
   type ManagementMod,
   type ManagementState,
@@ -43,12 +44,19 @@ async function fetchApi<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 async function loadManagementState(): Promise<ManagementState> {
-  const [status, modsResponse, diagnostics, updates] = await Promise.all([
+  const [status, modsResponse, diagnostics] = await Promise.all([
     fetchApi<ManagementStatus>('/api/status'),
     fetchApi<{mods: ManagementMod[]}>('/api/mods'),
     fetchApi<DiagnosticReport>('/api/diagnostics'),
-    fetchApi<UpdateReport>('/api/updates'),
   ]);
+
+  let updates = emptyUpdateReport();
+  const errors: string[] = [];
+  try {
+    updates = await fetchApi<UpdateReport>('/api/updates');
+  } catch {
+    errors.push('Update discovery is still refreshing; cached update data is not available yet.');
+  }
 
   return {
     status,
@@ -56,7 +64,7 @@ async function loadManagementState(): Promise<ManagementState> {
     diagnostics,
     updates,
     source: 'api',
-    errors: [],
+    errors,
   };
 }
 
