@@ -148,6 +148,15 @@ func doJSONWithRetry(
 				}
 				return readErr
 			}
+			if closeErr != nil {
+				if attempt < maxAttempts-1 {
+					if err := waitForRetry(ctx, retryDelay(nil, attempt)); err != nil {
+						return err
+					}
+					continue
+				}
+				return closeErr
+			}
 			if len(body) > maxJSONBytes {
 				return fmt.Errorf("%s response exceeded %d byte JSON safety limit", provider, maxJSONBytes)
 			}
@@ -160,15 +169,6 @@ func doJSONWithRetry(
 					continue
 				}
 				return decodeErr
-			}
-			if closeErr != nil {
-				if attempt < maxAttempts-1 {
-					if err := waitForRetry(ctx, retryDelay(nil, attempt)); err != nil {
-						return err
-					}
-					continue
-				}
-				return closeErr
 			}
 			return nil
 		}
