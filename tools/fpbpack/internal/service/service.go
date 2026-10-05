@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -209,7 +208,7 @@ func (s *Service) Refresh(ctx context.Context) (err error) {
 		GitHubBaseURL: s.options.GitHubBaseURL,
 		GitHubToken: s.options.GitHubToken,
 	})
-	if err := updateCtx.Err(); err != nil && !errors.Is(err, context.Canceled) {
+	if err := updateCtx.Err(); err != nil {
 		return fmt.Errorf("update discovery: %w", err)
 	}
 	s.applyUpdateRules(&report)
@@ -265,7 +264,7 @@ func (s *Service) CheckUpdates(ctx context.Context) (err error) {
 		GitHubBaseURL: s.options.GitHubBaseURL,
 		GitHubToken: s.options.GitHubToken,
 	})
-	if err := updateCtx.Err(); err != nil && !errors.Is(err, context.Canceled) {
+	if err := updateCtx.Err(); err != nil {
 		return fmt.Errorf("update discovery: %w", err)
 	}
 	s.applyUpdateRules(&report)
