@@ -23,9 +23,10 @@ type CurseForgeClient struct {
 }
 
 type curseForgeFile struct {
-	ID           uint32   `json:"id"`
-	ModID        uint32   `json:"modId"`
-	IsAvailable  bool     `json:"isAvailable"`
+	ID              uint32   `json:"id"`
+	ModID           uint32   `json:"modId"`
+	FileFingerprint uint32   `json:"fileFingerprint"`
+	IsAvailable     bool     `json:"isAvailable"`
 	DisplayName  string   `json:"displayName"`
 	FileName     string   `json:"fileName"`
 	ReleaseType  int      `json:"releaseType"`
@@ -122,10 +123,11 @@ func (client CurseForgeClient) matchBatch(ctx context.Context, fingerprints []ui
 
 	matches := make(map[uint32]CurseForgeMatch, len(decoded.Data.ExactMatches))
 	for _, exact := range decoded.Data.ExactMatches {
-		if exact.ID == 0 || exact.File.ID == 0 || exact.File.ModID == 0 || !exact.File.IsAvailable {
+		fingerprint := exact.File.FileFingerprint
+		if fingerprint == 0 || exact.File.ID == 0 || exact.File.ModID == 0 || !exact.File.IsAvailable {
 			continue
 		}
-		matches[exact.ID] = CurseForgeMatch{
+		matches[fingerprint] = CurseForgeMatch{
 			ProjectID:    exact.File.ModID,
 			FileID:       exact.File.ID,
 			DisplayName:  exact.File.DisplayName,
