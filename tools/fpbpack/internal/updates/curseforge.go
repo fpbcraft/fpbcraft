@@ -77,6 +77,21 @@ type curseForgeStringResponse struct {
 	Data string `json:"data"`
 }
 
+func (client *CurseForgeClient) Validate(ctx context.Context) error {
+	var response struct {
+		Data struct {
+			ID int `json:"id"`
+		} `json:"data"`
+	}
+	if err := client.getJSON(ctx, "/games/432", &response); err != nil {
+		return err
+	}
+	if response.Data.ID != 432 {
+		return fmt.Errorf("CurseForge credential validation returned an unexpected Minecraft game id")
+	}
+	return nil
+}
+
 func (client *CurseForgeClient) GetMod(ctx context.Context, projectID string) (curseForgeMod, error) {
 	var response curseForgeModResponse
 	if err := client.getJSON(ctx, "/mods/"+url.PathEscape(projectID), &response); err != nil {
