@@ -20,6 +20,7 @@ type CatalogPlanRequest struct {
 	VersionID string             `json:"version_id,omitempty"`
 	Path      string             `json:"path,omitempty"`
 	Placement inventory.Location `json:"placement,omitempty"`
+	AutoModpackGroup string       `json:"automodpack_group,omitempty"`
 }
 
 func (s *Service) SearchCatalog(
@@ -119,6 +120,7 @@ func (s *Service) CreateCatalogPlan(ctx context.Context, request CatalogPlanRequ
 	request.ProjectID = strings.TrimSpace(request.ProjectID)
 	request.VersionID = strings.TrimSpace(request.VersionID)
 	request.Path = normalizeCatalogPath(request.Path)
+	request.AutoModpackGroup = strings.TrimSpace(request.AutoModpackGroup)
 
 	if !s.refreshMu.TryLock() {
 		return planning.Plan{}, fmt.Errorf("provider refresh is in progress; retry catalog planning after it finishes")
@@ -154,6 +156,8 @@ func (s *Service) CreateCatalogPlan(ctx context.Context, request CatalogPlanRequ
 		if err != nil {
 			return planning.Plan{}, err
 		}
+		candidate.AutoModpackGroup = normalizeAutoModpackGroup(placement, request.AutoModpackGroup)
+		inheritClientDependencyGroups(candidate.Dependencies, candidate.AutoModpackGroup)
 
 	case "version":
 		entry, ok := managedCatalogEntryByPath(cat, request.Path)
@@ -174,6 +178,12 @@ func (s *Service) CreateCatalogPlan(ctx context.Context, request CatalogPlanRequ
 		if err != nil {
 			return planning.Plan{}, err
 		}
+		group := request.AutoModpackGroup
+		if strings.TrimSpace(group) == "" {
+			group = entry.AutoModpackGroup
+		}
+		candidate.AutoModpackGroup = normalizeAutoModpackGroup(placement, group)
+		inheritClientDependencyGroups(candidate.Dependencies, candidate.AutoModpackGroup)
 
 	case "remove":
 		entry, ok := managedCatalogEntryByPath(cat, request.Path)
@@ -200,6 +210,7 @@ func (s *Service) CreateCatalogPlan(ctx context.Context, request CatalogPlanRequ
 			Name:           entry.Name,
 			Side:           entry.Side,
 			Deployment:     entry.Deployment,
+			AutoModpackGroup: normalizeAutoModpackGroup(entry.Deployment, entry.AutoModpackGroup),
 			Environment:    entry.Environment,
 			Installed: updatecheck.Release{
 				ID:       versionID,
