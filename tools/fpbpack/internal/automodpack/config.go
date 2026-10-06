@@ -829,19 +829,19 @@ func (p *tokenParser) parseScalar(stoppers ...tokenKind) (string, error) {
 		}
 		switch current.kind {
 		case tokenWord:
-			hadValue = true
 			// Preserve compatibility with the compact colon-less object syntax
 			// accepted by AutoModpack/Reconf (for example: name: "Pack" General { ... }).
 			// A word followed by ':' or '{' after an already-started scalar is
 			// therefore the next member key, not part of the current scalar.
-			if builder.Len() > 0 && previous == tokenWord && p.pos+1 < len(p.tokens) &&
+			if hadValue && previous == tokenWord && p.pos+1 < len(p.tokens) &&
 				(p.tokens[p.pos+1].kind == tokenColon || p.tokens[p.pos+1].kind == tokenLBrace) {
 				return builder.String(), nil
 			}
-			if builder.Len() > 0 && previous == tokenWord {
+			if hadValue && previous == tokenWord {
 				builder.WriteByte(' ')
 			}
 			builder.WriteString(current.text)
+			hadValue = true
 		case tokenColon:
 			builder.WriteString(current.text)
 		default:
