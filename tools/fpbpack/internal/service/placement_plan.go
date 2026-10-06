@@ -35,7 +35,10 @@ func (s *Service) CreatePlacementPlan(ctx context.Context, path string) (plannin
 	if !ok {
 		return planning.Plan{}, fmt.Errorf("placement changes require a verified managed source")
 	}
-	if entry.Deployment == mod.Location {
+	currentGroup := normalizeAutoModpackGroup(mod.Location, mod.Group)
+	preferredGroup := normalizeAutoModpackGroup(entry.Deployment, entry.AutoModpackGroup)
+	if entry.Deployment == mod.Location &&
+		(entry.Deployment != inventory.LocationClient || currentGroup == preferredGroup) {
 		return planning.Plan{}, fmt.Errorf("current placement already matches the preferred placement")
 	}
 
@@ -57,10 +60,10 @@ func (s *Service) CreatePlacementPlan(ctx context.Context, path string) (plannin
 		targetDir = inventory.DefaultServerModsPath
 	}
 	if entry.Deployment == inventory.LocationClient {
-		targetDir = s.options.ClientModsPath
-		if strings.TrimSpace(targetDir) == "" {
-			targetDir = inventory.DefaultClientModsPath
+		if err := validateAutoModpackGroupID(preferredGroup); err != nil {
+			return planning.Plan{}, err
 		}
+		targetDir = s.autoModpackModsPath(preferredGroup)
 	}
 	targetPath := filepath.ToSlash(filepath.Join(targetDir, mod.Filename))
 	targetRel, err := safeRelativePath(targetPath)
@@ -115,6 +118,7 @@ func (s *Service) CreatePlacementPlan(ctx context.Context, path string) (plannin
 				SHA1: entry.SHA1,
 				SHA512: actual,
 				Deployment: string(entry.Deployment),
+				AutoModpackGroup: preferredGroup,
 			},
 			Operations: []planning.FileOperation{{
 				Action: "replace",
@@ -163,8 +167,8 @@ func (s *Service) CreatePlacementPlan(ctx context.Context, path string) (plannin
 		Summary: fmt.Sprintf(
 			"Placement plan for %s: %s → %s",
 			entry.Name,
-			mod.Location,
-			entry.Deployment,
+			placementLabel(mod.Location, currentGroup),
+			placementLabel(entry.Deployment, preferredGroup),
 		),
 	}
 	if err := s.persistHistoryEvent(event); err != nil {
@@ -201,4 +205,12 @@ func placementPlanID(candidateKey, currentPath, targetPath, sha512Value string) 
 		strings.ToLower(sha512Value),
 	}, "\x00")))
 	return "plan-" + hex.EncodeToString(sum[:8])
+}
+
+
+func placementLabel(location inventory.Location, group string) string {
+	if location == inventory.LocationClient {
+		return "AutoModpack/" + normalizeAutoModpackGroup(location, group)
+	}
+	return string(location)
 }
