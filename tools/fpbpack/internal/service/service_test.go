@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -205,5 +206,123 @@ func TestCancelledUpdateDiscoveryDoesNotReplaceLastGoodCache(t *testing.T) {
 	}
 	if !persisted.GeneratedAt.Equal(lastGood.GeneratedAt) {
 		t.Fatalf("cancelled discovery replaced last good cache")
+	}
+}
+
+
+func TestAutoModpackConfigUsesOptimisticConcurrencyAndBackups(t *testing.T) {
+	root := t.TempDir()
+	stateDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "mods"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	configDir := filepath.Join(root, "automodpack")
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	config := `modpack-host: true
+bandwidth-limit: 0
+future-setting: "preserve-me"
+modpack {
+  name: "FPBCraft"
+  General {
+    main {
+      required: true
+      default-selected: true
+      from-server: ["mods/*.jar"]
+      future-group-setting: "preserve-me-too"
+    }
+  }
+}
+`
+	if err := os.WriteFile(filepath.Join(configDir, "server.conf"), []byte(config), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	svc, err := New(context.Background(), Options{ServerRoot: root, StateDir: stateDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	status, err := svc.AutoModpackStatus()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !status.ConfigPresent || status.ConfigSHA256 == "" {
+		t.Fatalf("unexpected status: %+v", status)
+	}
+	next := status.Config
+	next.Settings.BandwidthLimit = 42
+	updated, err := svc.UpdateAutoModpackConfig(context.Background(), AutoModpackConfigRequest{
+		ExpectedSHA256: status.ConfigSHA256,
+		Config: next,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !updated.PendingPublish {
+		t.Fatal("config update should mark AutoModpack publication pending")
+	}
+	written, err := os.ReadFile(filepath.Join(configDir, "server.conf"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(written), "bandwidth-limit: 42") ||
+		!strings.Contains(string(written), "future-setting") ||
+		!strings.Contains(string(written), "future-group-setting") {
+		t.Fatalf("saved config lost expected content:\n%s", string(written))
+	}
+	backups, err := os.ReadDir(filepath.Join(stateDir, "automodpack", "config-backups"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(backups) != 1 {
+		t.Fatalf("config backups = %d, want 1", len(backups))
+	}
+	if _, err := svc.UpdateAutoModpackConfig(context.Background(), AutoModpackConfigRequest{
+		ExpectedSHA256: status.ConfigSHA256,
+		Config: next,
+	}); err == nil {
+		t.Fatal("stale config hash should be rejected")
+	}
+}
+
+func TestAutoModpackStatusReadsGenerationJournal(t *testing.T) {
+	root := t.TempDir()
+	stateDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "mods"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "automodpack", "server"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "automodpack"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(root, "automodpack", "server.conf"),
+		[]byte(`modpack { name: "FPBCraft" General { main { required: true } } }`),
+		0o644,
+	); err != nil {
+		t.Fatal(err)
+	}
+	journal := `{"seq":1,"contentToken":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","policySha1":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","createdAt":"2026-10-06T01:00:00Z","notes":"Initial","restoreOf":-1,"changes":[{"path":"mods/a.jar","fromSha1":null,"fromSize":0,"toSha1":"cccccccccccccccccccccccccccccccccccccccc","toSize":123}]}
+{"seq":2,"contentToken":"dddddddddddddddddddddddddddddddddddddddd","policySha1":"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee","createdAt":"2026-10-06T02:00:00Z","notes":"Update","restoreOf":-1,"changes":[{"path":"mods/a.jar","fromSha1":"cccccccccccccccccccccccccccccccccccccccc","fromSize":123,"toSha1":"ffffffffffffffffffffffffffffffffffffffff","toSize":125},{"path":"config/x","fromSha1":null,"fromSize":0,"toSha1":"1111111111111111111111111111111111111111","toSize":5}]}
+`
+	if err := os.WriteFile(filepath.Join(root, "automodpack", "server", "journal.jsonl"), []byte(journal), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	svc, err := New(context.Background(), Options{ServerRoot: root, StateDir: stateDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	status, err := svc.AutoModpackStatus()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(status.Generations) != 2 || status.Generations[0].Sequence != 2 {
+		t.Fatalf("unexpected generation history: %+v", status.Generations)
+	}
+	if status.Generations[0].Summary.Added != 1 || status.Generations[0].Summary.Changed != 1 {
+		t.Fatalf("unexpected generation summary: %+v", status.Generations[0].Summary)
 	}
 }
