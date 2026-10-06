@@ -53,6 +53,9 @@ type BackupRestorer func(context.Context, string) (service.RestoreResult, error)
 type ManualArtifactAccepter func(context.Context, string, string, io.Reader) (planning.Plan, error)
 type AutoModpackStatusLoader func() (service.AutoModpackStatus, error)
 type AutoModpackConfigSetter func(context.Context, service.AutoModpackConfigRequest) (service.AutoModpackStatus, error)
+type AutoModpackRawConfigSetter func(context.Context, service.AutoModpackRawConfigRequest) (service.AutoModpackStatus, error)
+type AutoModpackGroupFilesLoader func(string, int, int, string) (service.AutoModpackPublishedFilesPage, error)
+type AutoModpackGenerationDiffLoader func(int64) (service.AutoModpackGenerationDiff, error)
 type AutoModpackGroupMigrator func(context.Context, service.AutoModpackGroupMigrationRequest) (service.AutoModpackStatus, error)
 type AutoModpackActionRunner func(context.Context, service.AutoModpackActionRequest) (service.AutoModpackActionResult, error)
 
@@ -95,6 +98,9 @@ type ServerOptions struct {
 	AcceptManualArtifact ManualArtifactAccepter
 	AutoModpackStatus AutoModpackStatusLoader
 	UpdateAutoModpackConfig AutoModpackConfigSetter
+	UpdateAutoModpackRawConfig AutoModpackRawConfigSetter
+	AutoModpackGroupFiles AutoModpackGroupFilesLoader
+	AutoModpackGenerationDiff AutoModpackGenerationDiffLoader
 	MigrateAutoModpackGroup AutoModpackGroupMigrator
 	RunAutoModpackAction AutoModpackActionRunner
 	BackgroundContext context.Context
@@ -141,6 +147,9 @@ type Server struct {
 	acceptManualArtifact ManualArtifactAccepter
 	autoModpackStatus AutoModpackStatusLoader
 	updateAutoModpackConfig AutoModpackConfigSetter
+	updateAutoModpackRawConfig AutoModpackRawConfigSetter
+	autoModpackGroupFiles AutoModpackGroupFilesLoader
+	autoModpackGenerationDiff AutoModpackGenerationDiffLoader
 	migrateAutoModpackGroup AutoModpackGroupMigrator
 	runAutoModpackAction AutoModpackActionRunner
 	backgroundCtx context.Context
@@ -189,6 +198,9 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 		acceptManualArtifact: opts.AcceptManualArtifact,
 		autoModpackStatus: opts.AutoModpackStatus,
 		updateAutoModpackConfig: opts.UpdateAutoModpackConfig,
+		updateAutoModpackRawConfig: opts.UpdateAutoModpackRawConfig,
+		autoModpackGroupFiles: opts.AutoModpackGroupFiles,
+		autoModpackGenerationDiff: opts.AutoModpackGenerationDiff,
 		migrateAutoModpackGroup: opts.MigrateAutoModpackGroup,
 		runAutoModpackAction: opts.RunAutoModpackAction,
 		backgroundCtx: backgroundCtx,
@@ -234,6 +246,9 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("POST /api/neoforge/change", server.changeNeoForgeVersion)
 	mux.HandleFunc("GET /api/automodpack", server.autoModpack)
 	mux.HandleFunc("PUT /api/automodpack/config", server.updateAutoModpack)
+	mux.HandleFunc("PUT /api/automodpack/config/raw", server.updateAutoModpackRaw)
+	mux.HandleFunc("GET /api/automodpack/groups/{id}/files", server.autoModpackGroupFilesHandler)
+	mux.HandleFunc("GET /api/automodpack/generations/{sequence}/diff", server.autoModpackGenerationDiffHandler)
 	mux.HandleFunc("POST /api/automodpack/groups/migrate", server.migrateAutoModpackGroupHandler)
 	mux.HandleFunc("POST /api/automodpack/action", server.runAutoModpackActionHandler)
 	mux.HandleFunc("POST /api/plans/{id}/apply", server.applyPlanHandler)
@@ -1026,4 +1041,67 @@ func (s *Server) runAutoModpackActionHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	writeJSON(w, http.StatusAccepted, result)
+}
+
+
+func (s *Server) updateAutoModpackRaw(w http.ResponseWriter, r *http.Request) {
+	if s.updateAutoModpackRawConfig == nil {
+		writeError(w, http.StatusServiceUnavailable, "raw AutoModpack configuration management is not configured")
+		return
+	}
+	var request service.AutoModpackRawConfigRequest
+	r.Body = http.MaxBytesReader(w, r.Body, 2<<20)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid raw AutoModpack configuration request: "+err.Error())
+		return
+	}
+	status, err := s.updateAutoModpackRawConfig(r.Context(), request)
+	if err != nil {
+		writeError(w, http.StatusConflict, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, status)
+}
+
+func (s *Server) autoModpackGroupFilesHandler(w http.ResponseWriter, r *http.Request) {
+	if s.autoModpackGroupFiles == nil {
+		writeError(w, http.StatusServiceUnavailable, "AutoModpack content browsing is not configured")
+		return
+	}
+	offset, err := strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("offset")))
+	if err != nil && strings.TrimSpace(r.URL.Query().Get("offset")) != "" {
+		writeError(w, http.StatusBadRequest, "offset must be an integer")
+		return
+	}
+	limit, err := strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("limit")))
+	if err != nil && strings.TrimSpace(r.URL.Query().Get("limit")) != "" {
+		writeError(w, http.StatusBadRequest, "limit must be an integer")
+		return
+	}
+	page, err := s.autoModpackGroupFiles(r.PathValue("id"), offset, limit, r.URL.Query().Get("q"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, page)
+}
+
+func (s *Server) autoModpackGenerationDiffHandler(w http.ResponseWriter, r *http.Request) {
+	if s.autoModpackGenerationDiff == nil {
+		writeError(w, http.StatusServiceUnavailable, "AutoModpack generation diff is not configured")
+		return
+	}
+	sequence, err := strconv.ParseInt(r.PathValue("sequence"), 10, 64)
+	if err != nil || sequence < 1 {
+		writeError(w, http.StatusBadRequest, "generation sequence must be a positive integer")
+		return
+	}
+	diff, err := s.autoModpackGenerationDiff(sequence)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, diff)
 }
