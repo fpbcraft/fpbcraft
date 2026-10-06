@@ -463,11 +463,10 @@ func Write(result Result, opts Options) error {
 }
 
 func displayName(mod inventory.ModFile) string {
-	if mod.Modrinth != nil && mod.Modrinth.VersionName != "" {
-		return mod.Modrinth.VersionName
-	}
-	if mod.CurseForge != nil && mod.CurseForge.DisplayName != "" {
-		return mod.CurseForge.DisplayName
+	for _, metadata := range mod.Metadata {
+		if name := strings.TrimSpace(metadata.Name); name != "" {
+			return name
+		}
 	}
 	return strings.TrimSuffix(mod.Filename, filepath.Ext(mod.Filename))
 }

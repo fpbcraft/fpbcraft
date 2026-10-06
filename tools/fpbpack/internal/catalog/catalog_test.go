@@ -30,6 +30,35 @@ func TestBuildDeduplicatesExactArtifactsAndDetectsVersionConflicts(t *testing.T)
 	}
 }
 
+func TestBuildUsesJarMetadataNameInsteadOfProviderReleaseTitle(t *testing.T) {
+	inv := inventory.Inventory{SchemaVersion: inventory.SchemaVersion, ModrinthChecked: true, Mods: []inventory.ModFile{{
+		Location: inventory.LocationServer,
+		Path:     "mods/ding.jar",
+		Filename: "ding-1.5.0.jar",
+		SHA512:   "ding-sha",
+		Metadata: []inventory.ModMetadata{{Name: "Ding", Version: "1.5.0"}},
+		Modrinth: &inventory.ModrinthMatch{
+			ProjectID:     "ding",
+			VersionID:     "version",
+			VersionNumber: "1.5.0",
+			VersionName:   "[1.21 NeoForge] v1.5.0",
+			Filename:      "ding-1.5.0.jar",
+			Environment:   "client_and_server",
+		},
+	}}}
+
+	result, err := Build(inv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Entries) != 1 {
+		t.Fatalf("entries = %d, want 1", len(result.Entries))
+	}
+	if got := result.Entries[0].Name; got != "Ding" {
+		t.Fatalf("managed name = %q, want JAR metadata name %q", got, "Ding")
+	}
+}
+
 func TestWritePackwizCatalog(t *testing.T) {
 	inv := inventory.Inventory{SchemaVersion: 1, ModrinthChecked: true, Mods: []inventory.ModFile{
 		{Location: inventory.LocationClient, Path: "client/a.jar", Filename: "a.jar", SHA512: "abc", Modrinth: mr("project", "version", "1.0", "client_only")},
