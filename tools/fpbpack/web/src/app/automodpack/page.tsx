@@ -663,6 +663,52 @@ export default function AutoModpackPage() {
                               />
                             </label>
                           ))}
+                          <div className="md:col-span-2">
+                            <div className="mb-2 flex items-center justify-between">
+                              <div>
+                                <div className="section-label">Effective published content</div>
+                                <div className="mt-0.5 text-xs text-base-content/40">
+                                  AutoModpack current-projection.json after from-server and exclude rules.
+                                </div>
+                              </div>
+                              <Pill tone="neutral">{content?.published_files?.length ?? 0} files</Pill>
+                            </div>
+                            {content?.published_files?.length ? (
+                              <div className="max-h-64 overflow-auto rounded-box border border-base-300">
+                                <table className="table table-xs">
+                                  <thead>
+                                    <tr>
+                                      <th>Path</th>
+                                      <th>Type</th>
+                                      <th>Size</th>
+                                      <th>Mode</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {content.published_files.map((file) => (
+                                      <tr key={file.path}>
+                                        <td className="font-mono text-[0.68rem]">{file.path}</td>
+                                        <td className="text-xs text-base-content/50">{file.type || '—'}</td>
+                                        <td className="whitespace-nowrap text-xs text-base-content/50">{file.size || '—'}</td>
+                                        <td className="whitespace-nowrap text-xs">
+                                          {file.editable ? <Pill tone="blue">editable</Pill> : 'managed'}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                                {content.published_truncated ? (
+                                  <div className="border-t border-base-300 px-3 py-2 text-xs text-warning">
+                                    Showing the first 500 published files for this group.
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : (
+                              <div className="rounded-box border border-dashed border-base-300 px-3 py-4 text-xs text-base-content/40">
+                                No published group content is present in AutoModpack's current projection yet.
+                              </div>
+                            )}
+                          </div>
                           <div className="flex items-center justify-between border-t border-base-300 pt-3 md:col-span-2">
                             <div className="mono text-xs text-base-content/35">
                               {content?.path ?? 'automodpack/host-modpack/' + group.id}
