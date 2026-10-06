@@ -51,6 +51,10 @@ type NeoForgeChanger func(context.Context, string) (service.NeoForgeChangeResult
 type PlanApplier func(context.Context, string) (service.ApplyResult, error)
 type BackupRestorer func(context.Context, string) (service.RestoreResult, error)
 type ManualArtifactAccepter func(context.Context, string, string, io.Reader) (planning.Plan, error)
+type AutoModpackStatusLoader func() (service.AutoModpackStatus, error)
+type AutoModpackConfigSetter func(context.Context, service.AutoModpackConfigRequest) (service.AutoModpackStatus, error)
+type AutoModpackGroupMigrator func(context.Context, service.AutoModpackGroupMigrationRequest) (service.AutoModpackStatus, error)
+type AutoModpackActionRunner func(context.Context, service.AutoModpackActionRequest) (service.AutoModpackActionResult, error)
 
 type ServerOptions struct {
 	Updates      UpdatesLoader
@@ -89,6 +93,10 @@ type ServerOptions struct {
 	ApplyPlan     PlanApplier
 	RestoreBackup BackupRestorer
 	AcceptManualArtifact ManualArtifactAccepter
+	AutoModpackStatus AutoModpackStatusLoader
+	UpdateAutoModpackConfig AutoModpackConfigSetter
+	MigrateAutoModpackGroup AutoModpackGroupMigrator
+	RunAutoModpackAction AutoModpackActionRunner
 	BackgroundContext context.Context
 	Web          http.Handler
 }
@@ -131,6 +139,10 @@ type Server struct {
 	applyPlan      PlanApplier
 	restoreBackup  BackupRestorer
 	acceptManualArtifact ManualArtifactAccepter
+	autoModpackStatus AutoModpackStatusLoader
+	updateAutoModpackConfig AutoModpackConfigSetter
+	migrateAutoModpackGroup AutoModpackGroupMigrator
+	runAutoModpackAction AutoModpackActionRunner
 	backgroundCtx context.Context
 	backgroundMu sync.Mutex
 	backgroundRefresh bool
@@ -175,6 +187,10 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 		applyPlan: opts.ApplyPlan,
 		restoreBackup: opts.RestoreBackup,
 		acceptManualArtifact: opts.AcceptManualArtifact,
+		autoModpackStatus: opts.AutoModpackStatus,
+		updateAutoModpackConfig: opts.UpdateAutoModpackConfig,
+		migrateAutoModpackGroup: opts.MigrateAutoModpackGroup,
+		runAutoModpackAction: opts.RunAutoModpackAction,
 		backgroundCtx: backgroundCtx,
 		version: version,
 	}
@@ -216,6 +232,10 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("POST /api/server/stop", server.stopMinecraftServer)
 	mux.HandleFunc("GET /api/neoforge", server.neoForge)
 	mux.HandleFunc("POST /api/neoforge/change", server.changeNeoForgeVersion)
+	mux.HandleFunc("GET /api/automodpack", server.autoModpack)
+	mux.HandleFunc("PUT /api/automodpack/config", server.updateAutoModpack)
+	mux.HandleFunc("POST /api/automodpack/groups/migrate", server.migrateAutoModpackGroupHandler)
+	mux.HandleFunc("POST /api/automodpack/action", server.runAutoModpackActionHandler)
 	mux.HandleFunc("POST /api/plans/{id}/apply", server.applyPlanHandler)
 	mux.HandleFunc("POST /api/plans/{id}/manual-artifact", server.acceptManualArtifactHandler)
 	mux.HandleFunc("POST /api/backups/{id}/restore", server.restoreBackupHandler)
@@ -272,15 +292,17 @@ func (s *Server) inventory(w http.ResponseWriter, _ *http.Request) {
 			Total: snapshot.Inventory.Summary.Total,
 			Server: snapshot.Inventory.Summary.Server,
 			Client: snapshot.Inventory.Summary.Client,
+			ClientGroups: snapshot.Inventory.Summary.ClientGroups,
 		},
 		Mods: snapshot.Mods,
 	})
 }
 
 type inventorySummary struct {
-	Total  int `json:"total"`
-	Server int `json:"server"`
-	Client int `json:"client"`
+	Total        int `json:"total"`
+	Server       int `json:"server"`
+	Client       int `json:"client"`
+	ClientGroups int `json:"client_groups,omitempty"`
 }
 
 func (s *Server) catalog(w http.ResponseWriter, _ *http.Request) {
@@ -927,4 +949,81 @@ func writeJSON(w http.ResponseWriter, status int, value any) {
 
 func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"error": message})
+}
+
+
+func (s *Server) autoModpack(w http.ResponseWriter, _ *http.Request) {
+	if s.autoModpackStatus == nil {
+		writeError(w, http.StatusServiceUnavailable, "AutoModpack integration is not configured")
+		return
+	}
+	status, err := s.autoModpackStatus()
+	if err != nil {
+		writeError(w, http.StatusServiceUnavailable, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, status)
+}
+
+func (s *Server) updateAutoModpack(w http.ResponseWriter, r *http.Request) {
+	if s.updateAutoModpackConfig == nil {
+		writeError(w, http.StatusServiceUnavailable, "AutoModpack configuration management is not configured")
+		return
+	}
+	var request service.AutoModpackConfigRequest
+	r.Body = http.MaxBytesReader(w, r.Body, 512<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid AutoModpack configuration: "+err.Error())
+		return
+	}
+	status, err := s.updateAutoModpackConfig(r.Context(), request)
+	if err != nil {
+		writeError(w, http.StatusConflict, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, status)
+}
+
+func (s *Server) migrateAutoModpackGroupHandler(w http.ResponseWriter, r *http.Request) {
+	if s.migrateAutoModpackGroup == nil {
+		writeError(w, http.StatusServiceUnavailable, "AutoModpack group migration is not configured")
+		return
+	}
+	var request service.AutoModpackGroupMigrationRequest
+	r.Body = http.MaxBytesReader(w, r.Body, 32<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid AutoModpack group migration: "+err.Error())
+		return
+	}
+	status, err := s.migrateAutoModpackGroup(r.Context(), request)
+	if err != nil {
+		writeError(w, http.StatusConflict, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, status)
+}
+
+func (s *Server) runAutoModpackActionHandler(w http.ResponseWriter, r *http.Request) {
+	if s.runAutoModpackAction == nil {
+		writeError(w, http.StatusServiceUnavailable, "AutoModpack operations are not configured")
+		return
+	}
+	var request service.AutoModpackActionRequest
+	r.Body = http.MaxBytesReader(w, r.Body, 16<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid AutoModpack action: "+err.Error())
+		return
+	}
+	result, err := s.runAutoModpackAction(r.Context(), request)
+	if err != nil {
+		writeError(w, http.StatusConflict, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusAccepted, result)
 }
