@@ -393,3 +393,88 @@ func TestAutoModpackStatusReadsPublishedGroupProjection(t *testing.T) {
 		t.Fatalf("visual group missing from status: %+v", status.Groups)
 	}
 }
+
+
+func TestAutoModpackPublicationStateClearsOnlyAfterDurableGenerationAdvance(t *testing.T) {
+	root := t.TempDir()
+	stateDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "mods"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	svc, err := New(context.Background(), Options{ServerRoot: root, StateDir: stateDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	changedAt := time.Date(2026, 10, 6, 4, 0, 0, 0, time.UTC)
+	requestedAt := changedAt.Add(time.Minute)
+	svc.mu.Lock()
+	svc.state.AutoModpack.PendingPublish = true
+	svc.state.AutoModpack.LastChangedAt = &changedAt
+	svc.state.AutoModpack.LastPublishRequestedAt = &requestedAt
+	svc.state.AutoModpack.PublishRequestedJournalHead = 4
+	if err := svc.persistState(); err != nil {
+		svc.mu.Unlock()
+		t.Fatal(err)
+	}
+	svc.mu.Unlock()
+
+	cleared, err := svc.reconcileAutoModpackPublication(AutoModpackGeneration{
+		Sequence: 4,
+		CreatedAt: requestedAt.Add(time.Minute),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cleared {
+		t.Fatal("accepted publish request without journal advance must stay pending")
+	}
+
+	cleared, err = svc.reconcileAutoModpackPublication(AutoModpackGeneration{
+		Sequence: 5,
+		CreatedAt: requestedAt.Add(2 * time.Minute),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cleared {
+		t.Fatal("new durable generation should clear pending publication state")
+	}
+	svc.mu.RLock()
+	pending := svc.state.AutoModpack.PendingPublish
+	svc.mu.RUnlock()
+	if pending {
+		t.Fatal("pending publication state remained set after durable generation")
+	}
+}
+
+func TestAutoModpackAutomaticGenerationClearsPendingPublication(t *testing.T) {
+	root := t.TempDir()
+	stateDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "mods"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	svc, err := New(context.Background(), Options{ServerRoot: root, StateDir: stateDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	changedAt := time.Date(2026, 10, 6, 4, 0, 0, 0, time.UTC)
+	svc.mu.Lock()
+	svc.state.AutoModpack.PendingPublish = true
+	svc.state.AutoModpack.LastChangedAt = &changedAt
+	svc.state.AutoModpack.LastPublishRequestedAt = nil
+	svc.state.AutoModpack.PublishRequestedJournalHead = 0
+	svc.mu.Unlock()
+
+	cleared, err := svc.reconcileAutoModpackPublication(AutoModpackGeneration{
+		Sequence: 1,
+		CreatedAt: changedAt.Add(time.Minute),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cleared {
+		t.Fatal("automatic generation after the tracked change should clear pending publication state")
+	}
+}
