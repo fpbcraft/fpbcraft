@@ -195,9 +195,11 @@ func (s *Service) ChangeNeoForge(ctx context.Context, target string) (NeoForgeCh
 		return NeoForgeChangeResult{}, err
 	}
 	verifiedConfig, err := s.loadCraftyServerConfig(ctx)
-	if err != nil ||
-		neoForgeVersionFromText(verifiedConfig.ExecutionCommand) != target ||
-		neoForgeVersionFromText(verifiedConfig.Executable) != target {
+	verifiedCommandVersion := neoForgeVersionFromText(verifiedConfig.ExecutionCommand)
+	commandVerified := verifiedCommandVersion == target ||
+		(verifiedCommandVersion == "" && verifiedConfig.ExecutionCommand == nextCommand)
+	executableVerified := neoForgeVersionFromText(verifiedConfig.Executable) == target
+	if err != nil || !commandVerified || !executableVerified {
 		rollbackErr := s.updateCraftyNeoForgeConfig(
 			context.Background(),
 			currentConfig.ExecutionCommand,
