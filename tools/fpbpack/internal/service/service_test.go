@@ -305,8 +305,8 @@ func TestAutoModpackStatusReadsGenerationJournal(t *testing.T) {
 	); err != nil {
 		t.Fatal(err)
 	}
-	journal := `{"seq":1,"contentToken":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","policySha1":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","createdAt":"2026-10-06T01:00:00Z","notes":"Initial","restoreOf":-1,"changes":[{"path":"mods/a.jar","fromSha1":null,"fromSize":0,"toSha1":"cccccccccccccccccccccccccccccccccccccccc","toSize":123}]}
-{"seq":2,"contentToken":"dddddddddddddddddddddddddddddddddddddddd","policySha1":"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee","createdAt":"2026-10-06T02:00:00Z","notes":"Update","restoreOf":-1,"changes":[{"path":"mods/a.jar","fromSha1":"cccccccccccccccccccccccccccccccccccccccc","fromSize":123,"toSha1":"ffffffffffffffffffffffffffffffffffffffff","toSize":125},{"path":"config/x","fromSha1":null,"fromSize":0,"toSha1":"1111111111111111111111111111111111111111","toSize":5}]}
+	journal := `{"seq":1,"contentToken":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","policySha1":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","createdAt":"2026-10-06T01:00:00Z","notes":"Initial","restoreOf":-1,"changes":[{"path":"mods/a.jar","fromSha1":"","fromSize":0,"toSha1":"cccccccccccccccccccccccccccccccccccccccc","toSize":123}]}
+{"seq":2,"contentToken":"dddddddddddddddddddddddddddddddddddddddd","policySha1":"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee","createdAt":"2026-10-06T02:00:00Z","notes":"Update","restoreOf":-1,"changes":[{"path":"mods/a.jar","fromSha1":"cccccccccccccccccccccccccccccccccccccccc","fromSize":123,"toSha1":"ffffffffffffffffffffffffffffffffffffffff","toSize":125},{"path":"config/x","fromSha1":"","fromSize":0,"toSha1":"1111111111111111111111111111111111111111","toSize":5}]}
 `
 	if err := os.WriteFile(filepath.Join(root, "automodpack", "server", "journal.jsonl"), []byte(journal), 0o644); err != nil {
 		t.Fatal(err)
@@ -324,5 +324,72 @@ func TestAutoModpackStatusReadsGenerationJournal(t *testing.T) {
 	}
 	if status.Generations[0].Summary.Added != 1 || status.Generations[0].Summary.Changed != 1 {
 		t.Fatalf("unexpected generation summary: %+v", status.Generations[0].Summary)
+	}
+}
+
+
+func TestAutoModpackStatusReadsPublishedGroupProjection(t *testing.T) {
+	root := t.TempDir()
+	stateDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "mods"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "automodpack", "server"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(root, "automodpack", "server.conf"),
+		[]byte(`modpack {
+  name: "FPBCraft"
+  General {
+    main { required: true }
+    visual { description: "Visual extras" }
+  }
+}`),
+		0o644,
+	); err != nil {
+		t.Fatal(err)
+	}
+	projection := `{
+  "contentToken":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "journalHead":4,
+  "policy":{
+    "categories":{
+      "General":{
+        "main":{"files":{"mods/core.jar":{"size":"123","type":"mod","editable":false,"sha1":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}}},
+        "visual":{"files":{"shaderpacks/test.zip":{"size":"456","type":"shader","editable":true,"sha1":"cccccccccccccccccccccccccccccccccccccccc"}}}
+      }
+    }
+  }
+}`
+	if err := os.WriteFile(filepath.Join(root, "automodpack", "server", "current-projection.json"), []byte(projection), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	svc, err := New(context.Background(), Options{ServerRoot: root, StateDir: stateDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	status, err := svc.AutoModpackStatus()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status.PublishedJournalHead != 4 || status.PublishedContentToken == "" {
+		t.Fatalf("unexpected published head: %+v", status)
+	}
+	found := false
+	for _, group := range status.Groups {
+		if group.ID != "visual" {
+			continue
+		}
+		found = true
+		if len(group.PublishedFiles) != 1 ||
+			group.PublishedFiles[0].Path != "shaderpacks/test.zip" ||
+			!group.PublishedFiles[0].Editable {
+			t.Fatalf("unexpected visual published files: %+v", group.PublishedFiles)
+		}
+	}
+	if !found {
+		t.Fatalf("visual group missing from status: %+v", status.Groups)
 	}
 }
