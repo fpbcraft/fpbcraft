@@ -9,7 +9,7 @@ Browser
    │
    ▼
 FPBPack HTTP server :8787
-   ├── /, /mods/, /updates/, /history/, /settings/  static GUI
+   ├── /, /mods/, /updates/, /automodpack/, /history/, /settings/  static GUI
    ├── /api/*                                      management API
    └── /healthz                                    service health
         │
@@ -63,6 +63,8 @@ The state directory is FPBPack-owned:
 │   └── backup-<id>/
 │       ├── manifest.json
 │       └── files/...           verified copies of affected current JARs
+├── automodpack/
+│   └── config-backups/         retained pre-edit copies of server.conf
 └── cache/
     └── artifacts/
         └── <verified-key>.jar  prefetched target artifacts keyed by a verified provider checksum
@@ -71,6 +73,30 @@ The state directory is FPBPack-owned:
 `state.json` is authoritative for durable management identity such as provider/project ownership and unmanaged/pinned artifacts. `secrets.json` is separate so provider credentials are not mixed into ordinary exported/debug state; it is written with owner-only permissions and credential values are never returned by the API. The old `migration-report.json` is only a bootstrap/import format.
 
 A legacy migration report may be imported explicitly on the first run, or auto-discovered from supported legacy locations. Once imported, future starts use `state.json` and do not require the migration report.
+
+## AutoModpack integration
+
+AutoModpack remains authoritative for its own pack configuration and generation journal. FPBPack does **not** mirror `server.conf` into a second durable configuration model.
+
+The integration reads and safely mutates:
+
+```text
+/server/automodpack/
+├── server.conf                         authoritative AutoModpack server configuration
+├── host-modpack/
+│   ├── main/
+│   └── <group-id>/                     direct group content
+└── server/
+    └── journal.jsonl                   append-only published-generation history
+```
+
+FPBPack's catalog stores only the deployment identity needed for management: `server` or `client`, plus an AutoModpack group ID for client content. Legacy client entries with no explicit group are normalized to `main`. Inventory discovers all `host-modpack/<group>/mods` directories, and group identity then flows through update candidates, dependency planning, Review, Apply, Restore, and the Mods UI.
+
+Changes to `server.conf` use its SHA-256 as an optimistic-concurrency token. FPBPack refuses to overwrite a config that changed after it was loaded, writes a retained backup first, validates the resulting group graph, and atomically replaces the file. Unknown config fields are retained by the parser/editor so upgrading AutoModpack does not require FPBPack to understand every new setting before preserving it.
+
+Group IDs and category names are treated as persistent identities. Destructive/renaming edits require explicit confirmation; group-ID migration is a separate operation that rewrites `requires`/`breaks-with`, renames the group directory, and migrates accepted FPBPack catalog/source identities together.
+
+FPBPack tracks whether one of its file/config operations may require a new AutoModpack generation. Publication itself is performed by AutoModpack: FPBPack sends the documented commands through Crafty's server console connection. Generation history is read from AutoModpack's append-only journal, and rollback uses AutoModpack's preview/confirmed revert commands rather than reconstructing an old pack inside FPBPack.
 
 ## Plan readiness contract
 
