@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -106,4 +107,35 @@ func inheritClientDependencyGroups(dependencies []updatecheck.Dependency, group 
 		}
 		inheritClientDependencyGroups(dependency.Dependencies, nextGroup)
 	}
+}
+
+
+func validateAutoModpackGroupID(group string) error {
+	group = strings.TrimSpace(group)
+	if group == "" {
+		return fmt.Errorf("AutoModpack group is required for client placement")
+	}
+	if group == "." || group == ".." || strings.ContainsAny(group, "/\\") {
+		return fmt.Errorf("invalid AutoModpack group %q", group)
+	}
+	for _, char := range group {
+		if char <= ' ' || char == ':' {
+			return fmt.Errorf("invalid AutoModpack group %q", group)
+		}
+	}
+	return nil
+}
+
+func (s *Service) autoModpackModsPath(group string) string {
+	group = normalizeAutoModpackGroup(inventory.LocationClient, group)
+	if path := strings.TrimSpace(s.snapshot.Inventory.ClientGroupModsPaths[group]); path != "" {
+		return path
+	}
+	if group == "main" {
+		if path := strings.TrimSpace(s.options.ClientModsPath); path != "" {
+			return path
+		}
+		return inventory.DefaultClientModsPath
+	}
+	return filepath.ToSlash(filepath.Join(inventory.DefaultAutoModpackHostPath, group, "mods"))
 }
