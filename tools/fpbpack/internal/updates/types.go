@@ -75,6 +75,7 @@ type Dependency struct {
 	InstalledVersion string             `json:"installed_version,omitempty"`
 	TargetVersion    string             `json:"target_version,omitempty"`
 	Deployment       inventory.Location `json:"deployment,omitempty"`
+	AutoModpackGroup string             `json:"automodpack_group,omitempty"`
 	Environment      string             `json:"environment,omitempty"`
 	Target           *Release           `json:"target,omitempty"`
 	Dependencies     []Dependency       `json:"dependencies,omitempty"`
@@ -104,6 +105,7 @@ type Candidate struct {
 	IconURL        string             `json:"icon_url,omitempty"`
 	Side           string             `json:"side"`
 	Deployment     inventory.Location `json:"deployment"`
+	AutoModpackGroup string           `json:"automodpack_group,omitempty"`
 	Environment    string             `json:"environment,omitempty"`
 	Installed      Release            `json:"installed"`
 	Target         *Release           `json:"target,omitempty"`
