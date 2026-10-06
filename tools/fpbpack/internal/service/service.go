@@ -33,6 +33,8 @@ type Options struct {
 	CurseForgeAPIKey string
 	GitHubBaseURL     string
 	GitHubToken       string
+	NeoForgeBaseURL   string
+	JavaExecutable    string
 	CraftyURL         string
 	CraftyServerID    string
 	CraftyToken       string
@@ -167,6 +169,12 @@ func normalizeOptions(options *Options) {
 	}
 	if options.ModrinthBaseURL == "" {
 		options.ModrinthBaseURL = inventory.DefaultModrinthAPI
+	}
+	if options.NeoForgeBaseURL == "" {
+		options.NeoForgeBaseURL = DefaultNeoForgeMavenBaseURL
+	}
+	if options.JavaExecutable == "" {
+		options.JavaExecutable = "java"
 	}
 }
 
