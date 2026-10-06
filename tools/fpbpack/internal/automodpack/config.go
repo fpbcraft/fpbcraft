@@ -820,6 +820,7 @@ func (p *tokenParser) parseScalar(stoppers ...tokenKind) (string, error) {
 	}
 
 	var builder strings.Builder
+	hadValue := false
 	previous := tokenColon
 	for p.pos < len(p.tokens) {
 		current := p.tokens[p.pos]
@@ -828,6 +829,7 @@ func (p *tokenParser) parseScalar(stoppers ...tokenKind) (string, error) {
 		}
 		switch current.kind {
 		case tokenWord:
+			hadValue = true
 			// Preserve compatibility with the compact colon-less object syntax
 			// accepted by AutoModpack/Reconf (for example: name: "Pack" General { ... }).
 			// A word followed by ':' or '{' after an already-started scalar is
@@ -848,7 +850,7 @@ func (p *tokenParser) parseScalar(stoppers ...tokenKind) (string, error) {
 		previous = current.kind
 		p.pos++
 	}
-	if builder.Len() == 0 {
+	if !hadValue {
 		return "", fmt.Errorf("empty scalar value")
 	}
 	return builder.String(), nil
