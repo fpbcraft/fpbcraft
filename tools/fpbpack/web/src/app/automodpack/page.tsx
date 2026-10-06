@@ -422,7 +422,7 @@ export default function AutoModpackPage() {
                       <td className="whitespace-nowrap">
                         {formatDate(generation.created_at)}
                         {isHead ? <Pill tone="good">head</Pill> : null}
-                        {generation.restore_of > 0 ? (
+                        {(generation.restore_of ?? -1) > 0 ? (
                           <div className="mt-1 text-[0.68rem] text-base-content/40">
                             restore of #{generation.restore_of}
                           </div>
