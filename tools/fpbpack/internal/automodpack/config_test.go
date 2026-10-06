@@ -123,3 +123,22 @@ modpack: {
 		t.Fatalf("unexpected from-server list: %#v", group.FromServer)
 	}
 }
+
+
+func TestParseCompactEmptyStringBeforeNextKey(t *testing.T) {
+	doc, err := Parse([]byte(`modpack { name: "" General { main { display-name: "" required: true } } }`))
+	if err != nil {
+		t.Fatalf("expected compact empty strings to parse: %v", err)
+	}
+	cfg := doc.Config()
+	if cfg.Name != "" {
+		t.Fatalf("unexpected pack name: %q", cfg.Name)
+	}
+	if len(cfg.Categories) != 1 || len(cfg.Categories[0].Groups) != 1 {
+		t.Fatalf("unexpected groups: %#v", cfg.Categories)
+	}
+	group := cfg.Categories[0].Groups[0]
+	if group.DisplayName != "" || !group.Required {
+		t.Fatalf("unexpected compact group parse: %#v", group)
+	}
+}
