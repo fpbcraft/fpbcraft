@@ -84,6 +84,27 @@ export interface CraftyStatus {
   allow_insecure?: boolean;
 }
 
+export interface NeoForgeVersion {
+  version: string;
+  channel: 'release' | 'beta' | 'alpha' | 'rc' | string;
+  current?: boolean;
+}
+
+export interface NeoForgeStatus {
+  minecraft: string;
+  current_version?: string;
+  latest_version?: string;
+  versions: NeoForgeVersion[];
+  server_state: string;
+  detail?: string;
+}
+
+export interface NeoForgeChangeResult {
+  from_version: string;
+  to_version: string;
+  direction: 'upgrade' | 'downgrade' | 'reinstall' | string;
+}
+
 export interface ManagementStatus {
   mode: string;
   read_only: boolean;
