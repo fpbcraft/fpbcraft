@@ -1,6 +1,7 @@
 package automodpack
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -140,5 +141,44 @@ func TestParseCompactEmptyStringBeforeNextKey(t *testing.T) {
 	group := cfg.Categories[0].Groups[0]
 	if group.DisplayName != "" || !group.Required {
 		t.Fatalf("unexpected compact group parse: %#v", group)
+	}
+}
+
+
+func TestConfigJSONUsesEmptyArraysInsteadOfNull(t *testing.T) {
+	doc, err := Parse([]byte(`
+accepted-loaders: []
+modpack {
+  name: "FPBCraft"
+  General {
+    main {
+      required: true
+    }
+  }
+}
+`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded, err := json.Marshal(doc.Config())
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(encoded)
+	for _, field := range []string{
+		"accepted_loaders",
+		"requires",
+		"breaks_with",
+		"compatible_platforms",
+		"from_server",
+		"exclude",
+		"editable",
+	} {
+		if strings.Contains(text, `"`+field+`":null`) {
+			t.Fatalf("%s serialized as null: %s", field, text)
+		}
+		if !strings.Contains(text, `"`+field+`":[]`) {
+			t.Fatalf("%s did not serialize as an empty array: %s", field, text)
+		}
 	}
 }
