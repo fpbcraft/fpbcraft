@@ -63,6 +63,11 @@ func (s *Service) RunAutoModpackAction(ctx context.Context, request AutoModpackA
 		return AutoModpackActionResult{}, fmt.Errorf("unsupported AutoModpack action %q", request.Action)
 	}
 
+	publishBaseline := int64(0)
+	if action == "publish" || action == "revert_confirm" {
+		_, _, publishBaseline, _ = s.autoModpackPublishedContent()
+	}
+
 	status := s.CraftyStatus(ctx)
 	if !status.Configured {
 		return AutoModpackActionResult{}, fmt.Errorf("Crafty is not configured")
@@ -90,8 +95,8 @@ func (s *Service) RunAutoModpackAction(ctx context.Context, request AutoModpackA
 	now := time.Now().UTC()
 	if action == "publish" || action == "revert_confirm" {
 		s.mu.Lock()
-		s.state.AutoModpack.PendingPublish = false
 		s.state.AutoModpack.LastPublishRequestedAt = &now
+		s.state.AutoModpack.PublishRequestedJournalHead = publishBaseline
 		s.state.UpdatedAt = now
 		err := s.persistState()
 		s.mu.Unlock()
@@ -102,7 +107,7 @@ func (s *Service) RunAutoModpackAction(ctx context.Context, request AutoModpackA
 	s.logEvent("info", "automodpack", "Sent server command: "+command)
 	message := "Crafty accepted the AutoModpack command."
 	if action == "publish" || action == "revert_confirm" {
-		message += " The server console remains authoritative if AutoModpack rejects generation or publication."
+		message += " FPBPack will keep publication pending until AutoModpack's published journal advances; the server console remains authoritative if generation is rejected."
 	}
 	return AutoModpackActionResult{
 		Action: action,
