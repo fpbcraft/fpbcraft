@@ -408,6 +408,18 @@ func (s *Service) validatePlanCatalogState(plan planning.Plan) error {
 							entry.Deployment,
 						)
 					}
+					if entry.Deployment == inventory.LocationClient {
+						expectedGroup := normalizeAutoModpackGroup(inventory.LocationClient, change.Artifact.AutoModpackGroup)
+						currentGroup := normalizeAutoModpackGroup(inventory.LocationClient, entry.AutoModpackGroup)
+						if expectedGroup != currentGroup {
+							return fmt.Errorf(
+								"%s preferred AutoModpack group changed from %s to %s after the plan was created",
+								change.Name,
+								expectedGroup,
+								currentGroup,
+							)
+						}
+					}
 				}
 			case "add":
 				if exists {
@@ -816,6 +828,7 @@ func catalogAfterPlan(current catalog.Report, plan planning.Plan) (catalog.Repor
 			SHA512: change.Artifact.SHA512,
 			URL: change.Artifact.URL,
 			Deployment: inventory.Location(change.Artifact.Deployment),
+			AutoModpackGroup: normalizeAutoModpackGroup(inventory.Location(change.Artifact.Deployment), change.Artifact.AutoModpackGroup),
 			Environment: change.Artifact.Environment,
 		}
 		if entry.Deployment == inventory.LocationClient {
@@ -847,6 +860,7 @@ func catalogAfterPlan(current catalog.Report, plan planning.Plan) (catalog.Repor
 		for _, operation := range change.Operations {
 			entry.SourcePaths = append(entry.SourcePaths, catalog.Source{
 				Location: entry.Deployment,
+				Group: entry.AutoModpackGroup,
 				Path: filepath.ToSlash(operation.TargetPath),
 			})
 		}
