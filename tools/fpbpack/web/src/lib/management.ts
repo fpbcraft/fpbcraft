@@ -431,6 +431,19 @@ export interface AutoModpackGroupStatus {
   bytes: number;
 }
 
+export interface AutoModpackGeneration {
+  sequence: number;
+  content_token: string;
+  created_at: string;
+  notes?: string;
+  restore_of?: number;
+  summary: {
+    added: number;
+    changed: number;
+    removed: number;
+  };
+}
+
 export interface AutoModpackStatus {
   installed: boolean;
   version?: string;
@@ -445,6 +458,7 @@ export interface AutoModpackStatus {
   pending_publish: boolean;
   last_changed_at?: string;
   last_publish_requested_at?: string;
+  generations: AutoModpackGeneration[];
 }
 
 export interface AutoModpackActionResult {
