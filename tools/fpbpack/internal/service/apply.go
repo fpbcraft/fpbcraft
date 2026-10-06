@@ -148,7 +148,12 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 
 	nextState := previousState
 	nextState.Catalog = nextCatalog
-	nextState.UpdatedAt = time.Now().UTC()
+	stateChangedAt := time.Now().UTC()
+	nextState.UpdatedAt = stateChangedAt
+	if planTouchesAutoModpack(plan) {
+		nextState.AutoModpack.PendingPublish = true
+		nextState.AutoModpack.LastChangedAt = &stateChangedAt
+	}
 	if err = writeJSONAtomic(filepath.Join(s.options.StateDir, "inventory.json"), inv); err != nil {
 		return ApplyResult{}, fmt.Errorf("persist post-apply inventory: %w", err)
 	}
@@ -277,7 +282,12 @@ func (s *Service) RestoreBackup(ctx context.Context, backupID string) (result Re
 
 	nextState := previousState
 	nextState.Catalog = manifest.Catalog
-	nextState.UpdatedAt = time.Now().UTC()
+	stateChangedAt := time.Now().UTC()
+	nextState.UpdatedAt = stateChangedAt
+	if planTouchesAutoModpack(plan) {
+		nextState.AutoModpack.PendingPublish = true
+		nextState.AutoModpack.LastChangedAt = &stateChangedAt
+	}
 	if err = writeJSONAtomic(filepath.Join(s.options.StateDir, "inventory.json"), inv); err != nil {
 		return RestoreResult{}, err
 	}
@@ -886,4 +896,22 @@ func (s *Service) persistHistoryEvent(event planning.HistoryEvent) error {
 		return err
 	}
 	return s.pruneHistory(s.Settings().RetentionCount)
+}
+
+
+func planTouchesAutoModpack(plan planning.Plan) bool {
+	for _, change := range plan.Changes {
+		if inventory.Location(change.Artifact.Deployment) == inventory.LocationClient {
+			return true
+		}
+		for _, operation := range change.Operations {
+			for _, path := range []string{operation.CurrentPath, operation.TargetPath} {
+				path = filepath.ToSlash(filepath.Clean(path))
+				if strings.HasPrefix(path, inventory.DefaultAutoModpackHostPath+"/") {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
