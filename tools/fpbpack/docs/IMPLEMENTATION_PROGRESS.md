@@ -1,39 +1,44 @@
 # FPBPack implementation progress
 
-Last updated: **2026-10-05**
+Last updated: **2026-10-06**
 
 ## Active slice
 
-**Slice 4 — Catalog Management: in progress**
+**Slice 5 — Complete AutoModpack Integration: implementation in PR #20**
 
-Working branch: `fpbcraft/fpbcraft:feat/catalog-management` → draft PR #17 against `main`.
+Working branch: `fpbcraft/fpbcraft:feat/automodpack-integration` → draft PR #20 against `main`.
 
-Slices 1–3 plus the operational/reconciliation follow-up are merged. The user merges PRs manually; do not merge this branch automatically.
+Slices 1–4, the operational/reconciliation follow-up, release automation, and NeoForge runtime management are merged. The user merges PRs manually; do not merge this branch automatically.
 
-### Slice 4 work in PR #17
+### Slice 5 implementation
 
-- [x] Search compatible Modrinth projects from the GUI.
-- [x] Search compatible CurseForge projects from the GUI.
-- [x] Mark provider projects already managed by the accepted catalog.
-- [x] Browse compatible exact Modrinth versions with readable number/date/channel/changelog.
-- [x] Browse compatible exact CurseForge files with readable name/date/channel.
-- [x] Filter release/beta/alpha/all in the reusable version picker.
-- [x] Add a new mod with explicit server/common or client-only placement.
-- [x] Change an existing Modrinth/CurseForge mod to an exact version, including downgrade/reinstall.
-- [x] Resolve required dependencies into install/version plans using the existing provider dependency resolvers.
-- [x] Add true `remove` plan operations instead of conflating removal with state-only Forget.
-- [x] Back up removed JARs and restore both bytes and accepted catalog state.
-- [x] Verify reverse dependencies from the currently installed provider versions/files before removal.
-- [x] Fail removal closed when current provider dependency metadata cannot be verified.
-- [x] Update Review to distinguish installation, version change, dependency changes, and removal.
-- [x] Add catalog search/version/plan API endpoints and serve wiring.
-- [x] Add planning and Apply/Restore regression coverage for install/removal semantics.
-- [x] Add provider search/version-filter fixtures for Modrinth and CurseForge.
-- [x] PR #17 implementation CI/build/test validation (workflow #289 green: GUI typecheck/build, Go test/vet, static Unraid binary, Packwiz helper, artifact upload).
-- [ ] Exercise Modrinth add/version/remove against the real FPBCraft server.
-- [ ] Exercise CurseForge add/version/remove against the real FPBCraft server.
-- [ ] Exercise at least one dependency-driven install and one blocked required-dependency removal.
-- [ ] Resolve real-provider edge cases before marking Slice 4 complete.
+- [x] Treat AutoModpack `server.conf` as the authoritative configuration instead of duplicating it into FPBPack state.
+- [x] Parse/edit AutoModpack's documented HOCON subset while retaining unknown settings and unknown group fields.
+- [x] SHA-256 guard config writes so a manual edit made after the GUI loaded cannot be silently overwritten.
+- [x] Back up `server.conf` before every FPBPack config mutation and retain backups using FPBPack's retention setting.
+- [x] Discover every `automodpack/host-modpack/<group>/mods` directory instead of scanning only `main`.
+- [x] Carry AutoModpack group identity through inventory, accepted catalog, update candidates, plans, Apply, Restore, and the GUI.
+- [x] Backwards-compatibly interpret existing `client` entries without a group as `AutoModpack/main`.
+- [x] Support protected group-to-group moves through Review → Apply → Restore.
+- [x] Let catalog installs and exact-version changes target a selected AutoModpack group.
+- [x] Inherit the requesting client mod's group for newly planned client dependencies unless an explicit group already exists.
+- [x] Add AutoModpack group filtering/current/preferred group controls to Mods.
+- [x] Show the target AutoModpack group in Review.
+- [x] Add a dedicated AutoModpack GUI with installation/config status, diagnostics, general settings, advanced host/security settings, and group/category editing.
+- [x] Validate duplicate/invalid group identities, missing/self dependencies, dependency cycles, `requires` + `breaks-with` contradictions, and invalid platform names.
+- [x] Diagnose configured-vs-directory drift, managed artifacts targeting missing groups, direct cross-group content collisions, and AutoModpack self-updater ownership conflicts.
+- [x] Require explicit confirmation for category/group identity-changing edits.
+- [x] Add an explicit group-ID migration operation that updates config references, renames the group directory, and migrates FPBPack catalog/source identities together.
+- [x] Track FPBPack changes that have not yet been published to AutoModpack clients.
+- [x] Send `config reload`, `host restart`, generation preview/publish, group summary, host activity, and generation rollback commands through the existing Crafty connection.
+- [x] Read AutoModpack's append-only `automodpack/server/journal.jsonl` and expose generation notes, change counts, restore lineage, preview rollback, and confirmed rollback in the GUI.
+- [x] Add parser round-trip, group validation, multi-group inventory, group-to-group planning, config concurrency/backup, journal, and HTTP API regression coverage.
+- [ ] Get the complete Slice 5 branch green in FPBPack CI after the final frontend/backend integration.
+- [ ] Exercise config save/reload against the real FPBCraft AutoModpack installation.
+- [ ] Exercise one new optional group and one `main → optional group` protected move.
+- [ ] Preview then publish a real generation and verify the pending-publication indicator clears correctly.
+- [ ] Preview and confirm one generation rollback against the real server.
+- [ ] Capture real-server edge cases for the follow-up **Slice 5.1 — AutoModpack UX & hardening** pass.
 
 ## Architecture / runtime completed
 
