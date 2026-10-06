@@ -31,15 +31,14 @@ type AutoModpackPublishedFile struct {
 }
 
 type AutoModpackGroupStatus struct {
-	ID                 string                     `json:"id"`
-	Category           string                     `json:"category"`
-	Path               string                     `json:"path"`
-	Exists             bool                       `json:"exists"`
-	Files              int                        `json:"files"`
-	Mods               int                        `json:"mods"`
-	Bytes              int64                      `json:"bytes"`
-	PublishedFiles     []AutoModpackPublishedFile `json:"published_files"`
-	PublishedTruncated bool                       `json:"published_truncated,omitempty"`
+	ID                 string `json:"id"`
+	Category           string `json:"category"`
+	Path               string `json:"path"`
+	Exists             bool   `json:"exists"`
+	Files              int    `json:"files"`
+	Mods               int    `json:"mods"`
+	Bytes              int64  `json:"bytes"`
+	PublishedFileCount int    `json:"published_file_count"`
 }
 
 type AutoModpackGenerationSummary struct {
@@ -64,6 +63,7 @@ type AutoModpackStatus struct {
 	ConfigPresent          bool                       `json:"config_present"`
 	ConfigPath             string                     `json:"config_path"`
 	ConfigSHA256           string                     `json:"config_sha256,omitempty"`
+	RawConfig              string                     `json:"raw_config,omitempty"`
 	Config                 automodpack.Config         `json:"config"`
 	Findings               []automodpack.Finding      `json:"findings"`
 	Groups                 []AutoModpackGroupStatus   `json:"groups"`
@@ -77,9 +77,43 @@ type AutoModpackStatus struct {
 }
 
 type AutoModpackConfigRequest struct {
-	ExpectedSHA256        string             `json:"expected_sha256"`
-	Config                automodpack.Config `json:"config"`
-	ConfirmIdentityChanges bool              `json:"confirm_identity_changes,omitempty"`
+	ExpectedSHA256         string             `json:"expected_sha256"`
+	Config                 automodpack.Config `json:"config"`
+	ConfirmIdentityChanges bool               `json:"confirm_identity_changes,omitempty"`
+}
+
+type AutoModpackRawConfigRequest struct {
+	ExpectedSHA256         string `json:"expected_sha256"`
+	RawConfig              string `json:"raw_config"`
+	ConfirmIdentityChanges bool   `json:"confirm_identity_changes,omitempty"`
+}
+
+type AutoModpackPublishedFilesPage struct {
+	Group   string                     `json:"group"`
+	Files   []AutoModpackPublishedFile `json:"files"`
+	Offset  int                        `json:"offset"`
+	Limit   int                        `json:"limit"`
+	Total   int                        `json:"total"`
+	HasMore bool                       `json:"has_more"`
+	Query   string                     `json:"query,omitempty"`
+}
+
+type AutoModpackGenerationDiffEntry struct {
+	Path        string `json:"path"`
+	Action      string `json:"action"`
+	CurrentSHA1 string `json:"current_sha1,omitempty"`
+	CurrentSize int64  `json:"current_size,omitempty"`
+	TargetSHA1  string `json:"target_sha1,omitempty"`
+	TargetSize  int64  `json:"target_size,omitempty"`
+}
+
+type AutoModpackGenerationDiff struct {
+	TargetSequence int64                            `json:"target_sequence"`
+	HeadSequence   int64                            `json:"head_sequence"`
+	Added          int                              `json:"added"`
+	Changed        int                              `json:"changed"`
+	Removed        int                              `json:"removed"`
+	Entries        []AutoModpackGenerationDiffEntry `json:"entries"`
 }
 
 type AutoModpackGroupMigrationRequest struct {
@@ -135,6 +169,7 @@ func (s *Service) AutoModpackStatus() (AutoModpackStatus, error) {
 		return AutoModpackStatus{}, err
 	}
 	status.ConfigPresent = true
+	status.RawConfig = string(content)
 	sum := sha256.Sum256(content)
 	status.ConfigSHA256 = hex.EncodeToString(sum[:])
 	status.Config = doc.Config()
@@ -198,13 +233,7 @@ func (s *Service) AutoModpackStatus() (AutoModpackStatus, error) {
 		status.PublishedContentToken = contentToken
 		status.PublishedJournalHead = journalHead
 		for index := range status.Groups {
-			files := publishedGroups[status.Groups[index].ID]
-			if len(files) > 500 {
-				status.Groups[index].PublishedFiles = append([]AutoModpackPublishedFile(nil), files[:500]...)
-				status.Groups[index].PublishedTruncated = true
-			} else {
-				status.Groups[index].PublishedFiles = append([]AutoModpackPublishedFile(nil), files...)
-			}
+			status.Groups[index].PublishedFileCount = len(publishedGroups[status.Groups[index].ID])
 		}
 	}
 	generations, historyErr := s.autoModpackGenerationHistory()
@@ -294,6 +323,94 @@ func (s *Service) UpdateAutoModpackConfig(_ context.Context, request AutoModpack
 	}
 	s.logEvent("info", "automodpack", "Saved automodpack/server.conf; configuration reload is still required on a running server")
 	return s.AutoModpackStatus()
+}
+
+func (s *Service) UpdateAutoModpackRawConfig(_ context.Context, request AutoModpackRawConfigRequest) (AutoModpackStatus, error) {
+	s.catalogMu.Lock()
+	defer s.catalogMu.Unlock()
+
+	currentDoc, currentContent, err := s.readAutoModpackDocument()
+	if err != nil {
+		return AutoModpackStatus{}, err
+	}
+	currentSum := sha256.Sum256(currentContent)
+	currentHash := hex.EncodeToString(currentSum[:])
+	if strings.TrimSpace(request.ExpectedSHA256) == "" || !strings.EqualFold(strings.TrimSpace(request.ExpectedSHA256), currentHash) {
+		return AutoModpackStatus{}, fmt.Errorf("AutoModpack configuration changed since it was loaded; reload the page before saving")
+	}
+	nextContent := []byte(request.RawConfig)
+	if len(nextContent) == 0 {
+		return AutoModpackStatus{}, fmt.Errorf("AutoModpack configuration cannot be empty")
+	}
+	nextDoc, err := automodpack.Parse(nextContent)
+	if err != nil {
+		return AutoModpackStatus{}, fmt.Errorf("parse edited %s: %w", autoModpackConfigPath, err)
+	}
+	nextConfig := nextDoc.Config()
+	for _, finding := range automodpack.Validate(nextConfig) {
+		if finding.Level == "error" {
+			return AutoModpackStatus{}, fmt.Errorf("validate AutoModpack configuration: %s", finding.Message)
+		}
+	}
+	if err := s.validateAutoModpackIdentityChanges(currentDoc.Config(), nextConfig, request.ConfirmIdentityChanges); err != nil {
+		return AutoModpackStatus{}, err
+	}
+	if nextContent[len(nextContent)-1] != '\n' {
+		nextContent = append(nextContent, '\n')
+	}
+	if err := s.backupAutoModpackConfig(currentContent, currentHash); err != nil {
+		return AutoModpackStatus{}, fmt.Errorf("backup AutoModpack configuration: %w", err)
+	}
+	path := filepath.Join(s.options.ServerRoot, filepath.FromSlash(autoModpackConfigPath))
+	if err := writeBytesAtomic(path, nextContent, 0o644); err != nil {
+		return AutoModpackStatus{}, fmt.Errorf("write AutoModpack configuration: %w", err)
+	}
+	if err := s.markAutoModpackChanged(); err != nil {
+		return AutoModpackStatus{}, fmt.Errorf("persist AutoModpack publication state: %w", err)
+	}
+	s.logEvent("info", "automodpack", "Saved raw automodpack/server.conf; configuration reload is still required on a running server")
+	return s.AutoModpackStatus()
+}
+
+func (s *Service) AutoModpackGroupFiles(group string, offset, limit int, query string) (AutoModpackPublishedFilesPage, error) {
+	group = strings.TrimSpace(group)
+	if err := validateAutoModpackGroupID(group); err != nil {
+		return AutoModpackPublishedFilesPage{}, err
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	if limit < 1 {
+		limit = 100
+	}
+	if limit > 250 {
+		limit = 250
+	}
+	groups, _, _, err := s.autoModpackPublishedContent()
+	if err != nil {
+		return AutoModpackPublishedFilesPage{}, err
+	}
+	all := groups[group]
+	query = strings.TrimSpace(strings.ToLower(query))
+	filtered := make([]AutoModpackPublishedFile, 0, len(all))
+	for _, file := range all {
+		if query != "" && !strings.Contains(strings.ToLower(file.Path), query) {
+			continue
+		}
+		filtered = append(filtered, file)
+	}
+	if offset > len(filtered) {
+		offset = len(filtered)
+	}
+	end := offset + limit
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+	page := append([]AutoModpackPublishedFile{}, filtered[offset:end]...)
+	return AutoModpackPublishedFilesPage{
+		Group: group, Files: page, Offset: offset, Limit: limit,
+		Total: len(filtered), HasMore: end < len(filtered), Query: query,
+	}, nil
 }
 
 func (s *Service) validateAutoModpackIdentityChanges(current, next automodpack.Config, confirmed bool) error {
@@ -511,7 +628,7 @@ func (s *Service) MigrateAutoModpackGroup(ctx context.Context, request AutoModpa
 func (s *Service) autoModpackGroupStatus(category, group string) (AutoModpackGroupStatus, error) {
 	relative := filepath.ToSlash(filepath.Join(inventory.DefaultAutoModpackHostPath, group))
 	path := filepath.Join(s.options.ServerRoot, filepath.FromSlash(relative))
-	result := AutoModpackGroupStatus{ID: group, Category: category, Path: relative, PublishedFiles: []AutoModpackPublishedFile{}}
+	result := AutoModpackGroupStatus{ID: group, Category: category, Path: relative}
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return result, nil
