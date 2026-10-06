@@ -313,6 +313,9 @@ func (s *Service) validateAutoModpackIdentityChanges(current, next automodpack.C
 		if _, exists := newGroups[group]; exists {
 			continue
 		}
+		if group == "main" {
+			return fmt.Errorf("AutoModpack group %q is protected and cannot be removed or renamed", group)
+		}
 		for _, entry := range managedEntries {
 			if entry.Deployment == inventory.LocationClient &&
 				normalizeAutoModpackGroup(entry.Deployment, entry.AutoModpackGroup) == group {
@@ -338,6 +341,9 @@ func (s *Service) MigrateAutoModpackGroup(ctx context.Context, request AutoModpa
 	}
 	oldID := strings.TrimSpace(request.OldID)
 	newID := strings.TrimSpace(request.NewID)
+	if oldID == "main" {
+		return AutoModpackStatus{}, fmt.Errorf("AutoModpack group %q is protected and cannot be renamed", oldID)
+	}
 	if err := validateAutoModpackGroupID(newID); err != nil {
 		return AutoModpackStatus{}, err
 	}
@@ -423,6 +429,8 @@ func (s *Service) MigrateAutoModpackGroup(ctx context.Context, request AutoModpa
 	}
 
 	s.mu.Lock()
+	oldPrefix := filepath.ToSlash(filepath.Join(inventory.DefaultAutoModpackHostPath, oldID)) + "/"
+	newPrefix := filepath.ToSlash(filepath.Join(inventory.DefaultAutoModpackHostPath, newID)) + "/"
 	for index := range s.state.Catalog.Managed {
 		entry := &s.state.Catalog.Managed[index]
 		if entry.Deployment == inventory.LocationClient &&
@@ -435,8 +443,6 @@ func (s *Service) MigrateAutoModpackGroup(ctx context.Context, request AutoModpa
 					continue
 				}
 				source.Group = newID
-				oldPrefix := filepath.ToSlash(filepath.Join(inventory.DefaultAutoModpackHostPath, oldID)) + "/"
-				newPrefix := filepath.ToSlash(filepath.Join(inventory.DefaultAutoModpackHostPath, newID)) + "/"
 				if strings.HasPrefix(filepath.ToSlash(source.Path), oldPrefix) {
 					source.Path = newPrefix + strings.TrimPrefix(filepath.ToSlash(source.Path), oldPrefix)
 				}
@@ -444,6 +450,31 @@ func (s *Service) MigrateAutoModpackGroup(ctx context.Context, request AutoModpa
 		}
 	}
 	s.state.Catalog.RecalculateSummary()
+
+	inv := s.snapshot.Inventory
+	for index := range inv.Mods {
+		mod := &inv.Mods[index]
+		if mod.Location != inventory.LocationClient ||
+			normalizeAutoModpackGroup(mod.Location, mod.Group) != oldID {
+			continue
+		}
+		mod.Group = newID
+		if strings.HasPrefix(filepath.ToSlash(mod.Path), oldPrefix) {
+			mod.Path = newPrefix + strings.TrimPrefix(filepath.ToSlash(mod.Path), oldPrefix)
+		}
+	}
+	if inv.ClientGroupModsPaths == nil {
+		inv.ClientGroupModsPaths = map[string]string{}
+	}
+	delete(inv.ClientGroupModsPaths, oldID)
+	inv.ClientGroupModsPaths[newID] = filepath.ToSlash(filepath.Join(inventory.DefaultAutoModpackHostPath, newID, "mods"))
+	inv.RecalculateSummary()
+	s.snapshot = management.BuildSnapshot(inv, s.state.Catalog)
+	if s.hasUpdate {
+		reconcileUpdateReportToCatalog(&s.updates, s.state.Catalog)
+		s.applyUpdateRules(&s.updates)
+	}
+
 	now := time.Now().UTC()
 	s.state.AutoModpack.PendingPublish = true
 	s.state.AutoModpack.LastChangedAt = &now
@@ -456,6 +487,9 @@ func (s *Service) MigrateAutoModpackGroup(ctx context.Context, request AutoModpa
 		}
 		_ = writeBytesAtomic(configPath, content, 0o644)
 		return AutoModpackStatus{}, fmt.Errorf("persist migrated FPBPack group identity: %w", persistErr)
+	}
+	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "inventory.json"), inv); err != nil {
+		s.logEvent("warning", "automodpack", "Group migration succeeded but the inventory cache could not be updated: "+err.Error())
 	}
 
 	s.logEvent("info", "automodpack", fmt.Sprintf("Migrated AutoModpack group identity %s → %s", oldID, newID))
