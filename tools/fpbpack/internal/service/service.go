@@ -115,10 +115,11 @@ func New(ctx context.Context, options Options) (*Service, error) {
 		return nil, err
 	}
 	artifactIDsChanged := catalog.EnsureManagedArtifactIDs(service.state.Catalog.Managed)
+	autoModpackGroupsChanged := normalizeCatalogAutoModpackGroups(service.state.Catalog.Managed)
 	placementWarningsBefore, _ := json.Marshal(service.state.Catalog.Placement)
 	service.state.Catalog.RecalculateSummary()
 	placementWarningsAfter, _ := json.Marshal(service.state.Catalog.Placement)
-	if artifactIDsChanged || string(placementWarningsBefore) != string(placementWarningsAfter) {
+	if artifactIDsChanged || autoModpackGroupsChanged || string(placementWarningsBefore) != string(placementWarningsAfter) {
 		service.state.UpdatedAt = time.Now().UTC()
 		if err := service.persistState(); err != nil {
 			return nil, fmt.Errorf("persist catalog state normalization: %w", err)
@@ -324,6 +325,8 @@ func reconcileUpdateReportToCatalog(report *updatecheck.Report, current catalog.
 			continue
 		}
 		candidate.Deployment = entry.Deployment
+		candidate.AutoModpackGroup = normalizeAutoModpackGroup(entry.Deployment, entry.AutoModpackGroup)
+		inheritClientDependencyGroups(candidate.Dependencies, candidate.AutoModpackGroup)
 		candidate.Side = entry.Side
 		if strings.TrimSpace(entry.Name) != "" {
 			candidate.Name = entry.Name
