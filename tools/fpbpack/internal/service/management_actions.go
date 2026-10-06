@@ -487,13 +487,12 @@ func (s *Service) assignCurseForgeSource(
 		APIKey: apiKey,
 		Mode: updatecheck.RefreshModeInteractive,
 	}
-	verified, err := client.VerifyInstalledFile(
+	if _, err := client.VerifyInstalledFile(
 		verifyCtx,
 		projectID,
 		request.FileID,
 		mod.SHA1,
-	)
-	if err != nil {
+	); err != nil {
 		return ModManagementResult{}, fmt.Errorf("verify CurseForge source: %w", err)
 	}
 

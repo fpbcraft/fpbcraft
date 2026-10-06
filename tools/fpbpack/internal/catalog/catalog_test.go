@@ -43,6 +43,7 @@ func TestBuildUsesJarMetadataNameInsteadOfProviderReleaseTitle(t *testing.T) {
 			VersionNumber: "1.5.0",
 			VersionName:   "[1.21 NeoForge] v1.5.0",
 			Filename:      "ding-1.5.0.jar",
+			URL:           "https://cdn.example/ding-1.5.0.jar",
 			Environment:   "client_and_server",
 		},
 	}}}
