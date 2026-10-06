@@ -42,7 +42,8 @@ type Artifact struct {
 	SHA1       string `json:"sha1,omitempty"`
 	SHA256     string `json:"sha256,omitempty"`
 	SHA512     string `json:"sha512,omitempty"`
-	Deployment     string `json:"deployment"`
+	Deployment       string `json:"deployment"`
+	AutoModpackGroup string `json:"automodpack_group,omitempty"`
 	Environment    string `json:"environment,omitempty"`
 	ManualDownload bool   `json:"manual_download,omitempty"`
 	ManualProvided bool   `json:"manual_provided,omitempty"`
@@ -207,6 +208,7 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 					Filename: mod.Filename,
 					SHA512: mod.SHA512,
 					Deployment: string(mod.Deployment),
+					AutoModpackGroup: normalizedGroup(mod.Deployment, mod.AutoModpackGroup),
 				},
 				Operations: []FileOperation{{
 					Action: "remove",
@@ -246,8 +248,9 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 			addBlocker(&plan, "installed_artifact_missing", key, "The currently managed artifact could not be matched to the live inventory.")
 		}
 
-		targetPath := filepath.ToSlash(filepath.Join(modsPath(snapshot.Inventory, candidate.Deployment), target.Filename))
-		if installed && mod.Path != "" && mod.Deployment == candidate.Deployment {
+		targetPath := filepath.ToSlash(filepath.Join(modsPath(snapshot.Inventory, candidate.Deployment, candidate.AutoModpackGroup), target.Filename))
+		if installed && mod.Path != "" && mod.Deployment == candidate.Deployment &&
+			(mod.Deployment != inventory.LocationClient || normalizedGroup(mod.Deployment, mod.AutoModpackGroup) == normalizedGroup(candidate.Deployment, candidate.AutoModpackGroup)) {
 			targetPath = filepath.ToSlash(filepath.Join(filepath.Dir(mod.Path), target.Filename))
 		}
 		change := Change{
@@ -260,7 +263,7 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 			Artifact: Artifact{
 				Provider: candidate.Provider, ProjectID: candidate.ProjectID,
 				VersionID: target.ID, Filename: target.Filename, URL: target.URL,
-				SHA1: target.SHA1, SHA256: target.SHA256, SHA512: target.SHA512, Deployment: string(candidate.Deployment), Environment: candidate.Environment,
+				SHA1: target.SHA1, SHA256: target.SHA256, SHA512: target.SHA512, Deployment: string(candidate.Deployment), AutoModpackGroup: normalizedGroup(candidate.Deployment, candidate.AutoModpackGroup), Environment: candidate.Environment,
 				ManualDownload: target.ManualDownload, ManualURL: target.ManualURL,
 			},
 			Operations: []FileOperation{{
@@ -362,7 +365,7 @@ func appendDependencyClosure(
 			mod, installed := mods[depKey]
 			operation := FileOperation{
 				Action: "add",
-				TargetPath: filepath.ToSlash(filepath.Join(modsPath(inv, deployment), target.Filename)),
+				TargetPath: filepath.ToSlash(filepath.Join(modsPath(inv, deployment, dependency.AutoModpackGroup), target.Filename)),
 				TargetSHA512: target.SHA512,
 			}
 			installedRelease := updatecheck.Release{}
@@ -372,7 +375,8 @@ func appendDependencyClosure(
 				} else {
 					operation.Action = "replace"
 					operation.CurrentPath = mod.Path
-					if mod.Deployment == deployment {
+					if mod.Deployment == deployment &&
+						(deployment != inventory.LocationClient || normalizedGroup(mod.Deployment, mod.AutoModpackGroup) == normalizedGroup(deployment, dependency.AutoModpackGroup)) {
 						operation.TargetPath = filepath.ToSlash(filepath.Join(filepath.Dir(mod.Path), target.Filename))
 					}
 					operation.CurrentSHA512 = mod.SHA512
@@ -404,6 +408,7 @@ func appendDependencyClosure(
 					SHA256: target.SHA256,
 					SHA512: target.SHA512,
 					Deployment: string(deployment),
+					AutoModpackGroup: normalizedGroup(deployment, dependency.AutoModpackGroup),
 					Environment: dependency.Environment,
 					ManualDownload: target.ManualDownload,
 					ManualURL: target.ManualURL,
@@ -479,17 +484,34 @@ func addBlocker(plan *Plan, code, candidateKey, message string) {
 	})
 }
 
-func modsPath(inv inventory.Inventory, deployment inventory.Location) string {
+func modsPath(inv inventory.Inventory, deployment inventory.Location, group string) string {
 	if deployment == inventory.LocationClient {
-		if strings.TrimSpace(inv.ClientModsPath) != "" {
+		group = normalizedGroup(deployment, group)
+		if inv.ClientGroupModsPaths != nil {
+			if path := strings.TrimSpace(inv.ClientGroupModsPaths[group]); path != "" {
+				return path
+			}
+		}
+		if group == "main" && strings.TrimSpace(inv.ClientModsPath) != "" {
 			return inv.ClientModsPath
 		}
-		return inventory.DefaultClientModsPath
+		return filepath.ToSlash(filepath.Join(inventory.DefaultAutoModpackHostPath, group, "mods"))
 	}
 	if strings.TrimSpace(inv.ServerModsPath) != "" {
 		return inv.ServerModsPath
 	}
 	return inventory.DefaultServerModsPath
+}
+
+func normalizedGroup(deployment inventory.Location, group string) string {
+	if deployment != inventory.LocationClient {
+		return ""
+	}
+	group = strings.TrimSpace(group)
+	if group == "" {
+		return "main"
+	}
+	return group
 }
 
 func coalesceSatisfiedManagedAdds(plan *Plan, mods []management.Mod) {
