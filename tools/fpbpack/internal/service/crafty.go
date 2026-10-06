@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -307,17 +308,38 @@ func (s *Service) craftyRequest(
 	path string,
 	target any,
 ) error {
+	return s.craftyRequestWithBody(ctx, config, token, method, path, nil, target)
+}
+
+func (s *Service) craftyRequestWithBody(
+	ctx context.Context,
+	config CraftySettings,
+	token string,
+	method string,
+	path string,
+	body any,
+	target any,
+) error {
 	base := strings.TrimRight(strings.TrimSpace(config.URL), "/")
 	parsed, err := url.Parse(base)
 	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
 		return fmt.Errorf("invalid Crafty URL")
 	}
+
+	var payload []byte
+	if body != nil {
+		payload, err = json.Marshal(body)
+		if err != nil {
+			return fmt.Errorf("encode Crafty request: %w", err)
+		}
+	}
+
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	if config.AllowInsecure {
 		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true} // user opt-in for Crafty's common self-signed certificate
 	}
 	client := &http.Client{Timeout: 15 * time.Second, Transport: transport}
-	request, err := http.NewRequestWithContext(ctx, method, base+"/api/v2"+path, nil)
+	request, err := http.NewRequestWithContext(ctx, method, base+"/api/v2"+path, bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}
