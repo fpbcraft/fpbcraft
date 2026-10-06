@@ -421,6 +421,14 @@ export interface AutoModpackFinding {
   group?: string;
 }
 
+export interface AutoModpackPublishedFile {
+  path: string;
+  size?: string;
+  type?: string;
+  editable?: boolean;
+  sha1?: string;
+}
+
 export interface AutoModpackGroupStatus {
   id: string;
   category: string;
@@ -429,6 +437,8 @@ export interface AutoModpackGroupStatus {
   files: number;
   mods: number;
   bytes: number;
+  published_files?: AutoModpackPublishedFile[];
+  published_truncated?: boolean;
 }
 
 export interface AutoModpackGeneration {
@@ -459,6 +469,8 @@ export interface AutoModpackStatus {
   last_changed_at?: string;
   last_publish_requested_at?: string;
   generations: AutoModpackGeneration[];
+  published_content_token?: string;
+  published_journal_head?: number;
 }
 
 export interface AutoModpackActionResult {
