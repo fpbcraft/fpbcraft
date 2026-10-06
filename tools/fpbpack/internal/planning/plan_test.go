@@ -690,3 +690,68 @@ func TestExplicitCatalogInstallDoesNotCoalesceOccupiedManagedTarget(t *testing.T
 		t.Fatalf("explicit install operation was incorrectly coalesced: %+v", plan.Changes)
 	}
 }
+
+
+func TestBuildMovesClientArtifactBetweenAutoModpackGroups(t *testing.T) {
+	now := time.Date(2026, 10, 6, 3, 0, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: now,
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:visual",
+			Provider: "modrinth",
+			ProjectID: "visual",
+			Name: "Visual Mod",
+			Deployment: inventory.LocationClient,
+			AutoModpackGroup: "performance",
+			Classification: updatecheck.ClassificationReview,
+			Installed: updatecheck.Release{ID: "v1", Number: "1.0"},
+			Target: &updatecheck.Release{
+				ID: "v2", Number: "2.0", Filename: "visual-v2.jar",
+				URL: "https://cdn.example/visual.jar", SHA512: "target-sha",
+			},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{
+			GeneratedAt: now,
+			ClientModsPath: inventory.DefaultClientModsPath,
+			ClientGroupModsPaths: map[string]string{
+				"main": inventory.DefaultClientModsPath,
+				"performance": "automodpack/host-modpack/performance/mods",
+			},
+		},
+		Mods: []management.Mod{{
+			ID: "modrinth:visual",
+			Provider: "modrinth",
+			ProjectID: "visual",
+			Name: "Visual Mod",
+			Management: "managed",
+			Deployment: inventory.LocationClient,
+			AutoModpackGroup: "main",
+			Path: "automodpack/host-modpack/main/mods/visual-v1.jar",
+			SHA512: "current-sha",
+		}},
+	}
+
+	plan, err := Build([]string{"modrinth:visual"}, report, snapshot, now.Add(time.Minute))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Changes) != 1 {
+		t.Fatalf("changes = %+v", plan.Changes)
+	}
+	change := plan.Changes[0]
+	if change.Artifact.AutoModpackGroup != "performance" {
+		t.Fatalf("artifact group = %q", change.Artifact.AutoModpackGroup)
+	}
+	if len(change.Operations) != 1 {
+		t.Fatalf("operations = %+v", change.Operations)
+	}
+	op := change.Operations[0]
+	if op.CurrentPath != "automodpack/host-modpack/main/mods/visual-v1.jar" {
+		t.Fatalf("current path = %q", op.CurrentPath)
+	}
+	if op.TargetPath != "automodpack/host-modpack/performance/mods/visual-v2.jar" {
+		t.Fatalf("target path = %q", op.TargetPath)
+	}
+}
