@@ -426,7 +426,8 @@ export default function SettingsPage() {
                 </p>
                 <p className="mt-1 text-xs text-base-content/40">
                   The server must already be stopped. FPBPack does not restart it after an upgrade or downgrade,
-                  so you can review the result before starting it again.
+                  so you can review the result before starting it again. Create a world backup before starting the
+                  server on a changed loader version.
                 </p>
                 {neoForge?.detail ? (
                   <p className="mt-2 text-xs text-base-content/45">{neoForge.detail}</p>
