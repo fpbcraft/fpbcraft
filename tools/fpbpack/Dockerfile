@@ -18,7 +18,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     ./cmd/fpbpack
 
 FROM alpine:3.22
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates openjdk21-jre-headless
 COPY --from=build /out/fpbpack /usr/local/bin/fpbpack
 VOLUME ["/data"]
 EXPOSE 8787
