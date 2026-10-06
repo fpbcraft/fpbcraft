@@ -42,6 +42,7 @@ type CurseForgeMatch struct {
 
 type ModFile struct {
 	Location              Location         `json:"location"`
+	Group                 string           `json:"group,omitempty"`
 	Path                  string           `json:"path"`
 	Filename              string           `json:"filename"`
 	Size                  int64            `json:"size"`
@@ -58,6 +59,7 @@ type Summary struct {
 	Total              int `json:"total"`
 	Server             int `json:"server"`
 	Client             int `json:"client"`
+	ClientGroups       int `json:"client_groups,omitempty"`
 	ModrinthExact      int `json:"modrinth_exact"`
 	CurseForgeExact    int `json:"curseforge_exact"`
 	Unmatched          int `json:"unmatched"`
@@ -70,6 +72,7 @@ type Inventory struct {
 	ServerRoot         string    `json:"server_root"`
 	ServerModsPath     string    `json:"server_mods_path"`
 	ClientModsPath     string    `json:"client_mods_path"`
+	ClientGroupModsPaths map[string]string `json:"client_group_mods_paths,omitempty"`
 	ModrinthChecked    bool      `json:"modrinth_checked"`
 	ModrinthError      string    `json:"modrinth_error,omitempty"`
 	CurseForgeChecked  bool      `json:"curseforge_checked"`
@@ -81,6 +84,7 @@ type Inventory struct {
 
 func (i *Inventory) RecalculateSummary() {
 	var summary Summary
+	clientGroups := map[string]struct{}{}
 	for _, mod := range i.Mods {
 		summary.Total++
 		switch mod.Location {
@@ -88,6 +92,11 @@ func (i *Inventory) RecalculateSummary() {
 			summary.Server++
 		case LocationClient:
 			summary.Client++
+			group := mod.Group
+			if group == "" {
+				group = "main"
+			}
+			clientGroups[group] = struct{}{}
 		}
 		if mod.Modrinth != nil {
 			summary.ModrinthExact++
@@ -106,5 +115,6 @@ func (i *Inventory) RecalculateSummary() {
 			summary.MetadataUnreadable++
 		}
 	}
+	summary.ClientGroups = len(clientGroups)
 	i.Summary = summary
 }
