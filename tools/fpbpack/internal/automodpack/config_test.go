@@ -86,3 +86,40 @@ func TestApplyRejectsInvalidIdentity(t *testing.T) {
 		t.Fatal("expected invalid group id to be rejected")
 	}
 }
+
+
+func TestParseAutoModpackBareURLAndCanonicalLists(t *testing.T) {
+	input := `
+# AutoModpack configuration. Docs: https://moddedmc.wiki/en/project/automodpack/docs
+nag-clickable-link: https://modrinth.com/project/automodpack
+advertised-endpoint-host: vpn.tailnet.ts.net
+modpack: {
+  name: "FPBCraft"
+  General: {
+    main: {
+      required: true
+      from-server: [mods/*.jar, kubejs/**, emotes/*]
+      exclude: [**/.*, **/.*/**, "**/*.{tmp,disabled,bak}", kubejs/server_scripts/**]
+    }
+  }
+}
+`
+	doc, err := Parse([]byte(input))
+	if err != nil {
+		t.Fatalf("expected AutoModpack config to parse: %v", err)
+	}
+	cfg := doc.Config()
+	if cfg.Settings.NagClickableLink != "https://modrinth.com/project/automodpack" {
+		t.Fatalf("unexpected URL: %q", cfg.Settings.NagClickableLink)
+	}
+	if cfg.Settings.AdvertisedEndpointHost != "vpn.tailnet.ts.net" {
+		t.Fatalf("unexpected advertised host: %q", cfg.Settings.AdvertisedEndpointHost)
+	}
+	if len(cfg.Categories) != 1 || len(cfg.Categories[0].Groups) != 1 {
+		t.Fatalf("unexpected groups: %#v", cfg.Categories)
+	}
+	group := cfg.Categories[0].Groups[0]
+	if len(group.FromServer) != 3 || group.FromServer[0] != "mods/*.jar" || group.FromServer[1] != "kubejs/**" {
+		t.Fatalf("unexpected from-server list: %#v", group.FromServer)
+	}
+}
