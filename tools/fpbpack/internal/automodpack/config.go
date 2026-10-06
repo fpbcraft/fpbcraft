@@ -97,6 +97,7 @@ type Document struct {
 func DefaultConfig() Config {
 	return Config{
 		Settings: Settings{
+			AcceptedLoaders:           []string{},
 			ModpackHost:               true,
 			GenerateModpackOnStart:    true,
 			AutoExcludeServerSideMods: true,
@@ -480,14 +481,21 @@ func int64Value(o *object, key string, fallback int64) int64 {
 
 func listValue(o *object, key string, fallback []string) []string {
 	if o == nil {
-		return append([]string(nil), fallback...)
+		return nonNilStrings(fallback)
 	}
 	for _, item := range o.entries {
 		if item.key == key && item.value.kind == kindList {
-			return append([]string(nil), item.value.list...)
+			return nonNilStrings(item.value.list)
 		}
 	}
-	return append([]string(nil), fallback...)
+	return nonNilStrings(fallback)
+}
+
+func nonNilStrings(values []string) []string {
+	if len(values) == 0 {
+		return []string{}
+	}
+	return append([]string{}, values...)
 }
 
 func setScalar(o *object, key, scalar string) {
