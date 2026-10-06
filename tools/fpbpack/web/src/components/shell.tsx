@@ -5,6 +5,7 @@ import {usePathname} from 'next/navigation';
 import type {ReactNode} from 'react';
 import {
   Boxes,
+  Cable,
   History,
   Home,
   PackageSearch,
@@ -19,6 +20,7 @@ const nav = [
   {href: '/', label: 'Overview', icon: Home},
   {href: '/updates', label: 'Updates', icon: PackageSearch},
   {href: '/mods', label: 'Mods', icon: Boxes},
+  {href: '/automodpack', label: 'AutoModpack', icon: Cable},
   {href: '/history', label: 'History', icon: History},
   {href: '/tools', label: 'Tools', icon: Terminal},
   {href: '/logs', label: 'Logs', icon: ScrollText},
