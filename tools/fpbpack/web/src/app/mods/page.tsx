@@ -405,6 +405,18 @@ export default function ModsPage() {
   };
 
   const selectedCandidate = selectedMod ? candidatesByKey.get(selectedMod.id) : undefined;
+  const selectedTargetGroup =
+    preferredPlacement === 'client' ? preferredAutoModpackGroup || 'main' : '';
+  const selectedPreferenceChanged = selectedMod
+    ? preferredPlacement !== selectedMod.preferred_deployment ||
+      (preferredPlacement === 'client' &&
+        selectedTargetGroup !== normalizedGroup(selectedMod, true))
+    : false;
+  const selectedLiveMoveNeeded = selectedMod
+    ? preferredPlacement !== selectedMod.deployment ||
+      (preferredPlacement === 'client' &&
+        selectedTargetGroup !== normalizedGroup(selectedMod))
+    : false;
   const selectedRule = selectedCandidate ? rules[selectedCandidate.key] : undefined;
   const selectedBlockers = useMemo(
     () =>
@@ -1227,8 +1239,8 @@ export default function ModsPage() {
 
                 <div className="border-t border-base-300 pt-4">
                   <div className="mb-2 text-xs font-semibold">Placement</div>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                    <label className="form-control flex-1">
+                  <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] sm:items-end">
+                    <label className="form-control">
                       <span className="mb-1 text-xs text-base-content/45">Preferred placement</span>
                       <select
                         className="select select-sm select-bordered"
@@ -1239,7 +1251,32 @@ export default function ModsPage() {
                         }
                       >
                         <option value="server">Server/common</option>
-                        <option value="client">Client-only (AutoModpack)</option>
+                        <option value="client">AutoModpack</option>
+                      </select>
+                    </label>
+                    <label className="form-control">
+                      <span className="mb-1 text-xs text-base-content/45">AutoModpack group</span>
+                      <select
+                        className="select select-sm select-bordered"
+                        value={preferredAutoModpackGroup}
+                        disabled={
+                          preferredPlacement !== 'client' ||
+                          selectedMod.management !== 'managed' ||
+                          managementBusy
+                        }
+                        onChange={(event) => setPreferredAutoModpackGroup(event.target.value)}
+                      >
+                        {(autoModpackStatus?.config.categories.flatMap((category) =>
+                          category.groups.map((group) => (
+                            <option key={group.id} value={group.id}>
+                              {group.display_name || group.id} · {category.name}
+                            </option>
+                          )),
+                        ) ?? [
+                          <option key="main" value="main">
+                            main
+                          </option>,
+                        ])}
                       </select>
                     </label>
                     <button
@@ -1248,7 +1285,7 @@ export default function ModsPage() {
                       disabled={
                         managementBusy ||
                         selectedMod.management !== 'managed' ||
-                        preferredPlacement === selectedMod.preferred_deployment
+                        !selectedPreferenceChanged
                       }
                       onClick={() => void savePlacement(false)}
                     >
@@ -1260,7 +1297,7 @@ export default function ModsPage() {
                       disabled={
                         managementBusy ||
                         selectedMod.management !== 'managed' ||
-                        preferredPlacement === selectedMod.deployment
+                        !selectedLiveMoveNeeded
                       }
                       onClick={() => void savePlacement(true)}
                     >
@@ -1268,10 +1305,9 @@ export default function ModsPage() {
                     </button>
                   </div>
                   <p className="mt-2 text-xs text-base-content/40">
-                    Current: {selectedMod.deployment === 'client' ? 'client-only' : 'server/common'}.
-                    Saving only updates the preferred placement. Review move creates a verified,
-                    backed-up plan that moves the current JAR through the same server-stopped Apply
-                    flow as an update.
+                    Current: {placementLabel(selectedMod)}. Preferred: {placementLabel(selectedMod, true)}.
+                    Saving only updates the preferred target. Review move creates a verified,
+                    backed-up plan; this includes moves between two AutoModpack groups.
                   </p>
                 </div>
 
