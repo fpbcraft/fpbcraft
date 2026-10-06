@@ -231,6 +231,9 @@ func (s *Service) adoptCurrentArtifact(ctx context.Context, request ModManagemen
 	}
 
 	entry := previous
+	if name := metadataDisplayName(mod); name != "" {
+		entry.Name = name
+	}
 	entry.Filename = mod.Filename
 	entry.SHA1 = mod.SHA1
 	entry.SHA512 = mod.SHA512
@@ -269,9 +272,6 @@ func (s *Service) adoptCurrentArtifact(ctx context.Context, request ModManagemen
 		entry.VersionID = match.VersionID
 		entry.URL = match.URL
 		entry.Environment = match.Environment
-		if strings.TrimSpace(match.VersionName) != "" {
-			entry.Name = match.VersionName
-		}
 	case "curseforge":
 		apiKey, _ := s.effectiveCurseForgeAPIKey()
 		if apiKey == "" {
@@ -294,9 +294,6 @@ func (s *Service) adoptCurrentArtifact(ctx context.Context, request ModManagemen
 			return ModManagementResult{}, fmt.Errorf("verify current CurseForge artifact: %w", err)
 		}
 		entry.FileID = verified.FileID
-		if strings.TrimSpace(verified.DisplayName) != "" {
-			entry.Name = verified.DisplayName
-		}
 	case "github":
 		livePath := filepath.Join(s.options.ServerRoot, filepath.FromSlash(mod.Path))
 		sha256Value, err := sha256File(livePath)
@@ -321,9 +318,6 @@ func (s *Service) adoptCurrentArtifact(ctx context.Context, request ModManagemen
 		entry.Tag = verified.Tag
 		entry.Asset = verified.Asset
 		entry.URL = verified.DownloadURL
-		if strings.TrimSpace(verified.Name) != "" {
-			entry.Name = verified.Name
-		}
 	default:
 		return ModManagementResult{}, fmt.Errorf(
 			"adopting manually replaced %s artifacts is not supported",
@@ -434,9 +428,6 @@ func (s *Service) assignModrinthSource(
 	}
 
 	name := managementDisplayName(mod)
-	if strings.TrimSpace(verified.VersionName) != "" {
-		name = verified.VersionName
-	}
 	entry := catalog.Entry{
 		Provider: "modrinth",
 		ProjectID: projectID,
@@ -507,9 +498,6 @@ func (s *Service) assignCurseForgeSource(
 	}
 
 	name := managementDisplayName(mod)
-	if strings.TrimSpace(verified.DisplayName) != "" {
-		name = verified.DisplayName
-	}
 	entry := catalog.Entry{
 		Provider: "curseforge",
 		ProjectID: projectID,
@@ -1032,11 +1020,18 @@ func normalizeCatalogPath(path string) string {
 	return strings.TrimPrefix(filepath.ToSlash(filepath.Clean(strings.TrimSpace(path))), "./")
 }
 
-func managementDisplayName(mod inventory.ModFile) string {
+func metadataDisplayName(mod inventory.ModFile) string {
 	for _, metadata := range mod.Metadata {
-		if strings.TrimSpace(metadata.Name) != "" {
-			return metadata.Name
+		if name := strings.TrimSpace(metadata.Name); name != "" {
+			return name
 		}
+	}
+	return ""
+}
+
+func managementDisplayName(mod inventory.ModFile) string {
+	if name := metadataDisplayName(mod); name != "" {
+		return name
 	}
 	return mod.Filename
 }

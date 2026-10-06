@@ -202,12 +202,14 @@ func readJSON(path string, target any) error {
 }
 
 func displayName(file inventory.ModFile, managed catalog.Entry, isManaged bool) string {
-	if isManaged && strings.TrimSpace(managed.Name) != "" {
-		return managed.Name
-	}
 	for _, meta := range file.Metadata {
-		if strings.TrimSpace(meta.Name) != "" {
-			return meta.Name
+		if name := strings.TrimSpace(meta.Name); name != "" {
+			return name
+		}
+	}
+	if isManaged {
+		if name := strings.TrimSpace(managed.Name); name != "" {
+			return name
 		}
 	}
 	return file.Filename

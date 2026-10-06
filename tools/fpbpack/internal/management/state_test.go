@@ -56,6 +56,34 @@ func TestBuildModsUsesDomainFields(t *testing.T) {
 }
 
 
+func TestBuildModsPrefersJarMetadataNameOverPersistedManagedName(t *testing.T) {
+	inv := inventory.Inventory{Mods: []inventory.ModFile{{
+		Location: inventory.LocationServer,
+		Path:     "mods/ding.jar",
+		Filename: "ding-1.5.0.jar",
+		SHA512:   "ding-sha",
+		Metadata: []inventory.ModMetadata{{Name: "Ding", Version: "1.5.0"}},
+	}}}
+	cat := catalog.Report{Managed: []catalog.Entry{{
+		Provider:  "modrinth",
+		ProjectID: "ding",
+		Name:      "[1.21 NeoForge] v1.5.0",
+		SHA512:    "ding-sha",
+		SourcePaths: []catalog.Source{{
+			Location: inventory.LocationServer,
+			Path:     "mods/ding.jar",
+		}},
+	}}}
+
+	mods := BuildMods(inv, cat)
+	if len(mods) != 1 {
+		t.Fatalf("mods = %d, want 1", len(mods))
+	}
+	if got := mods[0].Name; got != "Ding" {
+		t.Fatalf("display name = %q, want JAR metadata name %q", got, "Ding")
+	}
+}
+
 func TestBuildModsKeepsSiblingArtifactsDistinctAndShowsPreferredPlacement(t *testing.T) {
 	inv := inventory.Inventory{
 		SchemaVersion: inventory.SchemaVersion,
