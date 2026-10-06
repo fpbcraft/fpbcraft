@@ -1,9 +1,11 @@
 package service
 
 import (
+	"bufio"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
@@ -29,6 +31,21 @@ type AutoModpackGroupStatus struct {
 	Bytes    int64  `json:"bytes"`
 }
 
+type AutoModpackGenerationSummary struct {
+	Added   int `json:"added"`
+	Changed int `json:"changed"`
+	Removed int `json:"removed"`
+}
+
+type AutoModpackGeneration struct {
+	Sequence     int64                        `json:"sequence"`
+	ContentToken string                       `json:"content_token"`
+	CreatedAt    time.Time                    `json:"created_at"`
+	Notes        string                       `json:"notes,omitempty"`
+	RestoreOf    int64                        `json:"restore_of,omitempty"`
+	Summary      AutoModpackGenerationSummary `json:"summary"`
+}
+
 type AutoModpackStatus struct {
 	Installed              bool                       `json:"installed"`
 	Version                string                     `json:"version,omitempty"`
@@ -43,6 +60,7 @@ type AutoModpackStatus struct {
 	PendingPublish          bool                       `json:"pending_publish"`
 	LastChangedAt          *time.Time                 `json:"last_changed_at,omitempty"`
 	LastPublishRequestedAt *time.Time                 `json:"last_publish_requested_at,omitempty"`
+	Generations            []AutoModpackGeneration    `json:"generations"`
 }
 
 type AutoModpackConfigRequest struct {
@@ -72,6 +90,7 @@ func (s *Service) AutoModpackStatus() (AutoModpackStatus, error) {
 		PendingPublish:         managedState.PendingPublish,
 		LastChangedAt:          managedState.LastChangedAt,
 		LastPublishRequestedAt: managedState.LastPublishRequestedAt,
+		Generations:            []AutoModpackGeneration{},
 	}
 	for _, mod := range snapshot.Inventory.Mods {
 		detected := false
@@ -155,6 +174,15 @@ func (s *Service) AutoModpackStatus() (AutoModpackStatus, error) {
 		}
 	}
 	status.Findings = append(status.Findings, s.autoModpackDirectContentCollisions(configuredGroups)...)
+	generations, historyErr := s.autoModpackGenerationHistory()
+	if historyErr != nil {
+		status.Findings = append(status.Findings, automodpack.Finding{
+			Level: "warning", Code: "generation_history_unreadable",
+			Message: fmt.Sprintf("Could not read AutoModpack generation history: %v", historyErr),
+		})
+	} else {
+		status.Generations = generations
+	}
 	return status, nil
 }
 
@@ -247,9 +275,18 @@ func (s *Service) validateAutoModpackIdentityChanges(current, next automodpack.C
 			return fmt.Errorf("removing or renaming category %q changes players' saved group-selection identity; retry with identity-change confirmation", category)
 		}
 	}
+	s.mu.RLock()
+	managedEntries := append([]catalog.Entry(nil), s.state.Catalog.Managed...)
+	s.mu.RUnlock()
 	for group := range oldGroups {
 		if _, exists := newGroups[group]; exists {
 			continue
+		}
+		for _, entry := range managedEntries {
+			if entry.Deployment == inventory.LocationClient &&
+				normalizeAutoModpackGroup(entry.Deployment, entry.AutoModpackGroup) == group {
+				return fmt.Errorf("group %q is still the preferred destination for managed artifact %q; move or reassign it before deleting the group", group, entry.Name)
+			}
 		}
 		groupPath := filepath.Join(s.options.ServerRoot, filepath.FromSlash(inventory.DefaultAutoModpackHostPath), group)
 		if nonEmpty, err := directoryHasContent(groupPath); err != nil {
@@ -516,8 +553,10 @@ func (s *Service) backupAutoModpackConfig(content []byte, hash string) error {
 		retention = DefaultRetentionCount
 	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Name() > entries[j].Name() })
-	for _, entry := range entries[retention:] {
-		_ = os.Remove(filepath.Join(dir, entry.Name()))
+	if len(entries) > retention {
+		for _, entry := range entries[retention:] {
+			_ = os.Remove(filepath.Join(dir, entry.Name()))
+		}
 	}
 	return nil
 }
@@ -579,4 +618,83 @@ func writeBytesAtomic(path string, content []byte, mode os.FileMode) error {
 		return err
 	}
 	return os.Rename(tempPath, path)
+}
+
+
+func (s *Service) autoModpackGenerationHistory() ([]AutoModpackGeneration, error) {
+	path := filepath.Join(s.options.ServerRoot, "automodpack", "server", "journal.jsonl")
+	file, err := os.Open(path)
+	if os.IsNotExist(err) {
+		return []AutoModpackGeneration{}, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	type journalChange struct {
+		Path     string  `json:"path"`
+		FromSHA1 *string `json:"fromSha1"`
+		ToSHA1   *string `json:"toSha1"`
+	}
+	type journalEntry struct {
+		Seq          int64           `json:"seq"`
+		ContentToken string          `json:"contentToken"`
+		CreatedAt    string          `json:"createdAt"`
+		Notes        string          `json:"notes"`
+		RestoreOf    int64           `json:"restoreOf"`
+		Changes      []journalChange `json:"changes"`
+	}
+
+	history := []AutoModpackGeneration{}
+	scanner := bufio.NewScanner(file)
+	scanner.Buffer(make([]byte, 64*1024), 4*1024*1024)
+	line := 0
+	for scanner.Scan() {
+		line++
+		raw := strings.TrimSpace(scanner.Text())
+		if raw == "" {
+			continue
+		}
+		var entry journalEntry
+		if err := json.Unmarshal([]byte(raw), &entry); err != nil {
+			// AutoModpack tolerates a torn final journal line after a crash. Keep
+			// earlier durable entries usable and ignore only that final fragment.
+			if !scanner.Scan() {
+				break
+			}
+			return nil, fmt.Errorf("invalid journal entry at line %d: %w", line, err)
+		}
+		createdAt, err := time.Parse(time.RFC3339Nano, entry.CreatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("invalid journal timestamp at line %d: %w", line, err)
+		}
+		summary := AutoModpackGenerationSummary{}
+		for _, change := range entry.Changes {
+			switch {
+			case change.FromSHA1 == nil && change.ToSHA1 != nil:
+				summary.Added++
+			case change.FromSHA1 != nil && change.ToSHA1 == nil:
+				summary.Removed++
+			default:
+				summary.Changed++
+			}
+		}
+		history = append(history, AutoModpackGeneration{
+			Sequence: entry.Seq,
+			ContentToken: entry.ContentToken,
+			CreatedAt: createdAt.UTC(),
+			Notes: entry.Notes,
+			RestoreOf: entry.RestoreOf,
+			Summary: summary,
+		})
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	sort.Slice(history, func(i, j int) bool { return history[i].Sequence > history[j].Sequence })
+	if len(history) > 100 {
+		history = history[:100]
+	}
+	return history, nil
 }
