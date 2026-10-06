@@ -214,6 +214,16 @@ func (s *Service) AutoModpackStatus() (AutoModpackStatus, error) {
 		})
 	} else {
 		status.Generations = generations
+		if status.PendingPublish && len(generations) > 0 {
+			if cleared, reconcileErr := s.reconcileAutoModpackPublication(generations[0]); reconcileErr != nil {
+				status.Findings = append(status.Findings, automodpack.Finding{
+					Level: "warning", Code: "publication_state_persist_failed",
+					Message: fmt.Sprintf("AutoModpack published a newer generation, but FPBPack could not persist the reconciled publication state: %v", reconcileErr),
+				})
+			} else if cleared {
+				status.PendingPublish = false
+			}
+		}
 	}
 	return status, nil
 }
@@ -628,6 +638,22 @@ func (s *Service) backupAutoModpackConfig(content []byte, hash string) error {
 		}
 	}
 	return nil
+}
+
+func (s *Service) reconcileAutoModpackPublication(head AutoModpackGeneration) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	state := &s.state.AutoModpack
+	if !state.PendingPublish || state.LastChangedAt == nil || head.CreatedAt.Before(*state.LastChangedAt) {
+		return false, nil
+	}
+	state.PendingPublish = false
+	s.state.UpdatedAt = time.Now().UTC()
+	if err := s.persistState(); err != nil {
+		state.PendingPublish = true
+		return false, err
+	}
+	return true, nil
 }
 
 func (s *Service) markAutoModpackChanged() error {
