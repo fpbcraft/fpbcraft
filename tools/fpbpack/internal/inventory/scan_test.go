@@ -68,3 +68,43 @@ func copyFile(t *testing.T, source, destination string) {
 		t.Fatal(err)
 	}
 }
+
+
+func TestScanDiscoversAllAutoModpackGroups(t *testing.T) {
+	root := t.TempDir()
+	for _, group := range []string{"main", "performance", "visual"} {
+		dir := filepath.Join(root, "automodpack", "host-modpack", group, "mods")
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		jar := writeTestJar(t, map[string]string{"fabric.mod.json": `{"id":"` + group + `","version":"1"}`})
+		copyFile(t, jar, filepath.Join(dir, group+".jar"))
+	}
+	if err := os.MkdirAll(filepath.Join(root, "mods"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := Scan(ScanOptions{ServerRoot: root})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Summary.Client != 3 || result.Summary.ClientGroups != 3 {
+		t.Fatalf("unexpected client summary: %+v", result.Summary)
+	}
+	for _, group := range []string{"main", "performance", "visual"} {
+		expectedPath := filepath.ToSlash(filepath.Join(DefaultAutoModpackHostPath, group, "mods"))
+		if result.ClientGroupModsPaths[group] != expectedPath {
+			t.Fatalf("group %s path = %q, want %q", group, result.ClientGroupModsPaths[group], expectedPath)
+		}
+		found := false
+		for _, mod := range result.Mods {
+			if mod.Group == group && mod.Location == LocationClient {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("group %s was not assigned to its discovered JAR: %+v", group, result.Mods)
+		}
+	}
+}
