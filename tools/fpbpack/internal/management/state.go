@@ -44,8 +44,10 @@ type Mod struct {
 	ProjectID        string             `json:"project_id,omitempty"`
 	ProjectURL       string             `json:"project_url,omitempty"`
 	Side             string             `json:"side"`
-	Deployment       inventory.Location `json:"deployment"`
+	Deployment          inventory.Location `json:"deployment"`
+	AutoModpackGroup    string             `json:"automodpack_group,omitempty"`
 	PreferredDeployment inventory.Location `json:"preferred_deployment"`
+	PreferredAutoModpackGroup string       `json:"preferred_automodpack_group,omitempty"`
 	Management       string             `json:"management"`
 	Path             string             `json:"path"`
 	SHA512           string             `json:"sha512,omitempty"`
@@ -135,6 +137,10 @@ func BuildMods(inv inventory.Inventory, cat catalog.Report) []Mod {
 			_, isUnresolved = unresolvedByPath[pathKey]
 		}
 
+		currentGroup := file.Group
+		if file.Location == inventory.LocationClient && strings.TrimSpace(currentGroup) == "" {
+			currentGroup = "main"
+		}
 		mod := Mod{
 			ID:               modID(file, managed, isManaged),
 			Name:             displayName(file, managed, isManaged),
@@ -142,7 +148,9 @@ func BuildMods(inv inventory.Inventory, cat catalog.Report) []Mod {
 			InstalledVersion: displayVersion(file),
 			Side:             string(file.Location),
 			Deployment:       file.Location,
+			AutoModpackGroup: currentGroup,
 			PreferredDeployment: file.Location,
+			PreferredAutoModpackGroup: currentGroup,
 			Management:       "unresolved",
 			Path:             file.Path,
 			SHA512:           file.SHA512,
@@ -153,6 +161,14 @@ func BuildMods(inv inventory.Inventory, cat catalog.Report) []Mod {
 			mod.Management = "managed"
 			if managed.Deployment != "" {
 				mod.PreferredDeployment = managed.Deployment
+			}
+			if managed.Deployment == inventory.LocationClient {
+				mod.PreferredAutoModpackGroup = strings.TrimSpace(managed.AutoModpackGroup)
+				if mod.PreferredAutoModpackGroup == "" {
+					mod.PreferredAutoModpackGroup = "main"
+				}
+			} else {
+				mod.PreferredAutoModpackGroup = ""
 			}
 			mod.Provider = managed.Provider
 			mod.ProjectID = managed.ProjectID
