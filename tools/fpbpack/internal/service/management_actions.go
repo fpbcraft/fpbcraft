@@ -28,6 +28,7 @@ type ModManagementRequest struct {
 	Tag        string `json:"tag,omitempty"`
 	Asset      string `json:"asset,omitempty"`
 	Placement  string `json:"placement,omitempty"`
+	AutoModpackGroup string `json:"automodpack_group,omitempty"`
 	ReplacesPath string `json:"replaces_path,omitempty"`
 }
 
@@ -44,6 +45,7 @@ func (s *Service) ManageMod(ctx context.Context, request ModManagementRequest) (
 	request.Action = strings.TrimSpace(request.Action)
 	request.Path = normalizeCatalogPath(request.Path)
 	request.ReplacesPath = normalizeCatalogPath(request.ReplacesPath)
+	request.AutoModpackGroup = strings.TrimSpace(request.AutoModpackGroup)
 	if request.Path == "" {
 		return ModManagementResult{}, fmt.Errorf("mod path is required")
 	}
@@ -66,7 +68,7 @@ func (s *Service) ManageMod(ctx context.Context, request ModManagementRequest) (
 		return result, err
 	case "set_placement":
 		s.mu.Lock()
-		result, err := s.setPreferredPlacement(request.Path, request.Placement)
+		result, err := s.setPreferredPlacement(request.Path, request.Placement, request.AutoModpackGroup)
 		s.mu.Unlock()
 		s.logModManagement(request.Action, result, err)
 		return result, err
@@ -234,7 +236,7 @@ func (s *Service) adoptCurrentArtifact(ctx context.Context, request ModManagemen
 	entry.SHA512 = mod.SHA512
 	entry.SourcePaths = s.sourcesForSHA(mod.SHA512)
 	if len(entry.SourcePaths) == 0 {
-		entry.SourcePaths = []catalog.Source{{Location: mod.Location, Path: mod.Path}}
+		entry.SourcePaths = []catalog.Source{{Location: mod.Location, Group: mod.Group, Path: mod.Path}}
 	}
 
 	verifyCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
@@ -342,6 +344,7 @@ func (s *Service) adoptCurrentArtifact(ctx context.Context, request ModManagemen
 	s.state.Catalog.Managed = managed
 	entry.ArtifactID = previous.ArtifactID
 	entry.Deployment = previous.Deployment
+	entry.AutoModpackGroup = previous.AutoModpackGroup
 	s.state.Catalog.Managed = append(s.state.Catalog.Managed, entry)
 	catalog.EnsureManagedArtifactIDs(s.state.Catalog.Managed)
 	sort.Slice(s.state.Catalog.Managed, func(i, j int) bool {
@@ -732,7 +735,7 @@ func (s *Service) forgetMissingAcceptedEntry(path string) (ModManagementResult, 
 	}, nil
 }
 
-func (s *Service) setPreferredPlacement(path, placement string) (ModManagementResult, error) {
+func (s *Service) setPreferredPlacement(path, placement, autoModpackGroup string) (ModManagementResult, error) {
 	placement = strings.TrimSpace(strings.ToLower(placement))
 	var target inventory.Location
 	switch placement {
@@ -743,12 +746,19 @@ func (s *Service) setPreferredPlacement(path, placement string) (ModManagementRe
 	default:
 		return ModManagementResult{}, fmt.Errorf("placement must be %q or %q", inventory.LocationServer, inventory.LocationClient)
 	}
+	group := normalizeAutoModpackGroup(target, autoModpackGroup)
+	if target == inventory.LocationClient {
+		if err := validateAutoModpackGroupID(group); err != nil {
+			return ModManagementResult{}, err
+		}
+	}
 
 	path = normalizeCatalogPath(path)
 	updated := false
 	for index := range s.state.Catalog.Managed {
 		if sourcesContainPath(s.state.Catalog.Managed[index].SourcePaths, path) {
 			s.state.Catalog.Managed[index].Deployment = target
+			s.state.Catalog.Managed[index].AutoModpackGroup = group
 			updated = true
 			break
 		}
@@ -759,11 +769,15 @@ func (s *Service) setPreferredPlacement(path, placement string) (ModManagementRe
 	if err := s.persistCatalogMutation(); err != nil {
 		return ModManagementResult{}, err
 	}
+	destination := string(target)
+	if target == inventory.LocationClient {
+		destination = "AutoModpack/" + group
+	}
 	return ModManagementResult{
 		Action: "set_placement",
 		Path: path,
 		Management: "managed",
-		Message: fmt.Sprintf("Preferred placement set to %s. The live JAR is not moved until a protected Apply operation.", target),
+		Message: fmt.Sprintf("Preferred placement set to %s. The live JAR is not moved until a protected Apply operation.", destination),
 	}, nil
 }
 
@@ -872,6 +886,9 @@ func (s *Service) replaceCatalogArtifact(mod inventory.ModFile, entry catalog.En
 		// across source reassignment or installed-version verification.
 		entry.ArtifactID = previous.ArtifactID
 		entry.Deployment = previous.Deployment
+		entry.AutoModpackGroup = previous.AutoModpackGroup
+	} else {
+		entry.AutoModpackGroup = normalizeAutoModpackGroup(entry.Deployment, mod.Group)
 	}
 	s.removeCatalogArtifact(mod)
 	s.state.Catalog.Managed = append(s.state.Catalog.Managed, entry)
@@ -951,7 +968,7 @@ func (s *Service) sourcesForSHA(sha512Value string) []catalog.Source {
 	result := make([]catalog.Source, 0)
 	for _, mod := range s.snapshot.Inventory.Mods {
 		if mod.SHA512 == sha512Value {
-			result = append(result, catalog.Source{Location: mod.Location, Path: mod.Path})
+			result = append(result, catalog.Source{Location: mod.Location, Group: mod.Group, Path: mod.Path})
 		}
 	}
 	sort.Slice(result, func(i, j int) bool {
