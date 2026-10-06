@@ -602,23 +602,33 @@ const (
 	tokenRBracket
 	tokenColon
 	tokenComma
+	tokenNewline
 )
 
 type token struct {
-	kind tokenKind
-	text string
+	kind   tokenKind
+	text   string
+	quoted bool
 }
 
 func lex(input string) ([]token, error) {
 	tokens := []token{}
 	for index := 0; index < len(input); {
 		char := input[index]
+		if char == '\r' || char == '\n' {
+			if char == '\r' && index+1 < len(input) && input[index+1] == '\n' {
+				index++
+			}
+			tokens = append(tokens, token{kind: tokenNewline, text: "\n"})
+			index++
+			continue
+		}
 		if unicode.IsSpace(rune(char)) {
 			index++
 			continue
 		}
 		if char == '#' {
-			for index < len(input) && input[index] != '\n' {
+			for index < len(input) && input[index] != '\r' && input[index] != '\n' {
 				index++
 			}
 			continue
@@ -671,12 +681,12 @@ func lex(input string) ([]token, error) {
 			if err != nil {
 				return nil, fmt.Errorf("invalid quoted string near byte %d: %w", start, err)
 			}
-			tokens = append(tokens, token{kind: tokenWord, text: value})
+			tokens = append(tokens, token{kind: tokenWord, text: value, quoted: true})
 		default:
 			start := index
 			for index < len(input) {
 				current := input[index]
-				if unicode.IsSpace(rune(current)) || strings.ContainsRune("{}[]:=,#", rune(current)) {
+				if current == '\r' || current == '\n' || unicode.IsSpace(rune(current)) || strings.ContainsRune("{}[]:=,#", rune(current)) {
 					break
 				}
 				index++
@@ -695,19 +705,31 @@ type tokenParser struct {
 	pos    int
 }
 
+func (p *tokenParser) skipEntrySeparators() {
+	for p.pos < len(p.tokens) && (p.tokens[p.pos].kind == tokenNewline || p.tokens[p.pos].kind == tokenComma) {
+		p.pos++
+	}
+}
+
+func (p *tokenParser) skipNewlines() {
+	for p.pos < len(p.tokens) && p.tokens[p.pos].kind == tokenNewline {
+		p.pos++
+	}
+}
+
 func (p *tokenParser) parseObject(expectClosing bool) (object, error) {
 	result := object{}
 	for p.pos < len(p.tokens) {
+		p.skipEntrySeparators()
+		if p.pos >= len(p.tokens) {
+			break
+		}
 		if p.tokens[p.pos].kind == tokenRBrace {
 			if !expectClosing {
 				return object{}, fmt.Errorf("unexpected closing brace")
 			}
 			p.pos++
 			return result, nil
-		}
-		if p.tokens[p.pos].kind == tokenComma {
-			p.pos++
-			continue
 		}
 		if p.tokens[p.pos].kind != tokenWord {
 			return object{}, fmt.Errorf("expected configuration key, got %q", p.tokens[p.pos].text)
@@ -719,9 +741,10 @@ func (p *tokenParser) parseObject(expectClosing bool) (object, error) {
 		}
 		if p.tokens[p.pos].kind == tokenColon {
 			p.pos++
-			if p.pos >= len(p.tokens) {
-				return object{}, fmt.Errorf("missing value for %q", key)
-			}
+		}
+		p.skipNewlines()
+		if p.pos >= len(p.tokens) {
+			return object{}, fmt.Errorf("missing value for %q", key)
 		}
 		next, err := p.parseValue()
 		if err != nil {
@@ -749,28 +772,76 @@ func (p *tokenParser) parseValue() (value, error) {
 		}
 		return value{kind: kindObject, object: &child}, nil
 	case tokenLBracket:
-		p.pos++
-		items := []string{}
-		for p.pos < len(p.tokens) && p.tokens[p.pos].kind != tokenRBracket {
-			if p.tokens[p.pos].kind == tokenComma {
-				p.pos++
-				continue
-			}
-			if p.tokens[p.pos].kind != tokenWord {
-				return value{}, fmt.Errorf("lists may contain only scalar values")
-			}
-			items = append(items, p.tokens[p.pos].text)
-			p.pos++
-		}
-		if p.pos >= len(p.tokens) || p.tokens[p.pos].kind != tokenRBracket {
-			return value{}, fmt.Errorf("unterminated list")
-		}
-		p.pos++
-		return value{kind: kindList, list: items}, nil
+		return p.parseList()
 	case tokenWord:
-		p.pos++
-		return value{kind: kindScalar, scalar: current.text}, nil
+		scalar, err := p.parseScalar(tokenNewline, tokenRBrace, tokenComma)
+		if err != nil {
+			return value{}, err
+		}
+		return value{kind: kindScalar, scalar: scalar}, nil
 	default:
 		return value{}, fmt.Errorf("unexpected value token %q", current.text)
 	}
+}
+
+func (p *tokenParser) parseList() (value, error) {
+	p.pos++ // [
+	items := []string{}
+	for {
+		p.skipEntrySeparators()
+		if p.pos >= len(p.tokens) {
+			return value{}, fmt.Errorf("unterminated list")
+		}
+		if p.tokens[p.pos].kind == tokenRBracket {
+			p.pos++
+			return value{kind: kindList, list: items}, nil
+		}
+		if p.tokens[p.pos].kind != tokenWord {
+			return value{}, fmt.Errorf("lists may contain only scalar values")
+		}
+		item, err := p.parseScalar(tokenComma, tokenRBracket, tokenNewline)
+		if err != nil {
+			return value{}, err
+		}
+		items = append(items, item)
+		if p.pos < len(p.tokens) && p.tokens[p.pos].kind == tokenComma {
+			p.pos++
+		}
+	}
+}
+
+func (p *tokenParser) parseScalar(stoppers ...tokenKind) (string, error) {
+	stop := map[tokenKind]bool{}
+	for _, kind := range stoppers {
+		stop[kind] = true
+	}
+	if p.pos >= len(p.tokens) || p.tokens[p.pos].kind != tokenWord {
+		return "", fmt.Errorf("expected scalar value")
+	}
+
+	var builder strings.Builder
+	previous := tokenColon
+	for p.pos < len(p.tokens) {
+		current := p.tokens[p.pos]
+		if stop[current.kind] {
+			break
+		}
+		switch current.kind {
+		case tokenWord:
+			if builder.Len() > 0 && previous == tokenWord {
+				builder.WriteByte(' ')
+			}
+			builder.WriteString(current.text)
+		case tokenColon:
+			builder.WriteString(current.text)
+		default:
+			return "", fmt.Errorf("unexpected token %q in scalar value", current.text)
+		}
+		previous = current.kind
+		p.pos++
+	}
+	if builder.Len() == 0 {
+		return "", fmt.Errorf("empty scalar value")
+	}
+	return builder.String(), nil
 }
