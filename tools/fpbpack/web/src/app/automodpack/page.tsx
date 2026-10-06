@@ -27,11 +27,29 @@ import type {
 } from '@/lib/management';
 
 function cloneConfig(config: AutoModpackConfig): AutoModpackConfig {
-  return JSON.parse(JSON.stringify(config)) as AutoModpackConfig;
+  const cloned = JSON.parse(JSON.stringify(config)) as AutoModpackConfig;
+  cloned.settings.accepted_loaders = Array.isArray(cloned.settings.accepted_loaders)
+    ? cloned.settings.accepted_loaders
+    : [];
+  cloned.categories = Array.isArray(cloned.categories) ? cloned.categories : [];
+  cloned.categories.forEach((category) => {
+    category.groups = Array.isArray(category.groups) ? category.groups : [];
+    category.groups.forEach((group) => {
+      group.requires = Array.isArray(group.requires) ? group.requires : [];
+      group.breaks_with = Array.isArray(group.breaks_with) ? group.breaks_with : [];
+      group.compatible_platforms = Array.isArray(group.compatible_platforms)
+        ? group.compatible_platforms
+        : [];
+      group.from_server = Array.isArray(group.from_server) ? group.from_server : [];
+      group.exclude = Array.isArray(group.exclude) ? group.exclude : [];
+      group.editable = Array.isArray(group.editable) ? group.editable : [];
+    });
+  });
+  return cloned;
 }
 
-function listText(values: string[]) {
-  return values.join(', ');
+function listText(values: string[] | null | undefined) {
+  return (values ?? []).join(', ');
 }
 
 function parseList(value: string) {
