@@ -1,0 +1,113 @@
+package service
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+)
+
+type AutoModpackActionRequest struct {
+	Action string `json:"action"`
+	Notes  string `json:"notes,omitempty"`
+}
+
+type AutoModpackActionResult struct {
+	Action     string    `json:"action"`
+	Command    string    `json:"command"`
+	Status     string    `json:"status"`
+	RequestedAt time.Time `json:"requested_at"`
+	Message    string    `json:"message"`
+}
+
+func (s *Service) RunAutoModpackAction(ctx context.Context, request AutoModpackActionRequest) (AutoModpackActionResult, error) {
+	action := strings.TrimSpace(strings.ToLower(request.Action))
+	command := ""
+	switch action {
+	case "reload":
+		command = "automodpack config reload"
+	case "host_restart":
+		command = "automodpack host restart"
+	case "preview":
+		command = "automodpack generate preview"
+	case "publish":
+		command = "automodpack generate"
+		if notes := sanitizeAutoModpackCommandText(request.Notes); notes != "" {
+			command += " " + notes
+		}
+	case "publish_if_changed":
+		command = "automodpack generate if-content"
+		if notes := sanitizeAutoModpackCommandText(request.Notes); notes != "" {
+			command += " " + notes
+		}
+	case "history":
+		command = "automodpack generate history"
+	case "groups":
+		command = "automodpack groups"
+	case "host_activity":
+		command = "automodpack host activity"
+	default:
+		return AutoModpackActionResult{}, fmt.Errorf("unsupported AutoModpack action %q", request.Action)
+	}
+
+	status := s.CraftyStatus(ctx)
+	if !status.Configured {
+		return AutoModpackActionResult{}, fmt.Errorf("Crafty is not configured")
+	}
+	if !status.Connected {
+		return AutoModpackActionResult{}, fmt.Errorf("Crafty server state is unavailable: %s", status.Detail)
+	}
+	if status.State != "running" {
+		return AutoModpackActionResult{}, fmt.Errorf("Minecraft server must be running to execute AutoModpack console commands")
+	}
+
+	config, token, _ := s.effectiveCraftyConfig()
+	if err := s.craftyRequestWithBody(
+		ctx,
+		config,
+		token,
+		http.MethodPost,
+		"/servers/"+url.PathEscape(config.ServerID)+"/stdin",
+		map[string]string{"command": command},
+		nil,
+	); err != nil {
+		return AutoModpackActionResult{}, err
+	}
+
+	now := time.Now().UTC()
+	if action == "publish" || action == "publish_if_changed" {
+		s.mu.Lock()
+		s.state.AutoModpack.PendingPublish = false
+		s.state.AutoModpack.LastPublishRequestedAt = &now
+		s.state.UpdatedAt = now
+		err := s.persistState()
+		s.mu.Unlock()
+		if err != nil {
+			return AutoModpackActionResult{}, fmt.Errorf("persist AutoModpack publish request: %w", err)
+		}
+	}
+	s.logEvent("info", "automodpack", "Sent server command: "+command)
+	message := "Crafty accepted the AutoModpack command."
+	if action == "publish" || action == "publish_if_changed" {
+		message += " The server console remains authoritative if AutoModpack rejects generation or publication."
+	}
+	return AutoModpackActionResult{
+		Action: action,
+		Command: command,
+		Status: "accepted",
+		RequestedAt: now,
+		Message: message,
+	}, nil
+}
+
+func sanitizeAutoModpackCommandText(value string) string {
+	value = strings.ReplaceAll(value, "\r", " ")
+	value = strings.ReplaceAll(value, "\n", " ")
+	value = strings.TrimSpace(value)
+	if len(value) > 240 {
+		value = value[:240]
+	}
+	return value
+}
