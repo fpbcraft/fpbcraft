@@ -17,6 +17,7 @@ import (
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/automodpack"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/catalog"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
 )
 
 const autoModpackConfigPath = "automodpack/server.conf"
@@ -472,7 +473,7 @@ func (s *Service) MigrateAutoModpackGroup(ctx context.Context, request AutoModpa
 	s.snapshot = management.BuildSnapshot(inv, s.state.Catalog)
 	if s.hasUpdate {
 		reconcileUpdateReportToCatalog(&s.updates, s.state.Catalog)
-		s.applyUpdateRules(&s.updates)
+		applyRulesToReport(&s.updates, cloneRules(s.state.UpdateRules), time.Now().UTC())
 	}
 
 	now := time.Now().UTC()
