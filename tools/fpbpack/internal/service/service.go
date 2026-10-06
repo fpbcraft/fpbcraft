@@ -59,6 +59,12 @@ type CraftySettings struct {
 	AllowInsecure bool   `json:"allow_insecure,omitempty"`
 }
 
+type AutoModpackManagedState struct {
+	PendingPublish         bool       `json:"pending_publish,omitempty"`
+	LastChangedAt          *time.Time `json:"last_changed_at,omitempty"`
+	LastPublishRequestedAt *time.Time `json:"last_publish_requested_at,omitempty"`
+}
+
 type State struct {
 	SchemaVersion int             `json:"schema_version"`
 	CreatedAt     time.Time       `json:"created_at"`
@@ -66,6 +72,7 @@ type State struct {
 	ImportedFrom  string          `json:"imported_from,omitempty"`
 	Settings      RuntimeSettings       `json:"settings"`
 	Crafty        CraftySettings        `json:"crafty,omitempty"`
+	AutoModpack   AutoModpackManagedState `json:"automodpack,omitempty"`
 	UpdateRules   map[string]UpdateRule `json:"update_rules,omitempty"`
 	Catalog       catalog.Report        `json:"catalog"`
 }
