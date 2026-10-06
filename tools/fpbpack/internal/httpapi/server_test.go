@@ -898,3 +898,57 @@ func TestCatalogManagementEndpoints(t *testing.T) {
 		t.Fatalf("catalog plan request = %+v", planned)
 	}
 }
+
+
+func TestAutoModpackEndpointsExposeConfigAndActions(t *testing.T) {
+	actionCalled := false
+	handler := NewHandlerWithOptions(
+		func() (management.Snapshot, error) { return management.Snapshot{}, nil },
+		"dev",
+		ServerOptions{
+			AutoModpackStatus: func() (service.AutoModpackStatus, error) {
+				return service.AutoModpackStatus{
+					Installed: true,
+					ConfigPresent: true,
+					ConfigPath: "automodpack/server.conf",
+					ConfigSHA256: "abc",
+					PendingPublish: true,
+					Generations: []service.AutoModpackGeneration{{Sequence: 2}},
+				}, nil
+			},
+			RunAutoModpackAction: func(_ context.Context, request service.AutoModpackActionRequest) (service.AutoModpackActionResult, error) {
+				actionCalled = true
+				if request.Action != "revert_preview" || request.Sequence != 2 {
+					t.Fatalf("unexpected action request: %+v", request)
+				}
+				return service.AutoModpackActionResult{Action: request.Action, Status: "accepted"}, nil
+			},
+		},
+	)
+
+	statusRecorder := httptest.NewRecorder()
+	handler.ServeHTTP(statusRecorder, httptest.NewRequest(http.MethodGet, "/api/automodpack", nil))
+	if statusRecorder.Code != http.StatusOK {
+		t.Fatalf("AutoModpack status code = %d, want 200", statusRecorder.Code)
+	}
+	var status service.AutoModpackStatus
+	if err := json.Unmarshal(statusRecorder.Body.Bytes(), &status); err != nil {
+		t.Fatal(err)
+	}
+	if !status.Installed || !status.PendingPublish || len(status.Generations) != 1 {
+		t.Fatalf("unexpected AutoModpack status: %+v", status)
+	}
+
+	actionRecorder := httptest.NewRecorder()
+	handler.ServeHTTP(
+		actionRecorder,
+		httptest.NewRequest(
+			http.MethodPost,
+			"/api/automodpack/action",
+			strings.NewReader(`{"action":"revert_preview","sequence":2}`),
+		),
+	)
+	if actionRecorder.Code != http.StatusAccepted || !actionCalled {
+		t.Fatalf("AutoModpack action code=%d called=%v body=%s", actionRecorder.Code, actionCalled, actionRecorder.Body.String())
+	}
+}
