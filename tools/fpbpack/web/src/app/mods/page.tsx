@@ -20,6 +20,7 @@ import {PageHeader, Pill, formatDate} from '@/components/ui';
 import {useManagement} from '@/components/management-provider';
 import {api} from '@/lib/api';
 import type {
+  AutoModpackStatus,
   DiagnosticFinding,
   ManagementMod,
   UpdateCandidate,
@@ -52,6 +53,30 @@ function normalizePath(value?: string) {
   return (value ?? '').replaceAll('\\', '/').replace(/^\.\//, '');
 }
 
+function normalizedGroup(mod: ManagementMod, preferred = false) {
+  const deployment = preferred ? mod.preferred_deployment : mod.deployment;
+  if (deployment !== 'client') return '';
+  return (
+    (preferred ? mod.preferred_automodpack_group : mod.automodpack_group)?.trim() ||
+    'main'
+  );
+}
+
+function placementLabel(mod: ManagementMod, preferred = false) {
+  const deployment = preferred ? mod.preferred_deployment : mod.deployment;
+  return deployment === 'client'
+    ? 'AutoModpack/' + normalizedGroup(mod, preferred)
+    : 'server/common';
+}
+
+function pathAutoModpackGroup(path?: string) {
+  const normalized = normalizePath(path);
+  const prefix = 'automodpack/host-modpack/';
+  if (!normalized.startsWith(prefix)) return '';
+  const rest = normalized.slice(prefix.length);
+  return rest.split('/')[0] || '';
+}
+
 function managementTone(
   management: ManagementMod['management'],
 ): 'good' | 'warn' | 'bad' | 'neutral' {
@@ -74,6 +99,7 @@ export default function ModsPage() {
   const router = useRouter();
   const [q, setQ] = useState('');
   const [deployment, setDeployment] = useState('all');
+  const [autoModpackGroupFilter, setAutoModpackGroupFilter] = useState('all');
   const [management, setManagement] = useState('all');
   const [provider, setProvider] = useState('all');
   const [updateStatus, setUpdateStatus] = useState('all');
@@ -95,6 +121,8 @@ export default function ModsPage() {
   const [githubTag, setGithubTag] = useState('');
   const [githubAsset, setGithubAsset] = useState('');
   const [preferredPlacement, setPreferredPlacement] = useState<'server' | 'client'>('server');
+  const [preferredAutoModpackGroup, setPreferredAutoModpackGroup] = useState('main');
+  const [autoModpackStatus, setAutoModpackStatus] = useState<AutoModpackStatus | null>(null);
   const [replacementPath, setReplacementPath] = useState('');
   const [catalogDialog, setCatalogDialog] = useState<
     {mode: 'install' | 'version'; mod?: ManagementMod} | null
@@ -152,11 +180,8 @@ export default function ModsPage() {
         const path = normalizePath(finding.path);
         if (!path || livePaths.has(path)) return false;
 
-        const inferredDeployment: 'server' | 'client' = path.startsWith(
-          'automodpack/host-modpack/main/mods/',
-        )
-          ? 'client'
-          : 'server';
+        const inferredGroup = pathAutoModpackGroup(path);
+        const inferredDeployment: 'server' | 'client' = inferredGroup ? 'client' : 'server';
         const inferredManagement: 'unresolved' | 'external' =
           finding.code === 'unresolved_artifact' ? 'unresolved' : 'external';
         const text = [finding.mod ?? '', finding.message, finding.code, path]
@@ -166,6 +191,8 @@ export default function ModsPage() {
         return (
           (!needle || text.includes(needle)) &&
           (deployment === 'all' || deployment === inferredDeployment) &&
+          (autoModpackGroupFilter === 'all' ||
+            (inferredDeployment === 'client' && inferredGroup === autoModpackGroupFilter)) &&
           (management === 'all' || management === inferredManagement) &&
           provider === 'all' &&
           (updateStatus === 'all' || updateStatus === 'blocked')
@@ -176,9 +203,7 @@ export default function ModsPage() {
         return {
           kind: 'diagnostic' as const,
           finding,
-          deployment: path.startsWith('automodpack/host-modpack/main/mods/')
-            ? 'client'
-            : 'server',
+          deployment: pathAutoModpackGroup(path) ? 'client' : 'server',
           management:
             finding.code === 'unresolved_artifact' ? ('unresolved' as const) : ('external' as const),
         };
@@ -188,6 +213,7 @@ export default function ModsPage() {
     livePaths,
     q,
     deployment,
+    autoModpackGroupFilter,
     management,
     provider,
     updateStatus,
@@ -196,6 +222,9 @@ export default function ModsPage() {
   useEffect(() => {
     api<{rules: Record<string, UpdateRule>}>('/api/update-rules')
       .then((response) => setRules(response.rules))
+      .catch(() => undefined);
+    api<AutoModpackStatus>('/api/automodpack')
+      .then(setAutoModpackStatus)
       .catch(() => undefined);
 
     const params = new URLSearchParams(window.location.search);
@@ -216,6 +245,7 @@ export default function ModsPage() {
     };
     setQ(stringValue('q', ''));
     setDeployment(stringValue('deployment', 'all'));
+    setAutoModpackGroupFilter(stringValue('group', 'all'));
     setManagement(stringValue('management', 'all'));
     setProvider(stringValue('provider', 'all'));
     setUpdateStatus(stringValue('update', 'all'));
@@ -234,6 +264,7 @@ export default function ModsPage() {
     const value = {
       q,
       deployment,
+      group: autoModpackGroupFilter,
       management,
       provider,
       update: updateStatus,
@@ -249,6 +280,7 @@ export default function ModsPage() {
     };
     sync('q', q, '');
     sync('deployment', deployment, 'all');
+    sync('group', autoModpackGroupFilter, 'all');
     sync('management', management, 'all');
     sync('provider', provider, 'all');
     sync('update', updateStatus, 'all');
@@ -262,6 +294,7 @@ export default function ModsPage() {
     filtersReady,
     q,
     deployment,
+    autoModpackGroupFilter,
     management,
     provider,
     updateStatus,
@@ -306,6 +339,8 @@ export default function ModsPage() {
       return (
         (!needle || text.includes(needle)) &&
         (deployment === 'all' || mod.deployment === deployment) &&
+        (autoModpackGroupFilter === 'all' ||
+          (mod.deployment === 'client' && normalizedGroup(mod) === autoModpackGroupFilter)) &&
         (management === 'all' || mod.management === management) &&
         (provider === 'all' || mod.provider === provider) &&
         statusMatches &&
@@ -326,6 +361,7 @@ export default function ModsPage() {
     blockerRank,
     q,
     deployment,
+    autoModpackGroupFilter,
     management,
     provider,
     updateStatus,
@@ -400,6 +436,9 @@ export default function ModsPage() {
     setGithubTag(mod.provider === 'github' ? candidate?.installed.id ?? '' : '');
     setGithubAsset(mod.filename);
     setPreferredPlacement(mod.preferred_deployment ?? mod.deployment);
+    setPreferredAutoModpackGroup(
+      mod.preferred_automodpack_group ?? mod.automodpack_group ?? 'main',
+    );
     setReplacementPath('');
     const params = new URLSearchParams(window.location.search);
     params.set('mod', mod.id);
