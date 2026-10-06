@@ -129,7 +129,9 @@ export interface ManagementMod {
   project_url?: string;
   side: string;
   deployment: Location;
+  automodpack_group?: string;
   preferred_deployment: Location;
+  preferred_automodpack_group?: string;
   management: 'managed' | 'unmanaged' | 'unresolved' | 'external' | string;
   path: string;
   sha512?: string;
@@ -165,6 +167,7 @@ export interface UpdateDependency {
   installed_version?: string;
   target_version?: string;
   deployment?: Location;
+  automodpack_group?: string;
   target?: UpdateRelease;
   dependencies?: UpdateDependency[];
 }
@@ -194,6 +197,7 @@ export interface UpdateCandidate {
   icon_url?: string;
   side: string;
   deployment: Location;
+  automodpack_group?: string;
   installed: UpdateRelease;
   target?: UpdateRelease;
   classification: UpdateClassification;
@@ -285,6 +289,7 @@ export interface PlanArtifact {
   sha256?: string;
   sha512: string;
   deployment: string;
+  automodpack_group?: string;
   environment?: string;
   manual_download?: boolean;
   manual_provided?: boolean;
@@ -355,4 +360,97 @@ export interface HistoryEvent {
   backup_id?: string;
   mods: number;
   summary: string;
+}
+
+
+export interface AutoModpackSettings {
+  modpack_host: boolean;
+  generate_modpack_on_start: boolean;
+  auto_exclude_server_side_mods: boolean;
+  require_modpack: boolean;
+  accepted_loaders: string[];
+  advertise_versions_to_sync: boolean;
+  self_updater: boolean;
+  connection_mode: string;
+  bind_address: string;
+  bind_port: number;
+  advertised_endpoint_host: string;
+  advertised_endpoint_port: number;
+  bandwidth_limit: number;
+  disable_internal_tls: boolean;
+  accept_proxy_protocol: boolean;
+  validate_secrets: boolean;
+  secret_lifetime: number;
+  export_http_directory: string;
+  export_http_include_all: boolean;
+  nag_unmodded_clients: boolean;
+  nag_message: string;
+  nag_clickable_message: string;
+  nag_clickable_link: string;
+}
+
+export interface AutoModpackGroup {
+  id: string;
+  display_name: string;
+  description: string;
+  required: boolean;
+  default_selected: boolean;
+  requires: string[];
+  breaks_with: string[];
+  compatible_platforms: string[];
+  from_server: string[];
+  exclude: string[];
+  editable: string[];
+}
+
+export interface AutoModpackCategory {
+  name: string;
+  groups: AutoModpackGroup[];
+}
+
+export interface AutoModpackConfig {
+  name: string;
+  settings: AutoModpackSettings;
+  categories: AutoModpackCategory[];
+}
+
+export interface AutoModpackFinding {
+  level: 'error' | 'warning' | 'info' | string;
+  code: string;
+  message: string;
+  group?: string;
+}
+
+export interface AutoModpackGroupStatus {
+  id: string;
+  category: string;
+  path: string;
+  exists: boolean;
+  files: number;
+  mods: number;
+  bytes: number;
+}
+
+export interface AutoModpackStatus {
+  installed: boolean;
+  version?: string;
+  jar?: string;
+  config_present: boolean;
+  config_path: string;
+  config_sha256?: string;
+  config: AutoModpackConfig;
+  findings: AutoModpackFinding[];
+  groups: AutoModpackGroupStatus[];
+  orphan_group_directories?: string[];
+  pending_publish: boolean;
+  last_changed_at?: string;
+  last_publish_requested_at?: string;
+}
+
+export interface AutoModpackActionResult {
+  action: string;
+  command: string;
+  status: string;
+  requested_at: string;
+  message: string;
 }
