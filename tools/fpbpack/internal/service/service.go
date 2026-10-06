@@ -60,9 +60,10 @@ type CraftySettings struct {
 }
 
 type AutoModpackManagedState struct {
-	PendingPublish         bool       `json:"pending_publish,omitempty"`
-	LastChangedAt          *time.Time `json:"last_changed_at,omitempty"`
-	LastPublishRequestedAt *time.Time `json:"last_publish_requested_at,omitempty"`
+	PendingPublish              bool       `json:"pending_publish,omitempty"`
+	LastChangedAt               *time.Time `json:"last_changed_at,omitempty"`
+	LastPublishRequestedAt      *time.Time `json:"last_publish_requested_at,omitempty"`
+	PublishRequestedJournalHead int64      `json:"publish_requested_journal_head,omitempty"`
 }
 
 type State struct {
