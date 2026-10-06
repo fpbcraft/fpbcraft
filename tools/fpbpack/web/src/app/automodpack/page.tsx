@@ -853,7 +853,7 @@ export default function AutoModpackPage() {
         <section className="panel mb-4 p-4">
           <div className="section-label">Orphan group directories</div>
           <div className="mt-2 flex flex-wrap gap-2">
-            {status.orphan_group_directories.map((group) => (
+            {(status.orphan_group_directories ?? []).map((group) => (
               <Pill key={group} tone="warn">{group}</Pill>
             ))}
           </div>
