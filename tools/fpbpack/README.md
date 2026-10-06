@@ -185,8 +185,11 @@ The management API covers discovery, remediation, planning, server control, Appl
 - update-rule, provider-credential, mod-management, and per-mod refresh endpoints
 - `GET|PUT /api/crafty`, `DELETE /api/crafty/credentials`
 - `POST /api/server/start`, `POST /api/server/stop`
+- `GET /api/neoforge`, `POST /api/neoforge/change`
 
 Live mutation is deliberately narrower than the rest of the API. Apply accepts only a persisted ready/verified plan, rechecks the complete accepted managed state, requires Crafty to positively report the Minecraft server stopped, verifies cached target bytes again, and mutates only the exact file operations in that plan. Restore likewise requires the server stopped and verifies the currently applied files plus backup hashes before reverting them. An unknown or unreachable Crafty state fails closed.
+
+NeoForge runtime changes are also fail-closed. **Settings → NeoForge runtime** lists exact versions from NeoForge's official Maven metadata for the configured Minecraft release series. Upgrade, downgrade, and reinstall all require the server to be stopped. FPBPack verifies the installer's published SHA-512, preserves `user_jvm_args.txt`, runs the official server installer against the mounted server root, verifies the generated runtime files, and only then repoints Crafty's executable/execution command. Existing JVM/RAM flags are preserved and the server is never restarted automatically.
 
 The service owns inventory/reconciliation/update refreshes and persists generated cache snapshots under its state directory. Manual refresh/check requests return immediately and continue on a server-owned context, so reloading or closing the browser does not cancel provider discovery. Refresh status exposes phase, current provider item, totals, and percentage; the GUI shows this globally. Safe catalog-only remediation remains usable while provider discovery runs, while source/provider actions that would race fail immediately instead of waiting invisibly. Cancelled/timed-out refreshes never replace the last good update cache. Provider metadata refresh is non-destructive: transient failures retain the previous target, changelog, dependency and project metadata, mark it stale, and record the refresh error. The standalone `inventory`, `doctor`, and `updates` commands remain available for scripting and debugging, but are not required for GUI operation.
 
@@ -261,7 +264,7 @@ The embedded UI uses Tailwind CSS 4 and daisyUI 5 with a custom FPBPack theme. T
 
 ## Docker
 
-The production container is a single-process image. Node is used only in the build stage to produce the static export; the final image contains FPBPack and CA certificates, not a Node runtime.
+The production container is a single-process image. Node is used only in the build stage to produce the static export; the final image contains FPBPack, CA certificates, and a Java 21 runtime used only for explicit NeoForge installer operations.
 
 Automated Docker builds run only for published GitHub releases. Pull-request/development CI does not build Docker images.
 
