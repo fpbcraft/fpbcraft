@@ -3,7 +3,6 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   AlertTriangle,
-  Check,
   ChevronDown,
   FileCog,
   FolderTree,
@@ -137,6 +136,14 @@ export default function AutoModpackPage() {
 
   const save = async () => {
     if (!draft || !status?.config_sha256) return;
+    if (
+      identityDirty &&
+      !window.confirm(
+        'This changes or removes an AutoModpack category/group identity. Existing player group selections may no longer match. Save these identity changes?',
+      )
+    ) {
+      return;
+    }
     setSaving(true);
     setError(null);
     setMessage(null);
@@ -160,8 +167,16 @@ export default function AutoModpackPage() {
     }
   };
 
-  const runAction = async (action: string) => {
-    setActionBusy(action);
+  const runAction = async (action: string, sequence?: number) => {
+    if (
+      action === 'revert_confirm' &&
+      !window.confirm(
+        'Publish generation ' + sequence + ' as a new rollback generation? This changes what connecting clients receive.',
+      )
+    ) {
+      return;
+    }
+    setActionBusy(action + (sequence ? ':' + sequence : ''));
     setError(null);
     setMessage(null);
     try {
@@ -169,7 +184,11 @@ export default function AutoModpackPage() {
         method: 'POST',
         body: JSON.stringify({
           action,
-          notes: action === 'publish' || action === 'publish_if_changed' ? publishNotes : undefined,
+          sequence,
+          notes:
+            action === 'publish' || action === 'preview' || action === 'revert_confirm'
+              ? publishNotes
+              : undefined,
         }),
       });
       setMessage(result.message + ' ' + result.command);
@@ -354,12 +373,6 @@ export default function AutoModpackPage() {
             <button className="btn btn-xs btn-ghost" disabled={!!actionBusy} onClick={() => void runAction('host_restart')}>
               <RefreshCw size={12} /> Restart AutoModpack host
             </button>
-            <button className="btn btn-xs btn-ghost" disabled={!!actionBusy} onClick={() => void runAction('publish_if_changed')}>
-              <Check size={12} /> Publish if changed
-            </button>
-            <button className="btn btn-xs btn-ghost" disabled={!!actionBusy} onClick={() => void runAction('history')}>
-              <History size={12} /> Generation history
-            </button>
             <button className="btn btn-xs btn-ghost" disabled={!!actionBusy} onClick={() => void runAction('groups')}>
               <FolderTree size={12} /> Server group summary
             </button>
@@ -371,6 +384,102 @@ export default function AutoModpackPage() {
             Commands are sent through Crafty to the running Minecraft server. AutoModpack's server console is authoritative if generation validation rejects a command.
           </p>
         </div>
+      </section>
+
+      <section className="panel mb-4 overflow-hidden">
+        <div className="panel-header">
+          <div>
+            <div className="section-label">Generations</div>
+            <h2 className="mt-0.5 text-sm font-semibold">Published AutoModpack history</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <History size={15} className="text-base-content/40" />
+            <Pill tone="neutral">{status.generations.length}</Pill>
+          </div>
+        </div>
+        {status.generations.length ? (
+          <div className="overflow-x-auto">
+            <table className="table table-sm">
+              <thead>
+                <tr>
+                  <th>Seq</th>
+                  <th>Published</th>
+                  <th>Changes</th>
+                  <th>Notes</th>
+                  <th>Token</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {status.generations.map((generation, index) => {
+                  const isHead = index === 0;
+                  const busyForGeneration =
+                    actionBusy === 'revert_preview:' + generation.sequence ||
+                    actionBusy === 'revert_confirm:' + generation.sequence;
+                  return (
+                    <tr key={generation.sequence}>
+                      <td className="font-mono">#{generation.sequence}</td>
+                      <td className="whitespace-nowrap">
+                        {formatDate(generation.created_at)}
+                        {isHead ? <Pill tone="good">head</Pill> : null}
+                        {generation.restore_of > 0 ? (
+                          <div className="mt-1 text-[0.68rem] text-base-content/40">
+                            restore of #{generation.restore_of}
+                          </div>
+                        ) : null}
+                      </td>
+                      <td className="whitespace-nowrap text-xs">
+                        <span className="text-success">+{generation.summary.added}</span>
+                        {' · '}
+                        <span>~{generation.summary.changed}</span>
+                        {' · '}
+                        <span className="text-error">−{generation.summary.removed}</span>
+                      </td>
+                      <td className="max-w-xs text-xs text-base-content/55">
+                        {generation.notes || '—'}
+                      </td>
+                      <td className="font-mono text-[0.68rem] text-base-content/40">
+                        {generation.content_token.slice(0, 12)}
+                      </td>
+                      <td>
+                        {!isHead ? (
+                          <div className="flex justify-end gap-1">
+                            <button
+                              className="btn btn-xs btn-ghost"
+                              type="button"
+                              disabled={!!actionBusy}
+                              onClick={() => void runAction('revert_preview', generation.sequence)}
+                            >
+                              {busyForGeneration && actionBusy?.startsWith('revert_preview') ? (
+                                <span className="loading loading-spinner loading-xs" />
+                              ) : null}
+                              Preview revert
+                            </button>
+                            <button
+                              className="btn btn-xs btn-outline btn-warning"
+                              type="button"
+                              disabled={!!actionBusy}
+                              onClick={() => void runAction('revert_confirm', generation.sequence)}
+                            >
+                              {busyForGeneration && actionBusy?.startsWith('revert_confirm') ? (
+                                <span className="loading loading-spinner loading-xs" />
+                              ) : null}
+                              Publish rollback
+                            </button>
+                          </div>
+                        ) : null}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="p-4 text-sm text-base-content/45">
+            AutoModpack has not published a generation yet, or its journal is not present.
+          </div>
+        )}
       </section>
 
       <section className="panel mb-4 overflow-hidden">
