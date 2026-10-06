@@ -647,6 +647,10 @@ func (s *Service) reconcileAutoModpackPublication(head AutoModpackGeneration) (b
 	if !state.PendingPublish || state.LastChangedAt == nil || head.CreatedAt.Before(*state.LastChangedAt) {
 		return false, nil
 	}
+	if state.LastPublishRequestedAt != nil && !state.LastPublishRequestedAt.Before(*state.LastChangedAt) &&
+		head.Sequence <= state.PublishRequestedJournalHead {
+		return false, nil
+	}
 	state.PendingPublish = false
 	s.state.UpdatedAt = time.Now().UTC()
 	if err := s.persistState(); err != nil {
