@@ -8,6 +8,7 @@ import {Pill, formatDate} from '@/components/ui';
 import type {
   CatalogProject,
   CatalogVersion,
+  AutoModpackStatus,
   ManagementMod,
   UpdatePlan,
 } from '@/lib/management';
@@ -38,11 +39,21 @@ export function CatalogManagerDialog({
   const [placement, setPlacement] = useState<Placement>(
     mod?.preferred_deployment ?? mod?.deployment ?? 'server',
   );
+  const [autoModpackGroup, setAutoModpackGroup] = useState(
+    mod?.preferred_automodpack_group ?? mod?.automodpack_group ?? 'main',
+  );
+  const [autoModpackStatus, setAutoModpackStatus] = useState<AutoModpackStatus | null>(null);
   const [channel, setChannel] = useState<'all' | 'release' | 'beta' | 'alpha'>('release');
   const [searching, setSearching] = useState(false);
   const [loadingVersions, setLoadingVersions] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api<AutoModpackStatus>('/api/automodpack')
+      .then(setAutoModpackStatus)
+      .catch(() => undefined);
+  }, []);
 
   const loadVersions = async (
     projectProvider: Provider,
@@ -194,12 +205,14 @@ export function CatalogManagerDialog({
                 project_id: selectedProject.project_id,
                 version_id: selectedVersionID,
                 placement,
+                automodpack_group: placement === 'client' ? autoModpackGroup : undefined,
               }
             : {
                 action: 'version',
                 path: mod?.path,
                 version_id: selectedVersionID,
                 placement,
+                automodpack_group: placement === 'client' ? autoModpackGroup : undefined,
               },
         ),
       });
@@ -378,6 +391,27 @@ export function CatalogManagerDialog({
                     <option value="client">Client-only (AutoModpack)</option>
                   </select>
                 </label>
+                {placement === 'client' ? (
+                  <label className="form-control mt-3">
+                    <span className="mb-1 text-xs text-base-content/45">AutoModpack group</span>
+                    <select
+                      className="select select-sm select-bordered"
+                      value={autoModpackGroup}
+                      onChange={(event) => setAutoModpackGroup(event.target.value)}
+                    >
+                      {(autoModpackStatus?.config.categories.flatMap((category) =>
+                        category.groups.map((group) => (
+                          <option key={group.id} value={group.id}>
+                            {group.display_name || group.id} · {category.name}
+                          </option>
+                        )),
+                      ) ?? [<option key="main" value="main">main</option>])}
+                    </select>
+                    <span className="mt-1 text-[0.68rem] text-base-content/35">
+                      Client content is stored in host-modpack/&lt;group&gt;/mods.
+                    </span>
+                  </label>
+                ) : null}
                 {mode === 'install' ? (
                   <button
                     className="btn btn-xs btn-ghost mt-3"
