@@ -33,6 +33,8 @@ Slices 1–4, the operational/reconciliation follow-up, release automation, and 
 - [x] Send `config reload`, `host restart`, generation preview/publish, group summary, host activity, and generation rollback commands through the existing Crafty connection.
 - [x] Read AutoModpack's append-only `automodpack/server/journal.jsonl` and expose generation notes, change counts, restore lineage, preview rollback, and confirmed rollback in the GUI.
 - [x] Add parser round-trip, group validation, multi-group inventory, group-to-group planning, config concurrency/backup, journal, and HTTP API regression coverage.
+- [x] Parse real AutoModpack/Reconf config syntax including bare URLs/globs, colon-less objects, and quoted empty values without confusing value colons with assignment separators.
+- [x] Keep publication pending after Crafty accepts generate/revert; clear it only after AutoModpack's durable journal confirms a newer generation, including automatic generate-on-start.
 - [ ] Get the complete Slice 5 branch green in FPBPack CI after the final frontend/backend integration.
 - [ ] Exercise config save/reload against the real FPBCraft AutoModpack installation.
 - [ ] Exercise one new optional group and one `main → optional group` protected move.
