@@ -38,7 +38,7 @@ type AutoModpackGroupStatus struct {
 	Files              int                        `json:"files"`
 	Mods               int                        `json:"mods"`
 	Bytes              int64                      `json:"bytes"`
-	PublishedFiles     []AutoModpackPublishedFile `json:"published_files,omitempty"`
+	PublishedFiles     []AutoModpackPublishedFile `json:"published_files"`
 	PublishedTruncated bool                       `json:"published_truncated,omitempty"`
 }
 
@@ -67,7 +67,7 @@ type AutoModpackStatus struct {
 	Config                 automodpack.Config         `json:"config"`
 	Findings               []automodpack.Finding      `json:"findings"`
 	Groups                 []AutoModpackGroupStatus   `json:"groups"`
-	OrphanGroupDirectories []string                   `json:"orphan_group_directories,omitempty"`
+	OrphanGroupDirectories []string                   `json:"orphan_group_directories"`
 	PendingPublish          bool                       `json:"pending_publish"`
 	LastChangedAt          *time.Time                 `json:"last_changed_at,omitempty"`
 	LastPublishRequestedAt *time.Time                 `json:"last_publish_requested_at,omitempty"`
@@ -100,6 +100,7 @@ func (s *Service) AutoModpackStatus() (AutoModpackStatus, error) {
 		Config:                 automodpack.DefaultConfig(),
 		Findings:               []automodpack.Finding{},
 		Groups:                 []AutoModpackGroupStatus{},
+		OrphanGroupDirectories: []string{},
 		PendingPublish:         managedState.PendingPublish,
 		LastChangedAt:          managedState.LastChangedAt,
 		LastPublishRequestedAt: managedState.LastPublishRequestedAt,
@@ -510,7 +511,7 @@ func (s *Service) MigrateAutoModpackGroup(ctx context.Context, request AutoModpa
 func (s *Service) autoModpackGroupStatus(category, group string) (AutoModpackGroupStatus, error) {
 	relative := filepath.ToSlash(filepath.Join(inventory.DefaultAutoModpackHostPath, group))
 	path := filepath.Join(s.options.ServerRoot, filepath.FromSlash(relative))
-	result := AutoModpackGroupStatus{ID: group, Category: category, Path: relative}
+	result := AutoModpackGroupStatus{ID: group, Category: category, Path: relative, PublishedFiles: []AutoModpackPublishedFile{}}
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return result, nil
