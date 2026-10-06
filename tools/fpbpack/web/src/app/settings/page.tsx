@@ -1,11 +1,11 @@
 'use client';
 
 import {useEffect, useState} from 'react';
-import {KeyRound, RefreshCw, Save, Trash2} from 'lucide-react';
+import {ArrowDownUp, KeyRound, RefreshCw, Save, Trash2} from 'lucide-react';
 import {PageHeader, Pill} from '@/components/ui';
 import {useManagement} from '@/components/management-provider';
 import {api} from '@/lib/api';
-import type {CraftyStatus} from '@/lib/management';
+import type {CraftyStatus, NeoForgeChangeResult, NeoForgeStatus} from '@/lib/management';
 
 interface RuntimeSettings {
   retention_count: number;
@@ -38,6 +38,10 @@ export default function SettingsPage() {
   const [craftyInsecure, setCraftyInsecure] = useState(false);
   const [savingCrafty, setSavingCrafty] = useState(false);
   const [clearingCrafty, setClearingCrafty] = useState(false);
+  const [neoForge, setNeoForge] = useState<NeoForgeStatus | null>(null);
+  const [neoForgeTarget, setNeoForgeTarget] = useState('');
+  const [neoForgeBusy, setNeoForgeBusy] = useState(false);
+  const [neoForgeError, setNeoForgeError] = useState<string | null>(null);
 
   useEffect(() => {
     void Promise.all([
@@ -57,6 +61,15 @@ export default function SettingsPage() {
     ]).catch((error: unknown) => {
       setSettingsError(error instanceof Error ? error.message : String(error));
     });
+
+    void api<NeoForgeStatus>('/api/neoforge')
+      .then((status) => {
+        setNeoForge(status);
+        setNeoForgeTarget(status.current_version ?? status.latest_version ?? status.versions[0]?.version ?? '');
+      })
+      .catch((error: unknown) => {
+        setNeoForgeError(error instanceof Error ? error.message : String(error));
+      });
   }, []);
 
   const saveRetention = async () => {
@@ -156,6 +169,55 @@ export default function SettingsPage() {
       setClearingCrafty(false);
     }
   };
+
+  const refreshNeoForge = async () => {
+    setNeoForgeError(null);
+    try {
+      const status = await api<NeoForgeStatus>('/api/neoforge');
+      setNeoForge(status);
+      setNeoForgeTarget((current) => {
+        if (current && status.versions.some((version) => version.version === current)) {
+          return current;
+        }
+        return status.current_version ?? status.latest_version ?? status.versions[0]?.version ?? '';
+      });
+    } catch (error: unknown) {
+      setNeoForgeError(error instanceof Error ? error.message : String(error));
+    }
+  };
+
+  const changeNeoForge = async () => {
+    if (!neoForgeTarget) return;
+    setNeoForgeBusy(true);
+    setNeoForgeError(null);
+    try {
+      const result = await api<NeoForgeChangeResult>('/api/neoforge/change', {
+        method: 'POST',
+        body: JSON.stringify({version: neoForgeTarget}),
+      });
+      await refreshNeoForge();
+      setSettingsError(
+        `NeoForge ${result.direction} completed: ${result.from_version} → ${result.to_version}. The server remains stopped.`,
+      );
+    } catch (error: unknown) {
+      setNeoForgeError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setNeoForgeBusy(false);
+    }
+  };
+
+  const currentNeoForgeIndex =
+    neoForge?.versions.findIndex((version) => version.version === neoForge.current_version) ?? -1;
+  const targetNeoForgeIndex =
+    neoForge?.versions.findIndex((version) => version.version === neoForgeTarget) ?? -1;
+  const neoForgeAction =
+    neoForgeTarget && neoForgeTarget === neoForge?.current_version
+      ? 'Reinstall'
+      : currentNeoForgeIndex >= 0 && targetNeoForgeIndex >= 0 && targetNeoForgeIndex < currentNeoForgeIndex
+        ? 'Upgrade'
+        : currentNeoForgeIndex >= 0 && targetNeoForgeIndex > currentNeoForgeIndex
+          ? 'Downgrade'
+          : 'Change version';
 
   return (
     <>
@@ -333,6 +395,101 @@ export default function SettingsPage() {
                 </button>
               ) : null}
             </div>
+          </div>
+        </section>
+
+        <section className="panel xl:col-span-2">
+          <div className="panel-header">
+            <div>
+              <div className="section-label">NeoForge runtime</div>
+              <h2 className="mt-0.5 text-sm font-semibold">Server loader version</h2>
+            </div>
+            <Pill tone={neoForge?.current_version ? 'good' : 'warn'}>
+              {neoForge?.current_version ? `NeoForge ${neoForge.current_version}` : 'Version unknown'}
+            </Pill>
+          </div>
+          <div className="p-4">
+            {neoForgeError ? (
+              <div className="alert alert-error mb-4 rounded-box py-3 text-sm">{neoForgeError}</div>
+            ) : null}
+            <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+              <div>
+                <p className="text-sm text-base-content/65">
+                  Install an exact NeoForge version for Minecraft {neoForge?.minecraft ?? state.updates.minecraft || '—'}.
+                  FPBPack verifies the official installer SHA-512, runs it against the mounted server directory,
+                  preserves <span className="mono">user_jvm_args.txt</span>, and updates Crafty's launch paths.
+                </p>
+                <p className="mt-1 text-xs text-base-content/40">
+                  The server must already be stopped. FPBPack does not restart it after an upgrade or downgrade,
+                  so you can review the result before starting it again.
+                </p>
+                {neoForge?.detail ? (
+                  <p className="mt-2 text-xs text-base-content/45">{neoForge.detail}</p>
+                ) : null}
+              </div>
+              <button
+                className="btn btn-sm btn-ghost"
+                type="button"
+                disabled={neoForgeBusy}
+                onClick={() => void refreshNeoForge()}
+              >
+                <RefreshCw size={13} /> Refresh versions
+              </button>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
+              <label className="form-control">
+                <span className="mb-1 text-xs text-base-content/45">Target NeoForge version</span>
+                <select
+                  className="select select-sm select-bordered w-full"
+                  value={neoForgeTarget}
+                  disabled={neoForgeBusy || !neoForge}
+                  onChange={(event) => setNeoForgeTarget(event.target.value)}
+                >
+                  {!neoForgeTarget ? <option value="">Select a version</option> : null}
+                  {neoForge?.versions.map((version) => (
+                    <option value={version.version} key={version.version}>
+                      {version.version}
+                      {version.channel !== 'release' ? ` — ${version.channel}` : ''}
+                      {version.current ? ' — current' : ''}
+                    </option>
+                  ))}
+                </select>
+                <span className="mt-1 text-xs text-base-content/35">
+                  Latest release: {neoForge?.latest_version ?? '—'}
+                </span>
+              </label>
+              <button
+                className={`btn btn-sm ${neoForgeAction === 'Downgrade' ? 'btn-warning' : 'btn-primary'}`}
+                type="button"
+                disabled={
+                  neoForgeBusy ||
+                  !neoForgeTarget ||
+                  !neoForge?.current_version ||
+                  neoForge?.server_state !== 'stopped'
+                }
+                onClick={() => void changeNeoForge()}
+              >
+                {neoForgeBusy ? (
+                  <span className="loading loading-spinner loading-xs" />
+                ) : (
+                  <ArrowDownUp size={14} />
+                )}
+                {neoForgeBusy ? 'Installing…' : neoForgeAction}
+              </button>
+            </div>
+
+            {neoForge?.server_state !== 'stopped' ? (
+              <div className="mt-3 alert alert-warning rounded-box py-2 text-xs">
+                Stop the Minecraft server before changing NeoForge. Current Crafty state: {neoForge?.server_state ?? 'unknown'}.
+              </div>
+            ) : null}
+            {neoForgeAction === 'Downgrade' ? (
+              <div className="mt-3 alert alert-warning rounded-box py-2 text-xs">
+                Downgrading the loader can make installed mods incompatible. FPBPack keeps the old NeoForge runtime
+                installed and leaves the server stopped so the change can be reviewed before startup.
+              </div>
+            ) : null}
           </div>
         </section>
 
