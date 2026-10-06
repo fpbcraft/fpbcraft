@@ -437,8 +437,35 @@ export interface AutoModpackGroupStatus {
   files: number;
   mods: number;
   bytes: number;
-  published_files?: AutoModpackPublishedFile[];
-  published_truncated?: boolean;
+  published_file_count: number;
+}
+
+export interface AutoModpackPublishedFilesPage {
+  group: string;
+  files: AutoModpackPublishedFile[];
+  offset: number;
+  limit: number;
+  total: number;
+  has_more: boolean;
+  query?: string;
+}
+
+export interface AutoModpackGenerationDiffEntry {
+  path: string;
+  action: 'add' | 'change' | 'remove';
+  current_sha1?: string;
+  current_size?: number;
+  target_sha1?: string;
+  target_size?: number;
+}
+
+export interface AutoModpackGenerationDiff {
+  target_sequence: number;
+  head_sequence: number;
+  added: number;
+  changed: number;
+  removed: number;
+  entries: AutoModpackGenerationDiffEntry[];
 }
 
 export interface AutoModpackGeneration {
@@ -461,6 +488,7 @@ export interface AutoModpackStatus {
   config_present: boolean;
   config_path: string;
   config_sha256?: string;
+  raw_config?: string;
   config: AutoModpackConfig;
   findings: AutoModpackFinding[];
   groups: AutoModpackGroupStatus[];
@@ -479,4 +507,6 @@ export interface AutoModpackActionResult {
   status: string;
   requested_at: string;
   message: string;
+  output: string[];
+  output_error?: string;
 }
