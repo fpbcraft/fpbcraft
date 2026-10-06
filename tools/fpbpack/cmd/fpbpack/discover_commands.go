@@ -164,6 +164,8 @@ func runServe(args []string) int {
 			ClearCraftyCredential: app.ClearCraftyCredential,
 			StartServer:    app.StartServer,
 			StopServer:     app.StopServer,
+			NeoForgeStatus: app.NeoForgeStatus,
+			ChangeNeoForge: app.ChangeNeoForge,
 			ApplyPlan:      app.ApplyPlan,
 			RestoreBackup:  app.RestoreBackup,
 			AcceptManualArtifact: app.AcceptManualArtifact,
