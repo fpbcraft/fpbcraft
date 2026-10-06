@@ -513,6 +513,7 @@ export default function ModsPage() {
       tag?: string;
       asset?: string;
       placement?: 'server' | 'client';
+      automodpack_group?: string;
       replaces_path?: string;
     },
   ) => {
@@ -540,18 +541,27 @@ export default function ModsPage() {
     setManagementError(null);
     setManagementMessage(null);
     try {
-      if (preferredPlacement !== selectedMod.preferred_deployment) {
+      const targetGroup = preferredPlacement === 'client' ? preferredAutoModpackGroup || 'main' : '';
+      const preferredChanged =
+        preferredPlacement !== selectedMod.preferred_deployment ||
+        (preferredPlacement === 'client' &&
+          targetGroup !== normalizedGroup(selectedMod, true));
+      if (preferredChanged) {
         await api<ModManagementResult>('/api/mod-management', {
           method: 'POST',
           body: JSON.stringify({
             action: 'set_placement',
             path: selectedMod.path,
             placement: preferredPlacement,
+            automodpack_group: preferredPlacement === 'client' ? targetGroup : undefined,
           }),
         });
       }
 
-      if (reviewMove && preferredPlacement !== selectedMod.deployment) {
+      const liveMoveNeeded =
+        preferredPlacement !== selectedMod.deployment ||
+        (preferredPlacement === 'client' && targetGroup !== normalizedGroup(selectedMod));
+      if (reviewMove && liveMoveNeeded) {
         const plan = await api<UpdatePlan>('/api/placement-plans', {
           method: 'POST',
           body: JSON.stringify({path: selectedMod.path}),
@@ -563,9 +573,9 @@ export default function ModsPage() {
       }
 
       setManagementMessage(
-        preferredPlacement === selectedMod.deployment
-          ? 'Preferred placement now matches the live JAR.'
-          : 'Preferred placement saved. Review a protected move when you are ready.',
+        liveMoveNeeded
+          ? 'Preferred placement saved. Review a protected move when you are ready.'
+          : 'Preferred placement now matches the live JAR.',
       );
       await reload({silent: true});
       closeMod();
@@ -733,7 +743,7 @@ export default function ModsPage() {
         </section>
       ) : null}
 
-      <div className="mb-3 grid gap-2 md:grid-cols-[minmax(220px,1fr)_repeat(4,minmax(125px,auto))_auto_auto]">
+      <div className="mb-3 grid gap-2 md:grid-cols-[minmax(220px,1fr)_repeat(5,minmax(125px,auto))_auto_auto]">
         <label className="input input-sm flex w-full items-center gap-2">
           <Search size={14} className="text-base-content/35" />
           <input
@@ -763,6 +773,26 @@ export default function ModsPage() {
           <option value="all">All placements</option>
           <option value="server">Server/common</option>
           <option value="client">Client-only</option>
+        </select>
+        <select
+          className="select select-sm"
+          value={autoModpackGroupFilter}
+          onChange={(event) => updateFilter(setAutoModpackGroupFilter, event.target.value)}
+        >
+          <option value="all">All AutoModpack groups</option>
+          {[...new Set([
+            ...(autoModpackStatus?.config.categories.flatMap((category) =>
+              category.groups.map((group) => group.id),
+            ) ?? []),
+            ...state.mods
+              .filter((mod) => mod.deployment === 'client')
+              .map((mod) => normalizedGroup(mod)),
+          ])]
+            .filter(Boolean)
+            .sort((a, b) => a.localeCompare(b))
+            .map((group) => (
+              <option key={group} value={group}>{group}</option>
+            ))}
         </select>
         <select
           className="select select-sm"
@@ -804,6 +834,7 @@ export default function ModsPage() {
             setQ('');
             setUpdateStatus('all');
             setDeployment('all');
+            setAutoModpackGroupFilter('all');
             setManagement('all');
             setProvider('all');
             setAttentionOnly(false);
@@ -830,6 +861,7 @@ export default function ModsPage() {
                 <th>Latest</th>
                 <th>Status</th>
                 <th>Placement</th>
+                <th>Group</th>
                 <th>Source</th>
               </tr>
             </thead>
@@ -860,8 +892,11 @@ export default function ModsPage() {
                       </td>
                       <td className="whitespace-nowrap">
                         <Pill tone={row.deployment === 'client' ? 'blue' : 'neutral'}>
-                          {row.deployment === 'client' ? 'client-only' : 'server/common'}
+                          {row.deployment === 'client' ? 'AutoModpack' : 'server/common'}
                         </Pill>
+                      </td>
+                      <td className="whitespace-nowrap text-base-content/45">
+                        {row.deployment === 'client' ? pathAutoModpackGroup(path) || 'main' : '—'}
                       </td>
                       <td>
                         <div className="flex items-center gap-2">
@@ -934,19 +969,33 @@ export default function ModsPage() {
                     <td className="whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <Pill tone={mod.deployment === 'client' ? 'blue' : 'neutral'}>
-                          {mod.deployment === 'client' ? 'client-only' : 'server/common'}
+                          {mod.deployment === 'client' ? 'AutoModpack' : 'server/common'}
                         </Pill>
-                        {mod.preferred_deployment !== mod.deployment ? (
+                        {placementLabel(mod, true) !== placementLabel(mod) ? (
                           <>
                             <span className="text-base-content/30">→</span>
                             <Pill tone="warn">
-                              {mod.preferred_deployment === 'client'
-                                ? 'client-only'
-                                : 'server/common'}
+                              {mod.preferred_deployment === 'client' ? 'AutoModpack' : 'server/common'}
                             </Pill>
                           </>
                         ) : null}
                       </div>
+                    </td>
+                    <td className="whitespace-nowrap">
+                      {mod.deployment === 'client' ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="mono text-xs">{normalizedGroup(mod)}</span>
+                          {placementLabel(mod, true) !== placementLabel(mod) &&
+                          mod.preferred_deployment === 'client' ? (
+                            <>
+                              <span className="text-base-content/30">→</span>
+                              <span className="mono text-xs text-warning">
+                                {normalizedGroup(mod, true)}
+                              </span>
+                            </>
+                          ) : null}
+                        </div>
+                      ) : '—'}
                     </td>
                     <td>
                       {candidate?.project_url || mod.project_url ? (
