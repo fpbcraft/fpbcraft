@@ -5,7 +5,7 @@
 It understands the current FPBCraft layout:
 
 - `mods/*.jar` — server/common mods
-- `automodpack/host-modpack/main/mods/*.jar` — AutoModpack client-only mods
+- `automodpack/host-modpack/<group>/mods/*.jar` — AutoModpack client content, including `main` and optional groups
 
 ## Inventory
 
@@ -186,12 +186,26 @@ The management API covers discovery, remediation, planning, server control, Appl
 - `GET|PUT /api/crafty`, `DELETE /api/crafty/credentials`
 - `POST /api/server/start`, `POST /api/server/stop`
 - `GET /api/neoforge`, `POST /api/neoforge/change`
+- `GET /api/automodpack`, `PUT /api/automodpack/config`
+- `POST /api/automodpack/groups/migrate`, `POST /api/automodpack/action`
 
 Live mutation is deliberately narrower than the rest of the API. Apply accepts only a persisted ready/verified plan, rechecks the complete accepted managed state, requires Crafty to positively report the Minecraft server stopped, verifies cached target bytes again, and mutates only the exact file operations in that plan. Restore likewise requires the server stopped and verifies the currently applied files plus backup hashes before reverting them. An unknown or unreachable Crafty state fails closed.
 
 NeoForge runtime changes are also fail-closed. **Settings → NeoForge runtime** lists exact versions from NeoForge's official Maven metadata for the configured Minecraft release series. Upgrade, downgrade, and reinstall all require the server to be stopped. FPBPack verifies the installer's published SHA-512, preserves `user_jvm_args.txt`, runs the official server installer against the mounted server root, verifies the generated runtime files, and only then repoints Crafty's executable/execution command. Existing JVM/RAM flags are preserved and the server is never restarted automatically.
 
 The service owns inventory/reconciliation/update refreshes and persists generated cache snapshots under its state directory. Manual refresh/check requests return immediately and continue on a server-owned context, so reloading or closing the browser does not cancel provider discovery. Refresh status exposes phase, current provider item, totals, and percentage; the GUI shows this globally. Safe catalog-only remediation remains usable while provider discovery runs, while source/provider actions that would race fail immediately instead of waiting invisibly. Cancelled/timed-out refreshes never replace the last good update cache. Provider metadata refresh is non-destructive: transient failures retain the previous target, changelog, dependency and project metadata, mark it stale, and record the refresh error. The standalone `inventory`, `doctor`, and `updates` commands remain available for scripting and debugging, but are not required for GUI operation.
+
+## AutoModpack management
+
+The embedded GUI has a dedicated **AutoModpack** section. FPBPack reads `automodpack/server.conf` as the source of truth, exposes its normal server/hosting settings, and manages categories/groups without copying the config into `state.json`.
+
+Config saves are guarded by the SHA-256 of the version loaded by the browser, backed up under `state-dir/automodpack/config-backups`, validated, and atomically written. Group IDs are persistent identities; use the explicit **Migrate ID** action when renaming one so FPBPack can update group references, the `host-modpack/<group>` directory, and accepted catalog assignments together.
+
+Inventory and catalog management are group-aware. Client mods can target `AutoModpack/main` or any configured optional group, and **Review move** supports moving a managed JAR between groups through the same stopped-server Apply/Restore safety boundary used for updates. New catalog installs and exact-version changes can choose their AutoModpack group directly.
+
+FPBPack also exposes AutoModpack operations through the existing Crafty connection: config reload, host restart, generation preview/publish, group summary, host activity, and generation rollback. Published generation history comes from AutoModpack's own append-only `automodpack/server/journal.jsonl`; FPBPack does not create a competing generation store.
+
+After FPBPack changes client-distributed content or AutoModpack configuration, it records a **publish pending** state until a publish/rollback command is requested. AutoModpack remains authoritative if its own validation rejects the requested generation.
 
 ## Plan & Protect
 
