@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Code2,
-  Edit3,
   FileCog,
   FolderTree,
   History,
