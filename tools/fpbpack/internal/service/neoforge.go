@@ -22,35 +22,10 @@ import (
 const DefaultNeoForgeMavenBaseURL = "https://maven.neoforged.net/releases/net/neoforged/neoforge"
 
 var (
-	neoForgeArgsPattern = regexp.MustCompile(`(?i)(libraries[\\/]+net[\\/]+neoforged[\\/]+neoforge[\\/]+)([^\\/[:space:]]+)([\\/]+(unix|win)_args\.txt)`)
-	neoForgeJarPattern  = regexp.MustCompile(`(?i)(libraries[\\/]+net[\\/]+neoforged[\\/]+neoforge[\\/]+)([^\\/[:space:]]+)([\\/]+neoforge-)([^\\/[:space:]]+)(-server\.jar)`)
-	validNeoForgeVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+([-+][A-Za-z0-9._-]+)?package service
+	neoForgeArgsPattern  = regexp.MustCompile(`(?i)(libraries[\\/]+net[\\/]+neoforged[\\/]+neoforge[\\/]+)([^\\/[:space:]]+)([\\/]+(unix|win)_args\.txt)`)
+	neoForgeJarPattern   = regexp.MustCompile(`(?i)(libraries[\\/]+net[\\/]+neoforged[\\/]+neoforge[\\/]+)([^\\/[:space:]]+)([\\/]+neoforge-)([^\\/[:space:]]+)(-server\.jar)`)
+	validNeoForgeVersion = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+([-+][A-Za-z0-9._-]+)?$`)
 
-import (
-	"context"
-	"crypto/sha512"
-	"encoding/hex"
-	"encoding/xml"
-	"fmt"
-	"io"
-	"net/http"
-	"net/url"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"regexp"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
-)
-
-const DefaultNeoForgeMavenBaseURL = "https://maven.neoforged.net/releases/net/neoforged/neoforge"
-
-var (
-	neoForgeArgsPattern = regexp.MustCompile(`(?i)(libraries[\\/]+net[\\/]+neoforged[\\/]+neoforge[\\/]+)([^\\/[:space:]]+)([\\/]+(unix|win)_args\.txt)`)
-	neoForgeJarPattern  = regexp.MustCompile(`(?i)(libraries[\\/]+net[\\/]+neoforged[\\/]+neoforge[\\/]+)([^\\/[:space:]]+)([\\/]+neoforge-)([^\\/[:space:]]+)(-server\.jar)`)
-	)
 )
 
 type NeoForgeVersion struct {
