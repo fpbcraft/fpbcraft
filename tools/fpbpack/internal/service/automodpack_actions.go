@@ -173,7 +173,7 @@ func (s *Service) captureCraftyCommandOutput(
 ) ([]string, error) {
 	ticker := time.NewTicker(300 * time.Millisecond)
 	defer ticker.Stop()
-	timeout := time.NewTimer(4 * time.Second)
+	timeout := time.NewTimer(12 * time.Second)
 	defer timeout.Stop()
 
 	latest := []string{}
@@ -199,7 +199,7 @@ func (s *Service) captureCraftyCommandOutput(
 				latest = current
 				stablePolls = 0
 			}
-			if stablePolls >= 2 {
+			if stablePolls >= 5 {
 				return capAutoModpackOutput(latest), nil
 			}
 		}
