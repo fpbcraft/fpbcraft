@@ -35,7 +35,15 @@ Slices 1–4, the operational/reconciliation follow-up, release automation, and 
 - [x] Add parser round-trip, group validation, multi-group inventory, group-to-group planning, config concurrency/backup, journal, and HTTP API regression coverage.
 - [x] Parse real AutoModpack/Reconf config syntax including bare URLs/globs, colon-less objects, and quoted empty values without confusing value colons with assignment separators.
 - [x] Keep publication pending after Crafty accepts generate/revert; clear it only after AutoModpack's durable journal confirms a newer generation, including automatic generate-on-start.
-- [ ] Get the complete Slice 5 branch green in FPBPack CI after the final frontend/backend integration.
+- [x] Show server.conf read-only by default with an explicit edit toggle and floating Save/Discard controls for pending edits.
+- [x] Provide both structured form editing and a validated raw server.conf editor with optimistic concurrency protection.
+- [x] Keep ordinary AutoModpack config saves online; require a stopped server only for filesystem-mutating operations such as group-ID migration and live mod moves.
+- [x] Replace comma-delimited group rule fields with add/remove entry controls for loaders, requires, conflicts, platforms, from-server, exclude, and editable patterns.
+- [x] Replace the embedded 500-file limit with lazy, searchable, paginated published-content browsing.
+- [x] Capture and show terminal output for AutoModpack operations issued through Crafty, with an explicit fallback when terminal permission/output is unavailable.
+- [x] Replace the opaque rollback-preview command with an in-GUI journal-derived head-to-target file diff before rollback publication.
+- [x] Move generation history below the primary configuration and operations workflow.
+- [x] Get the complete Slice 5 branch green in FPBPack CI after the final frontend/backend integration.
 - [ ] Exercise config save/reload against the real FPBCraft AutoModpack installation.
 - [ ] Exercise one new optional group and one `main → optional group` protected move.
 - [ ] Preview then publish a real generation and verify the pending-publication indicator clears correctly.
