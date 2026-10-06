@@ -316,6 +316,12 @@ export default function ReviewPage() {
                   </dd>
                   <dt className="text-base-content/40">Provider</dt>
                   <dd>{change.artifact.provider} · {change.artifact.project_id} · {change.artifact.version_id}</dd>
+                  <dt className="text-base-content/40">Target placement</dt>
+                  <dd>
+                    {change.artifact.deployment === 'client'
+                      ? 'AutoModpack/' + (change.artifact.automodpack_group || 'main')
+                      : 'server/common'}
+                  </dd>
                   {change.artifact.manual_download ? (
                     <>
                       <dt className="text-base-content/40">Manual artifact</dt>
