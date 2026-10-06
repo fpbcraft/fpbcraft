@@ -42,6 +42,7 @@ export default function SettingsPage() {
   const [neoForgeTarget, setNeoForgeTarget] = useState('');
   const [neoForgeBusy, setNeoForgeBusy] = useState(false);
   const [neoForgeError, setNeoForgeError] = useState<string | null>(null);
+  const [neoForgeMessage, setNeoForgeMessage] = useState<string | null>(null);
 
   useEffect(() => {
     void Promise.all([
@@ -190,13 +191,14 @@ export default function SettingsPage() {
     if (!neoForgeTarget) return;
     setNeoForgeBusy(true);
     setNeoForgeError(null);
+    setNeoForgeMessage(null);
     try {
       const result = await api<NeoForgeChangeResult>('/api/neoforge/change', {
         method: 'POST',
         body: JSON.stringify({version: neoForgeTarget}),
       });
       await refreshNeoForge();
-      setSettingsError(
+      setNeoForgeMessage(
         `NeoForge ${result.direction} completed: ${result.from_version} → ${result.to_version}. The server remains stopped.`,
       );
     } catch (error: unknown) {
@@ -412,10 +414,13 @@ export default function SettingsPage() {
             {neoForgeError ? (
               <div className="alert alert-error mb-4 rounded-box py-3 text-sm">{neoForgeError}</div>
             ) : null}
+            {neoForgeMessage ? (
+              <div className="alert alert-success mb-4 rounded-box py-3 text-sm">{neoForgeMessage}</div>
+            ) : null}
             <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
               <div>
                 <p className="text-sm text-base-content/65">
-                  Install an exact NeoForge version for Minecraft {neoForge?.minecraft ?? state.updates.minecraft || '—'}.
+                  Install an exact NeoForge version for Minecraft {neoForge?.minecraft || state.updates.minecraft || '—'}.
                   FPBPack verifies the official installer SHA-512, runs it against the mounted server directory,
                   preserves <span className="mono">user_jvm_args.txt</span>, and updates Crafty's launch paths.
                 </p>
