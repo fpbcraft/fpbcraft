@@ -10,8 +10,9 @@ import (
 )
 
 type testCraftyState struct {
-	mu      sync.Mutex
-	running bool
+	mu       sync.Mutex
+	running  bool
+	commands []string
 }
 
 func newTestCraftyServer(t *testing.T, initialRunning bool) (*httptest.Server, *testCraftyState) {
@@ -39,6 +40,17 @@ func newTestCraftyServer(t *testing.T, initialRunning bool) (*httptest.Server, *
 		case r.Method == http.MethodPost && r.URL.Path == "/api/v2/servers/server-1/action/start_server":
 			state.mu.Lock()
 			state.running = true
+			state.mu.Unlock()
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "ok", "data": map[string]any{}})
+		case r.Method == http.MethodPost && r.URL.Path == "/api/v2/servers/server-1/stdin":
+			var body struct {
+				Command string `json:"command"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode stdin body: %v", err)
+			}
+			state.mu.Lock()
+			state.commands = append(state.commands, body.Command)
 			state.mu.Unlock()
 			_ = json.NewEncoder(w).Encode(map[string]any{"status": "ok", "data": map[string]any{}})
 		default:
@@ -91,5 +103,46 @@ func TestRequireServerStoppedFailsClosedWithoutCrafty(t *testing.T) {
 	service := &Service{}
 	if err := service.requireServerStopped(context.Background()); err == nil {
 		t.Fatal("unconfigured Crafty must not be treated as stopped")
+	}
+}
+
+
+func TestAutoModpackActionsUseDocumentedCraftyCommands(t *testing.T) {
+	server, state := newTestCraftyServer(t, true)
+	svc := &Service{
+		options: Options{
+			CraftyURL:      server.URL,
+			CraftyServerID: "server-1",
+			CraftyToken:    "test-token",
+		},
+	}
+
+	if _, err := svc.RunAutoModpackAction(context.Background(), AutoModpackActionRequest{
+		Action: "preview",
+		Notes:  "optional graphics",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.RunAutoModpackAction(context.Background(), AutoModpackActionRequest{
+		Action:   "revert_preview",
+		Sequence: 7,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	state.mu.Lock()
+	commands := append([]string(nil), state.commands...)
+	state.mu.Unlock()
+	want := []string{
+		"automodpack generate preview notes optional graphics",
+		"automodpack generate revert 7",
+	}
+	if len(commands) != len(want) {
+		t.Fatalf("commands = %#v", commands)
+	}
+	for index := range want {
+		if commands[index] != want[index] {
+			t.Fatalf("command %d = %q, want %q", index, commands[index], want[index])
+		}
 	}
 }
