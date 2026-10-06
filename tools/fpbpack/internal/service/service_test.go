@@ -383,14 +383,19 @@ func TestAutoModpackStatusReadsPublishedGroupProjection(t *testing.T) {
 			continue
 		}
 		found = true
-		if len(group.PublishedFiles) != 1 ||
-			group.PublishedFiles[0].Path != "shaderpacks/test.zip" ||
-			!group.PublishedFiles[0].Editable {
-			t.Fatalf("unexpected visual published files: %+v", group.PublishedFiles)
+		if group.PublishedFileCount != 1 {
+			t.Fatalf("unexpected visual published count: %+v", group)
 		}
 	}
 	if !found {
 		t.Fatalf("visual group missing from status: %+v", status.Groups)
+	}
+	page, err := svc.AutoModpackGroupFiles("visual", 0, 100, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(page.Files) != 1 || page.Files[0].Path != "shaderpacks/test.zip" || !page.Files[0].Editable {
+		t.Fatalf("unexpected visual published files page: %+v", page)
 	}
 }
 
