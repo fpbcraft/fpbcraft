@@ -141,6 +141,13 @@ func (s *Service) ChangeNeoForge(ctx context.Context, target string) (NeoForgeCh
 		)
 	}
 
+	if !s.refreshMu.TryLock() {
+		return NeoForgeChangeResult{}, fmt.Errorf("provider refresh is in progress; retry the NeoForge change after it finishes")
+	}
+	defer s.refreshMu.Unlock()
+	s.catalogMu.Lock()
+	defer s.catalogMu.Unlock()
+
 	versions, err := s.listNeoForgeVersions(ctx)
 	if err != nil {
 		return NeoForgeChangeResult{}, fmt.Errorf("load NeoForge versions: %w", err)
