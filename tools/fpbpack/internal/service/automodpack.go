@@ -636,9 +636,9 @@ func (s *Service) autoModpackGenerationHistory() ([]AutoModpackGeneration, error
 	defer file.Close()
 
 	type journalChange struct {
-		Path     string  `json:"path"`
-		FromSHA1 *string `json:"fromSha1"`
-		ToSHA1   *string `json:"toSha1"`
+		Path     string `json:"path"`
+		FromSHA1 string `json:"fromSha1"`
+		ToSHA1   string `json:"toSha1"`
 	}
 	type journalEntry struct {
 		Seq          int64           `json:"seq"`
@@ -674,10 +674,12 @@ func (s *Service) autoModpackGenerationHistory() ([]AutoModpackGeneration, error
 		}
 		summary := AutoModpackGenerationSummary{}
 		for _, change := range entry.Changes {
+			from := strings.TrimSpace(change.FromSHA1)
+			to := strings.TrimSpace(change.ToSHA1)
 			switch {
-			case change.FromSHA1 == nil && change.ToSHA1 != nil:
+			case from == "" && to != "":
 				summary.Added++
-			case change.FromSHA1 != nil && change.ToSHA1 == nil:
+			case from != "" && to == "":
 				summary.Removed++
 			default:
 				summary.Changed++
