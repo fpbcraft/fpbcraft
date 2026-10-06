@@ -735,8 +735,12 @@ func (s *Service) forgetMissingAcceptedEntry(path string) (ModManagementResult, 
 	}, nil
 }
 
-func (s *Service) setPreferredPlacement(path, placement, autoModpackGroup string) (ModManagementResult, error) {
+func (s *Service) setPreferredPlacement(path, placement string, autoModpackGroups ...string) (ModManagementResult, error) {
 	placement = strings.TrimSpace(strings.ToLower(placement))
+	autoModpackGroup := ""
+	if len(autoModpackGroups) > 0 {
+		autoModpackGroup = autoModpackGroups[0]
+	}
 	var target inventory.Location
 	switch placement {
 	case string(inventory.LocationServer):
