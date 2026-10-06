@@ -28,6 +28,7 @@ type Options struct {
 
 type Source struct {
 	Location inventory.Location `json:"location"`
+	Group    string             `json:"group,omitempty"`
 	Path     string             `json:"path"`
 }
 
@@ -107,8 +108,9 @@ type Entry struct {
 	SHA512      string             `json:"sha512"`
 	URL         string             `json:"url,omitempty"`
 	Side        string             `json:"side"`
-	Deployment  inventory.Location `json:"deployment"`
-	Environment string             `json:"environment,omitempty"`
+	Deployment       inventory.Location `json:"deployment"`
+	AutoModpackGroup string             `json:"automodpack_group,omitempty"`
+	Environment      string             `json:"environment,omitempty"`
 	Repository  string             `json:"repository,omitempty"`
 	Tag         string             `json:"tag,omitempty"`
 	Asset       string             `json:"asset,omitempty"`
@@ -264,7 +266,7 @@ func Build(inv inventory.Inventory) (Result, error) {
 		})
 		sources := make([]Source, 0, len(members))
 		for _, member := range members {
-			sources = append(sources, Source{Location: member.Location, Path: member.Path})
+			sources = append(sources, Source{Location: member.Location, Group: member.Group, Path: member.Path})
 		}
 		if len(members) > 1 {
 			report.Duplicates = append(report.Duplicates, Duplicate{SHA512: members[0].SHA512, Files: sources})
@@ -325,7 +327,7 @@ func Build(inv inventory.Inventory) (Result, error) {
 			Provider: provider, ProjectID: projectID,
 			Name: displayName(item.canonical), Filename: item.canonical.Filename,
 			SHA1: item.canonical.SHA1, SHA512: item.canonical.SHA512,
-			Deployment: item.canonical.Location, SourcePaths: item.sources,
+			Deployment: item.canonical.Location, AutoModpackGroup: normalizedAutoModpackGroup(item.canonical.Location, item.canonical.Group), SourcePaths: item.sources,
 		}
 		switch provider {
 		case "modrinth":
@@ -550,4 +552,16 @@ func renderPack(opts Options, indexHash string) string {
 func sha256Hex(content []byte) string {
 	sum := sha256.Sum256(content)
 	return hex.EncodeToString(sum[:])
+}
+
+
+func normalizedAutoModpackGroup(location inventory.Location, group string) string {
+	if location != inventory.LocationClient {
+		return ""
+	}
+	group = strings.TrimSpace(group)
+	if group == "" {
+		return "main"
+	}
+	return group
 }
