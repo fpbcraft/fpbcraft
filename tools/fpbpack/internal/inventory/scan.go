@@ -16,12 +16,14 @@ import (
 const (
 	DefaultServerModsPath = "mods"
 	DefaultClientModsPath = "automodpack/host-modpack/main/mods"
+	DefaultAutoModpackHostPath = "automodpack/host-modpack"
 )
 
 type ScanOptions struct {
-	ServerRoot     string
-	ServerModsPath string
-	ClientModsPath string
+	ServerRoot          string
+	ServerModsPath      string
+	ClientModsPath      string
+	AutoModpackHostPath string
 }
 
 func Scan(options ScanOptions) (Inventory, error) {
@@ -33,6 +35,9 @@ func Scan(options ScanOptions) (Inventory, error) {
 	}
 	if options.ClientModsPath == "" {
 		options.ClientModsPath = DefaultClientModsPath
+	}
+	if options.AutoModpackHostPath == "" {
+		options.AutoModpackHostPath = DefaultAutoModpackHostPath
 	}
 
 	root, err := filepath.Abs(options.ServerRoot)
@@ -53,25 +58,62 @@ func Scan(options ScanOptions) (Inventory, error) {
 		ServerRoot:     root,
 		ServerModsPath: options.ServerModsPath,
 		ClientModsPath: options.ClientModsPath,
+		ClientGroupModsPaths: map[string]string{},
 	}
 
-	targets := []struct {
+	type scanTarget struct {
 		location Location
+		group    string
 		relative string
-	}{
-		{LocationServer, options.ServerModsPath},
-		{LocationClient, options.ClientModsPath},
+	}
+	targets := []scanTarget{{location: LocationServer, relative: options.ServerModsPath}}
+	seenClientPaths := map[string]struct{}{}
+	addClientTarget := func(group, relative string) {
+		relative = filepath.ToSlash(filepath.Clean(relative))
+		if relative == "." || relative == "" {
+			return
+		}
+		key := strings.ToLower(relative)
+		if _, exists := seenClientPaths[key]; exists {
+			return
+		}
+		seenClientPaths[key] = struct{}{}
+		if strings.TrimSpace(group) == "" {
+			group = "main"
+		}
+		result.ClientGroupModsPaths[group] = relative
+		targets = append(targets, scanTarget{location: LocationClient, group: group, relative: relative})
+	}
+
+	configuredGroup := clientGroupFromModsPath(options.ClientModsPath, options.AutoModpackHostPath)
+	addClientTarget(configuredGroup, options.ClientModsPath)
+	hostRoot := filepath.Join(root, filepath.FromSlash(options.AutoModpackHostPath))
+	if entries, readErr := os.ReadDir(hostRoot); readErr == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			group := strings.TrimSpace(entry.Name())
+			if group == "" {
+				continue
+			}
+			addClientTarget(group, filepath.ToSlash(filepath.Join(options.AutoModpackHostPath, group, "mods")))
+		}
+	} else if !os.IsNotExist(readErr) {
+		return Inventory{}, fmt.Errorf("read AutoModpack group directory %s: %w", hostRoot, readErr)
 	}
 
 	foundDirectory := false
 	for _, target := range targets {
 		dir := filepath.Join(root, filepath.FromSlash(target.relative))
-		mods, exists, err := scanDirectory(root, dir, target.location)
+		mods, exists, err := scanDirectory(root, dir, target.location, target.group)
 		if err != nil {
 			return Inventory{}, err
 		}
 		if !exists {
-			result.Warnings = append(result.Warnings, fmt.Sprintf("%s mod directory does not exist: %s", target.location, dir))
+			if target.location == LocationServer || target.relative == filepath.ToSlash(filepath.Clean(options.ClientModsPath)) {
+				result.Warnings = append(result.Warnings, fmt.Sprintf("%s mod directory does not exist: %s", target.location, dir))
+			}
 			continue
 		}
 		foundDirectory = true
@@ -86,13 +128,16 @@ func Scan(options ScanOptions) (Inventory, error) {
 		if result.Mods[a].Location != result.Mods[b].Location {
 			return result.Mods[a].Location < result.Mods[b].Location
 		}
+		if result.Mods[a].Group != result.Mods[b].Group {
+			return strings.ToLower(result.Mods[a].Group) < strings.ToLower(result.Mods[b].Group)
+		}
 		return strings.ToLower(result.Mods[a].Filename) < strings.ToLower(result.Mods[b].Filename)
 	})
 	result.RecalculateSummary()
 	return result, nil
 }
 
-func scanDirectory(root, dir string, location Location) ([]ModFile, bool, error) {
+func scanDirectory(root, dir string, location Location, group string) ([]ModFile, bool, error) {
 	entries, err := os.ReadDir(dir)
 	if os.IsNotExist(err) {
 		return nil, false, nil
@@ -107,7 +152,7 @@ func scanDirectory(root, dir string, location Location) ([]ModFile, bool, error)
 			continue
 		}
 		path := filepath.Join(dir, entry.Name())
-		mod, err := inspectFile(root, path, location)
+		mod, err := inspectFile(root, path, location, group)
 		if err != nil {
 			relative, relErr := filepath.Rel(root, path)
 			if relErr != nil {
@@ -115,6 +160,7 @@ func scanDirectory(root, dir string, location Location) ([]ModFile, bool, error)
 			}
 			mods = append(mods, ModFile{
 				Location: location,
+				Group:    group,
 				Path:     filepath.ToSlash(relative),
 				Filename: entry.Name(),
 				Error:    err.Error(),
@@ -126,7 +172,7 @@ func scanDirectory(root, dir string, location Location) ([]ModFile, bool, error)
 	return mods, true, nil
 }
 
-func inspectFile(root, path string, location Location) (ModFile, error) {
+func inspectFile(root, path string, location Location, group string) (ModFile, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return ModFile{}, fmt.Errorf("open %s: %w", path, err)
@@ -158,6 +204,7 @@ func inspectFile(root, path string, location Location) (ModFile, error) {
 	}
 	mod := ModFile{
 		Location:              location,
+		Group:                 group,
 		Path:                  filepath.ToSlash(relative),
 		Filename:              filepath.Base(path),
 		Size:                  info.Size(),
@@ -173,4 +220,19 @@ func inspectFile(root, path string, location Location) (ModFile, error) {
 		mod.Metadata = metadata
 	}
 	return mod, nil
+}
+
+
+func clientGroupFromModsPath(clientModsPath, hostPath string) string {
+	clientModsPath = filepath.ToSlash(filepath.Clean(clientModsPath))
+	hostPath = strings.TrimSuffix(filepath.ToSlash(filepath.Clean(hostPath)), "/")
+	prefix := hostPath + "/"
+	if strings.HasPrefix(clientModsPath, prefix) {
+		rest := strings.TrimPrefix(clientModsPath, prefix)
+		parts := strings.Split(rest, "/")
+		if len(parts) >= 2 && parts[0] != "" && parts[1] == "mods" {
+			return parts[0]
+		}
+	}
+	return "main"
 }
