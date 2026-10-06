@@ -46,6 +46,8 @@ type CraftyStatusLoader func(context.Context) service.CraftyStatus
 type CraftyConfigSetter func(context.Context, service.CraftyConfigRequest) (service.CraftyStatus, error)
 type CraftyCredentialClearer func() (service.CraftyStatus, error)
 type ServerControl func(context.Context) (service.CraftyStatus, error)
+type NeoForgeStatusLoader func(context.Context) (service.NeoForgeStatus, error)
+type NeoForgeChanger func(context.Context, string) (service.NeoForgeChangeResult, error)
 type PlanApplier func(context.Context, string) (service.ApplyResult, error)
 type BackupRestorer func(context.Context, string) (service.RestoreResult, error)
 type ManualArtifactAccepter func(context.Context, string, string, io.Reader) (planning.Plan, error)
@@ -82,6 +84,8 @@ type ServerOptions struct {
 	ClearCraftyCredential CraftyCredentialClearer
 	StartServer   ServerControl
 	StopServer    ServerControl
+	NeoForgeStatus NeoForgeStatusLoader
+	ChangeNeoForge NeoForgeChanger
 	ApplyPlan     PlanApplier
 	RestoreBackup BackupRestorer
 	AcceptManualArtifact ManualArtifactAccepter
@@ -122,6 +126,8 @@ type Server struct {
 	clearCraftyCredential CraftyCredentialClearer
 	startServer    ServerControl
 	stopServer     ServerControl
+	neoForgeStatus NeoForgeStatusLoader
+	changeNeoForge NeoForgeChanger
 	applyPlan      PlanApplier
 	restoreBackup  BackupRestorer
 	acceptManualArtifact ManualArtifactAccepter
@@ -164,6 +170,8 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 		clearCraftyCredential: opts.ClearCraftyCredential,
 		startServer: opts.StartServer,
 		stopServer: opts.StopServer,
+		neoForgeStatus: opts.NeoForgeStatus,
+		changeNeoForge: opts.ChangeNeoForge,
 		applyPlan: opts.ApplyPlan,
 		restoreBackup: opts.RestoreBackup,
 		acceptManualArtifact: opts.AcceptManualArtifact,
@@ -206,6 +214,8 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("DELETE /api/crafty/credentials", server.clearCraftyCredentials)
 	mux.HandleFunc("POST /api/server/start", server.startMinecraftServer)
 	mux.HandleFunc("POST /api/server/stop", server.stopMinecraftServer)
+	mux.HandleFunc("GET /api/neoforge", server.neoForge)
+	mux.HandleFunc("POST /api/neoforge/change", server.changeNeoForgeVersion)
 	mux.HandleFunc("POST /api/plans/{id}/apply", server.applyPlanHandler)
 	mux.HandleFunc("POST /api/plans/{id}/manual-artifact", server.acceptManualArtifactHandler)
 	mux.HandleFunc("POST /api/backups/{id}/restore", server.restoreBackupHandler)
@@ -723,6 +733,50 @@ func (s *Server) refreshModMetadata(w http.ResponseWriter, r *http.Request) {
 		status = "already_refreshing"
 	}
 	writeJSON(w, http.StatusAccepted, map[string]string{"status": status})
+}
+
+func (s *Server) neoForge(w http.ResponseWriter, r *http.Request) {
+	if s.neoForgeStatus == nil {
+		writeError(w, http.StatusServiceUnavailable, "NeoForge version management is not configured")
+		return
+	}
+	status, err := s.neoForgeStatus(r.Context())
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, status)
+}
+
+func (s *Server) changeNeoForgeVersion(w http.ResponseWriter, r *http.Request) {
+	if s.changeNeoForge == nil {
+		writeError(w, http.StatusServiceUnavailable, "NeoForge version management is not configured")
+		return
+	}
+	var request struct {
+		Version string `json:"version"`
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 8<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid NeoForge change request: "+err.Error())
+		return
+	}
+	if strings.TrimSpace(request.Version) == "" {
+		writeError(w, http.StatusBadRequest, "version is required")
+		return
+	}
+	result, err := s.changeNeoForge(r.Context(), request.Version)
+	if err != nil {
+		status := http.StatusBadRequest
+		if strings.Contains(strings.ToLower(err.Error()), "must be stopped") {
+			status = http.StatusConflict
+		}
+		writeError(w, status, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
 }
 
 func (s *Server) crafty(w http.ResponseWriter, r *http.Request) {
