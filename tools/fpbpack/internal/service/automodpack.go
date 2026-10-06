@@ -919,6 +919,127 @@ func (s *Service) autoModpackGenerationHistory() ([]AutoModpackGeneration, error
 }
 
 
+func (s *Service) AutoModpackGenerationDiff(sequence int64) (AutoModpackGenerationDiff, error) {
+	if sequence < 1 {
+		return AutoModpackGenerationDiff{}, fmt.Errorf("generation sequence must be positive")
+	}
+	path := filepath.Join(s.options.ServerRoot, "automodpack", "server", "journal.jsonl")
+	file, err := os.Open(path)
+	if err != nil {
+		return AutoModpackGenerationDiff{}, err
+	}
+	defer file.Close()
+
+	type journalChange struct {
+		Path     string `json:"path"`
+		FromSHA1 string `json:"fromSha1"`
+		FromSize int64  `json:"fromSize"`
+		ToSHA1   string `json:"toSha1"`
+		ToSize   int64  `json:"toSize"`
+	}
+	type journalEntry struct {
+		Seq     int64           `json:"seq"`
+		Changes []journalChange `json:"changes"`
+	}
+
+	entries := []journalEntry{}
+	scanner := bufio.NewScanner(file)
+	scanner.Buffer(make([]byte, 64*1024), 4*1024*1024)
+	for scanner.Scan() {
+		raw := strings.TrimSpace(scanner.Text())
+		if raw == "" {
+			continue
+		}
+		var entry journalEntry
+		if err := json.Unmarshal([]byte(raw), &entry); err != nil {
+			return AutoModpackGenerationDiff{}, fmt.Errorf("parse AutoModpack journal: %w", err)
+		}
+		entries = append(entries, entry)
+	}
+	if err := scanner.Err(); err != nil {
+		return AutoModpackGenerationDiff{}, err
+	}
+	if len(entries) == 0 {
+		return AutoModpackGenerationDiff{}, fmt.Errorf("AutoModpack generation journal is empty")
+	}
+	head := entries[len(entries)-1].Seq
+	foundTarget := false
+	for _, entry := range entries {
+		if entry.Seq == sequence {
+			foundTarget = true
+			break
+		}
+	}
+	if !foundTarget {
+		return AutoModpackGenerationDiff{}, fmt.Errorf("AutoModpack generation #%d was not found", sequence)
+	}
+	if sequence > head {
+		return AutoModpackGenerationDiff{}, fmt.Errorf("generation #%d is newer than current head #%d", sequence, head)
+	}
+
+	type folded struct {
+		targetSHA1 string
+		targetSize int64
+		currentSHA1 string
+		currentSize int64
+		seen bool
+	}
+	byPath := map[string]folded{}
+	for _, entry := range entries {
+		if entry.Seq <= sequence {
+			continue
+		}
+		for _, change := range entry.Changes {
+			state := byPath[change.Path]
+			if !state.seen {
+				state.targetSHA1 = strings.TrimSpace(change.FromSHA1)
+				state.targetSize = change.FromSize
+				state.seen = true
+			}
+			state.currentSHA1 = strings.TrimSpace(change.ToSHA1)
+			state.currentSize = change.ToSize
+			byPath[change.Path] = state
+		}
+	}
+
+	result := AutoModpackGenerationDiff{
+		TargetSequence: sequence,
+		HeadSequence: head,
+		Entries: []AutoModpackGenerationDiffEntry{},
+	}
+	paths := make([]string, 0, len(byPath))
+	for path := range byPath {
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+	for _, logicalPath := range paths {
+		state := byPath[logicalPath]
+		if state.currentSHA1 == state.targetSHA1 {
+			continue
+		}
+		action := "change"
+		switch {
+		case state.currentSHA1 == "" && state.targetSHA1 != "":
+			action = "add"
+			result.Added++
+		case state.currentSHA1 != "" && state.targetSHA1 == "":
+			action = "remove"
+			result.Removed++
+		default:
+			result.Changed++
+		}
+		result.Entries = append(result.Entries, AutoModpackGenerationDiffEntry{
+			Path: logicalPath,
+			Action: action,
+			CurrentSHA1: state.currentSHA1,
+			CurrentSize: state.currentSize,
+			TargetSHA1: state.targetSHA1,
+			TargetSize: state.targetSize,
+		})
+	}
+	return result, nil
+}
+
 func (s *Service) autoModpackPublishedContent() (map[string][]AutoModpackPublishedFile, string, int64, error) {
 	path := filepath.Join(s.options.ServerRoot, "automodpack", "server", "current-projection.json")
 	content, err := os.ReadFile(path)
