@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/automodpack"
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/catalog"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
 )
 
@@ -217,7 +218,9 @@ func (s *Service) UpdateAutoModpackConfig(_ context.Context, request AutoModpack
 	if err := writeBytesAtomic(path, next, 0o644); err != nil {
 		return AutoModpackStatus{}, fmt.Errorf("write AutoModpack configuration: %w", err)
 	}
-	s.markAutoModpackChanged()
+	if err := s.markAutoModpackChanged(); err != nil {
+		return AutoModpackStatus{}, fmt.Errorf("persist AutoModpack publication state: %w", err)
+	}
 	s.logEvent("info", "automodpack", "Saved automodpack/server.conf; configuration reload is still required on a running server")
 	return s.AutoModpackStatus()
 }
@@ -519,14 +522,14 @@ func (s *Service) backupAutoModpackConfig(content []byte, hash string) error {
 	return nil
 }
 
-func (s *Service) markAutoModpackChanged() {
+func (s *Service) markAutoModpackChanged() error {
 	now := time.Now().UTC()
 	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.state.AutoModpack.PendingPublish = true
 	s.state.AutoModpack.LastChangedAt = &now
 	s.state.UpdatedAt = now
-	_ = s.persistState()
-	s.mu.Unlock()
+	return s.persistState()
 }
 
 func directoryHasContent(path string) (bool, error) {
