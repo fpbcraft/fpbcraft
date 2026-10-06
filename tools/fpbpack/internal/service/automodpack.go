@@ -21,14 +21,24 @@ import (
 
 const autoModpackConfigPath = "automodpack/server.conf"
 
-type AutoModpackGroupStatus struct {
-	ID       string `json:"id"`
-	Category string `json:"category"`
+type AutoModpackPublishedFile struct {
 	Path     string `json:"path"`
-	Exists   bool   `json:"exists"`
-	Files    int    `json:"files"`
-	Mods     int    `json:"mods"`
-	Bytes    int64  `json:"bytes"`
+	Size     string `json:"size,omitempty"`
+	Type     string `json:"type,omitempty"`
+	Editable bool   `json:"editable,omitempty"`
+	SHA1     string `json:"sha1,omitempty"`
+}
+
+type AutoModpackGroupStatus struct {
+	ID                 string                     `json:"id"`
+	Category           string                     `json:"category"`
+	Path               string                     `json:"path"`
+	Exists             bool                       `json:"exists"`
+	Files              int                        `json:"files"`
+	Mods               int                        `json:"mods"`
+	Bytes              int64                      `json:"bytes"`
+	PublishedFiles     []AutoModpackPublishedFile `json:"published_files,omitempty"`
+	PublishedTruncated bool                       `json:"published_truncated,omitempty"`
 }
 
 type AutoModpackGenerationSummary struct {
@@ -61,6 +71,8 @@ type AutoModpackStatus struct {
 	LastChangedAt          *time.Time                 `json:"last_changed_at,omitempty"`
 	LastPublishRequestedAt *time.Time                 `json:"last_publish_requested_at,omitempty"`
 	Generations            []AutoModpackGeneration    `json:"generations"`
+	PublishedContentToken  string                     `json:"published_content_token,omitempty"`
+	PublishedJournalHead   int64                      `json:"published_journal_head,omitempty"`
 }
 
 type AutoModpackConfigRequest struct {
@@ -174,6 +186,25 @@ func (s *Service) AutoModpackStatus() (AutoModpackStatus, error) {
 		}
 	}
 	status.Findings = append(status.Findings, s.autoModpackDirectContentCollisions(configuredGroups)...)
+	publishedGroups, contentToken, journalHead, projectionErr := s.autoModpackPublishedContent()
+	if projectionErr != nil {
+		status.Findings = append(status.Findings, automodpack.Finding{
+			Level: "warning", Code: "published_projection_unreadable",
+			Message: fmt.Sprintf("Could not read AutoModpack current published projection: %v", projectionErr),
+		})
+	} else {
+		status.PublishedContentToken = contentToken
+		status.PublishedJournalHead = journalHead
+		for index := range status.Groups {
+			files := publishedGroups[status.Groups[index].ID]
+			if len(files) > 500 {
+				status.Groups[index].PublishedFiles = append([]AutoModpackPublishedFile(nil), files[:500]...)
+				status.Groups[index].PublishedTruncated = true
+			} else {
+				status.Groups[index].PublishedFiles = append([]AutoModpackPublishedFile(nil), files...)
+			}
+		}
+	}
 	generations, historyErr := s.autoModpackGenerationHistory()
 	if historyErr != nil {
 		status.Findings = append(status.Findings, automodpack.Finding{
@@ -702,4 +733,55 @@ func (s *Service) autoModpackGenerationHistory() ([]AutoModpackGeneration, error
 		history = history[:100]
 	}
 	return history, nil
+}
+
+
+func (s *Service) autoModpackPublishedContent() (map[string][]AutoModpackPublishedFile, string, int64, error) {
+	path := filepath.Join(s.options.ServerRoot, "automodpack", "server", "current-projection.json")
+	content, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return map[string][]AutoModpackPublishedFile{}, "", 0, nil
+	}
+	if err != nil {
+		return nil, "", 0, err
+	}
+	type groupFile struct {
+		Size     string `json:"size"`
+		Type     string `json:"type"`
+		Editable bool   `json:"editable"`
+		SHA1     string `json:"sha1"`
+	}
+	type group struct {
+		Files map[string]groupFile `json:"files"`
+	}
+	var head struct {
+		ContentToken string `json:"contentToken"`
+		JournalHead  int64  `json:"journalHead"`
+		Policy struct {
+			Categories map[string]map[string]group `json:"categories"`
+		} `json:"policy"`
+	}
+	if err := json.Unmarshal(content, &head); err != nil {
+		return nil, "", 0, err
+	}
+	result := map[string][]AutoModpackPublishedFile{}
+	for _, groups := range head.Policy.Categories {
+		for groupID, groupData := range groups {
+			files := make([]AutoModpackPublishedFile, 0, len(groupData.Files))
+			for logicalPath, file := range groupData.Files {
+				files = append(files, AutoModpackPublishedFile{
+					Path: logicalPath,
+					Size: file.Size,
+					Type: file.Type,
+					Editable: file.Editable,
+					SHA1: file.SHA1,
+				})
+			}
+			sort.Slice(files, func(i, j int) bool {
+				return strings.ToLower(files[i].Path) < strings.ToLower(files[j].Path)
+			})
+			result[groupID] = files
+		}
+	}
+	return result, head.ContentToken, head.JournalHead, nil
 }
