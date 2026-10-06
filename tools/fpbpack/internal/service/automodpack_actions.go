@@ -10,8 +10,9 @@ import (
 )
 
 type AutoModpackActionRequest struct {
-	Action string `json:"action"`
-	Notes  string `json:"notes,omitempty"`
+	Action   string `json:"action"`
+	Notes    string `json:"notes,omitempty"`
+	Sequence int64  `json:"sequence,omitempty"`
 }
 
 type AutoModpackActionResult struct {
@@ -25,6 +26,7 @@ type AutoModpackActionResult struct {
 func (s *Service) RunAutoModpackAction(ctx context.Context, request AutoModpackActionRequest) (AutoModpackActionResult, error) {
 	action := strings.TrimSpace(strings.ToLower(request.Action))
 	command := ""
+	notes := sanitizeAutoModpackCommandText(request.Notes)
 	switch action {
 	case "reload":
 		command = "automodpack config reload"
@@ -32,18 +34,27 @@ func (s *Service) RunAutoModpackAction(ctx context.Context, request AutoModpackA
 		command = "automodpack host restart"
 	case "preview":
 		command = "automodpack generate preview"
+		if notes != "" {
+			command += " notes " + notes
+		}
 	case "publish":
 		command = "automodpack generate"
-		if notes := sanitizeAutoModpackCommandText(request.Notes); notes != "" {
-			command += " " + notes
+		if notes != "" {
+			command += " notes " + notes
 		}
-	case "publish_if_changed":
-		command = "automodpack generate if-content"
-		if notes := sanitizeAutoModpackCommandText(request.Notes); notes != "" {
-			command += " " + notes
+	case "revert_preview":
+		if request.Sequence < 1 {
+			return AutoModpackActionResult{}, fmt.Errorf("generation sequence must be positive")
 		}
-	case "history":
-		command = "automodpack generate history"
+		command = fmt.Sprintf("automodpack generate revert %d", request.Sequence)
+	case "revert_confirm":
+		if request.Sequence < 1 {
+			return AutoModpackActionResult{}, fmt.Errorf("generation sequence must be positive")
+		}
+		command = fmt.Sprintf("automodpack generate revert %d confirm", request.Sequence)
+		if notes != "" {
+			command += " notes " + notes
+		}
 	case "groups":
 		command = "automodpack groups"
 	case "host_activity":
@@ -77,7 +88,7 @@ func (s *Service) RunAutoModpackAction(ctx context.Context, request AutoModpackA
 	}
 
 	now := time.Now().UTC()
-	if action == "publish" || action == "publish_if_changed" {
+	if action == "publish" || action == "revert_confirm" {
 		s.mu.Lock()
 		s.state.AutoModpack.PendingPublish = false
 		s.state.AutoModpack.LastPublishRequestedAt = &now
@@ -90,7 +101,7 @@ func (s *Service) RunAutoModpackAction(ctx context.Context, request AutoModpackA
 	}
 	s.logEvent("info", "automodpack", "Sent server command: "+command)
 	message := "Crafty accepted the AutoModpack command."
-	if action == "publish" || action == "publish_if_changed" {
+	if action == "publish" || action == "revert_confirm" {
 		message += " The server console remains authoritative if AutoModpack rejects generation or publication."
 	}
 	return AutoModpackActionResult{
