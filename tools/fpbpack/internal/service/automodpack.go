@@ -301,7 +301,10 @@ func (s *Service) validateAutoModpackIdentityChanges(current, next automodpack.C
 	return nil
 }
 
-func (s *Service) MigrateAutoModpackGroup(_ context.Context, request AutoModpackGroupMigrationRequest) (AutoModpackStatus, error) {
+func (s *Service) MigrateAutoModpackGroup(ctx context.Context, request AutoModpackGroupMigrationRequest) (AutoModpackStatus, error) {
+	if err := s.requireServerStopped(ctx); err != nil {
+		return AutoModpackStatus{}, err
+	}
 	oldID := strings.TrimSpace(request.OldID)
 	newID := strings.TrimSpace(request.NewID)
 	if err := validateAutoModpackGroupID(newID); err != nil {
