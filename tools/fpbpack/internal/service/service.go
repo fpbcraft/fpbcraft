@@ -191,7 +191,23 @@ func normalizeOptions(options *Options) {
 func (s *Service) Snapshot() (management.Snapshot, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.snapshot, nil
+
+	snapshot := s.snapshot
+	snapshot.Mods = append([]management.Mod(nil), s.snapshot.Mods...)
+	if s.hasUpdate && len(s.updates.Candidates) > 0 {
+		icons := make(map[string]string, len(s.updates.Candidates))
+		for _, candidate := range s.updates.Candidates {
+			if strings.TrimSpace(candidate.IconURL) != "" {
+				icons[candidate.Key] = candidate.IconURL
+			}
+		}
+		for index := range snapshot.Mods {
+			if icon := icons[snapshot.Mods[index].ID]; icon != "" {
+				snapshot.Mods[index].IconURL = icon
+			}
+		}
+	}
+	return snapshot, nil
 }
 
 func (s *Service) Catalog() (catalog.Report, error) {
@@ -360,6 +376,9 @@ func (s *Service) Refresh(ctx context.Context) (err error) {
 	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "inventory.json"), inv); err != nil {
 		return fmt.Errorf("write inventory cache: %w", err)
 	}
+	if _, err := s.reconcileCatalogWithInventory(inv); err != nil {
+		return fmt.Errorf("reconcile catalog locations: %w", err)
+	}
 
 	acceptedCatalog, err := s.catalogSnapshot()
 	if err != nil {
@@ -434,6 +453,9 @@ func (s *Service) RefreshInventory(ctx context.Context) (err error) {
 	inv, err := s.scanInventory(ctx)
 	if err != nil {
 		return err
+	}
+	if _, err := s.reconcileCatalogWithInventory(inv); err != nil {
+		return fmt.Errorf("reconcile catalog locations: %w", err)
 	}
 	currentCatalog, snapshotErr := s.catalogSnapshot()
 	if snapshotErr != nil {

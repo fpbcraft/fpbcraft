@@ -103,7 +103,7 @@ function isRemovableMod(mod: ManagementMod) {
 }
 
 export default function ModsPage() {
-  const {state, connectionStatus, reload} = useManagement();
+  const {state, connectionStatus, reload, refreshInventory} = useManagement();
   const router = useRouter();
   const [q, setQ] = useState('');
   const [deployment, setDeployment] = useState('all');
@@ -149,6 +149,10 @@ export default function ModsPage() {
 
   const blockerPaths = useMemo(
     () => new Set(blockers.map((finding) => normalizePath(finding.path)).filter(Boolean)),
+    [blockers],
+  );
+  const hasMovedCatalogDrift = useMemo(
+    () => blockers.some((finding) => finding.code === 'managed_artifact_moved'),
     [blockers],
   );
 
@@ -697,6 +701,19 @@ export default function ModsPage() {
     }
   };
 
+  const reconcileMovedMods = async () => {
+    setManagementError(null);
+    setManagementMessage(null);
+    try {
+      await refreshInventory();
+      setManagementMessage(
+        'Inventory reconciliation started. Byte-identical managed JARs that were moved manually will be adopted at their live paths automatically.',
+      );
+    } catch (error: unknown) {
+      setManagementError(error instanceof Error ? error.message : String(error));
+    }
+  };
+
   const refreshModMetadata = async (path: string) => {
     setManagementBusy(true);
     setManagementError(null);
@@ -761,7 +778,19 @@ export default function ModsPage() {
                 Resolve blocking catalog issues
               </h2>
             </div>
-            <Pill tone="bad">{blockers.length}</Pill>
+            <div className="flex items-center gap-2">
+              {hasMovedCatalogDrift ? (
+                <button
+                  className="btn btn-xs btn-primary"
+                  type="button"
+                  disabled={state.status.refresh?.refreshing}
+                  onClick={() => void reconcileMovedMods()}
+                >
+                  <RefreshCw size={12} /> Reconcile all moved mods
+                </button>
+              ) : null}
+              <Pill tone="bad">{blockers.length}</Pill>
+            </div>
           </div>
           <div className="divide-y divide-base-300">
             {blockers.map((finding, index) => {
@@ -1075,9 +1104,9 @@ export default function ModsPage() {
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
-                        {candidate?.icon_url ? (
+                        {(candidate?.icon_url || mod.icon_url) ? (
                           <img
-                            src={candidate.icon_url}
+                            src={candidate?.icon_url || mod.icon_url}
                             alt=""
                             className="size-7 rounded-md border border-base-300 object-cover"
                           />
@@ -1200,9 +1229,9 @@ export default function ModsPage() {
         >
           <div className="modal-box max-h-[90vh] max-w-3xl overflow-y-auto max-sm:h-full max-sm:max-h-none max-sm:w-full max-sm:rounded-none">
             <div className="flex items-start gap-3 border-b border-base-300 pb-4">
-              {selectedCandidate?.icon_url ? (
+              {selectedCandidate?.icon_url || selectedMod.icon_url ? (
                 <img
-                  src={selectedCandidate.icon_url}
+                  src={selectedCandidate?.icon_url || selectedMod.icon_url}
                   alt=""
                   className="size-12 rounded-lg border border-base-300 object-cover"
                 />

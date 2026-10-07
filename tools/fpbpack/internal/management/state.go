@@ -43,6 +43,7 @@ type Mod struct {
 	Provider         string             `json:"provider,omitempty"`
 	ProjectID        string             `json:"project_id,omitempty"`
 	ProjectURL       string             `json:"project_url,omitempty"`
+	IconURL          string             `json:"icon_url,omitempty"`
 	Side             string             `json:"side"`
 	Deployment          inventory.Location `json:"deployment"`
 	AutoModpackGroup    string             `json:"automodpack_group,omitempty"`
@@ -50,6 +51,7 @@ type Mod struct {
 	PreferredAutoModpackGroup string       `json:"preferred_automodpack_group,omitempty"`
 	Management       string             `json:"management"`
 	Path             string             `json:"path"`
+	SHA1             string             `json:"sha1,omitempty"`
 	SHA512           string             `json:"sha512,omitempty"`
 }
 
@@ -153,6 +155,7 @@ func BuildMods(inv inventory.Inventory, cat catalog.Report) []Mod {
 			PreferredAutoModpackGroup: currentGroup,
 			Management:       "unresolved",
 			Path:             file.Path,
+			SHA1:             file.SHA1,
 			SHA512:           file.SHA512,
 		}
 

@@ -132,6 +132,7 @@ func Analyze(inv inventory.Inventory, cat catalog.Report) Report {
 	}
 
 	managedPaths := map[string]struct{}{}
+	movedManagedPaths := map[string]struct{}{}
 	knownOtherPaths := map[string]struct{}{}
 
 	for _, entry := range cat.Managed {
@@ -141,6 +142,9 @@ func Analyze(inv inventory.Inventory, cat catalog.Report) Report {
 			current, exists := currentByPath[key]
 			if !exists {
 				if candidates := currentByHash[strings.ToLower(entry.SHA512)]; len(candidates) > 0 {
+					for _, candidate := range candidates {
+						movedManagedPaths[pathKey(candidate.Location, candidate.Path)] = struct{}{}
+					}
 					add(Finding{
 						Code:       "managed_artifact_moved",
 						Level:      LevelBlocking,
@@ -198,6 +202,9 @@ func Analyze(inv inventory.Inventory, cat catalog.Report) Report {
 			continue
 		}
 		if _, ok := knownOtherPaths[key]; ok {
+			continue
+		}
+		if _, ok := movedManagedPaths[key]; ok {
 			continue
 		}
 		add(Finding{

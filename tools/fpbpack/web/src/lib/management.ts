@@ -127,6 +127,7 @@ export interface ManagementMod {
   provider?: string;
   project_id?: string;
   project_url?: string;
+  icon_url?: string;
   side: string;
   deployment: Location;
   automodpack_group?: string;
@@ -134,6 +135,7 @@ export interface ManagementMod {
   preferred_automodpack_group?: string;
   management: 'managed' | 'unmanaged' | 'unresolved' | 'external' | string;
   path: string;
+  sha1?: string;
   sha512?: string;
 }
 
