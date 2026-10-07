@@ -149,6 +149,14 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 	nextState := previousState
 	nextState.Catalog = nextCatalog
 	stateChangedAt := time.Now().UTC()
+	if nextState.PendingChanges.ReviewedPlanID == plan.ID {
+		nextState.PendingChanges = PendingChanges{
+			SchemaVersion: PendingChangesSchemaVersion,
+			Revision:      nextState.PendingChanges.Revision + 1,
+			UpdatedAt:     &stateChangedAt,
+			Changes:       []PendingChange{},
+		}
+	}
 	nextState.UpdatedAt = stateChangedAt
 	if planTouchesAutoModpack(plan) {
 		nextState.AutoModpack.PendingPublish = true
