@@ -64,6 +64,14 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 	if plan.AppliedAt != nil {
 		return ApplyResult{}, fmt.Errorf("plan %s was already applied at %s", plan.ID, plan.AppliedAt.UTC().Format(time.RFC3339))
 	}
+	if plan.PendingRevision != 0 {
+		s.mu.RLock()
+		pending := clonePendingChanges(s.state.PendingChanges)
+		s.mu.RUnlock()
+		if pending.ReviewedPlanID != plan.ID || pending.Revision != plan.PendingRevision {
+			return ApplyResult{}, fmt.Errorf("reviewed changes are stale because pending changes were edited or discarded; review the current pending changes again")
+		}
+	}
 	if err := s.requireServerStopped(ctx); err != nil {
 		return ApplyResult{}, err
 	}
