@@ -135,6 +135,32 @@ export default function ReviewPage() {
   }
 
   const ready = plan.status === 'ready';
+  const findingContext = (finding: NonNullable<UpdatePlan['blockers']>[number]) => {
+    const change = plan.changes.find(
+      (item) => item.candidate_key === finding.candidate_key,
+    );
+    const liveMod = state.mods.find(
+      (item) => item.id === finding.candidate_key,
+    );
+    const candidate = state.updates.candidates.find(
+      (item) => item.key === finding.candidate_key,
+    );
+    const name =
+      finding.name ||
+      change?.name ||
+      liveMod?.name ||
+      candidate?.name ||
+      finding.candidate_key ||
+      finding.code.replaceAll('_', ' ');
+    const path =
+      finding.path ||
+      change?.operations[0]?.current_path ||
+      change?.operations[0]?.target_path ||
+      liveMod?.path ||
+      candidate?.target?.filename ||
+      candidate?.installed.filename;
+    return {name, path};
+  };
 
   return (
     <>
@@ -201,14 +227,25 @@ export default function ReviewPage() {
             <Pill tone="bad">{plan.blockers.length}</Pill>
           </div>
           <div>
-            {plan.blockers.map((blocker, index) => (
-              <div className="data-row" key={blocker.code + ':' + index}>
-                <div className="min-w-0">
-                  <div className="text-xs font-medium">{blocker.code.replaceAll('_', ' ')}</div>
-                  <div className="mt-0.5 text-xs text-base-content/50">{blocker.message}</div>
+            {plan.blockers.map((blocker, index) => {
+              const context = findingContext(blocker);
+              return (
+                <div className="data-row" key={blocker.code + ':' + index}>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="text-xs font-semibold">{context.name}</div>
+                      <Pill tone="bad">{blocker.code.replaceAll('_', ' ')}</Pill>
+                    </div>
+                    <div className="mt-1 text-xs text-base-content/55">{blocker.message}</div>
+                    {context.path ? (
+                      <div className="mono mt-1 break-all text-[0.68rem] text-base-content/35">
+                        {context.path}
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       ) : null}
@@ -223,11 +260,25 @@ export default function ReviewPage() {
             <Pill tone="warn">{plan.warnings.length}</Pill>
           </div>
           <div>
-            {plan.warnings.map((warning, index) => (
-              <div className="data-row text-xs text-base-content/55" key={warning.code + ':' + index}>
-                {warning.message}
-              </div>
-            ))}
+            {plan.warnings.map((warning, index) => {
+              const context = findingContext(warning);
+              return (
+                <div className="data-row" key={warning.code + ':' + index}>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="text-xs font-semibold">{context.name}</div>
+                      <Pill tone="warn">{warning.code.replaceAll('_', ' ')}</Pill>
+                    </div>
+                    <div className="mt-1 text-xs text-base-content/55">{warning.message}</div>
+                    {context.path ? (
+                      <div className="mono mt-1 break-all text-[0.68rem] text-base-content/35">
+                        {context.path}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
       ) : null}

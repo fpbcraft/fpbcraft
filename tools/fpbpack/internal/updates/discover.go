@@ -17,6 +17,7 @@ import (
 type Options struct {
 	Minecraft        string
 	Loader           string
+	AdditionalLoaders []string
 	ModrinthBaseURL  string
 	CurseForgeBaseURL string
 	CurseForgeAPIKey string
@@ -296,7 +297,7 @@ func discoverModrinthCandidate(
 		if !version.DatePublished.After(current.DatePublished) {
 			continue
 		}
-		rejected := rejectionReasons(version, opts.Minecraft, opts.Loader)
+		rejected := rejectionReasonsForOptions(version, opts)
 		if len(rejected) > 0 {
 			candidate.Rejected = append(candidate.Rejected, RejectedVersion{
 				ID: version.ID, Number: version.VersionNumber, Reasons: rejected,
@@ -315,15 +316,21 @@ func discoverModrinthCandidate(
 	release := releaseFromModrinth(target)
 	candidate.Target = &release
 	candidate.Classification = ClassificationSafe
+	if usesAdditionalLoader(target, opts) {
+		promote(&candidate, ClassificationReview, Reason{
+			Code: "connector_loader",
+			Message: "This target is a Fabric release accepted through Sinytra Connector rather than a native " + opts.Loader + " build.",
+		})
+	}
 
 	// Keep the broad version-history request lightweight so large projects do
 	// not need to return years of changelog text. Hydrate changelogs only for
 	// versions compatible with the configured Minecraft/loader pair.
-	changelogVersions, changelogErr := client.ListCompatibleVersionsWithChangelog(
+	changelogVersions, changelogErr := listModrinthVersionsWithChangelogForOptions(
 		ctx,
+		client,
 		entry.ProjectID,
-		opts.Minecraft,
-		opts.Loader,
+		opts,
 	)
 	if changelogErr == nil {
 		relevant := make([]modrinthVersion, 0, len(changelogVersions))
@@ -331,7 +338,7 @@ func discoverModrinthCandidate(
 			if !version.DatePublished.After(current.DatePublished) {
 				continue
 			}
-			if len(rejectionReasons(version, opts.Minecraft, opts.Loader)) > 0 {
+			if len(rejectionReasonsForOptions(version, opts)) > 0 {
 				continue
 			}
 			relevant = append(relevant, version)
@@ -404,6 +411,18 @@ func changelogEntries(versions []modrinthVersion) []ChangelogEntry {
 }
 
 func rejectionReasons(version modrinthVersion, minecraft, loader string) []Reason {
+	return rejectionReasonsForLoaders(version, minecraft, []string{loader})
+}
+
+func rejectionReasonsForOptions(version modrinthVersion, opts Options) []Reason {
+	return rejectionReasonsForLoaders(version, opts.Minecraft, compatibleLoaders(opts))
+}
+
+func rejectionReasonsForLoaders(
+	version modrinthVersion,
+	minecraft string,
+	loaders []string,
+) []Reason {
 	reasons := make([]Reason, 0, 3)
 	if version.Status != "" && version.Status != "listed" {
 		reasons = append(reasons, Reason{Code: "not_listed", Message: "Version status is " + version.Status + "."})
@@ -411,10 +430,84 @@ func rejectionReasons(version modrinthVersion, minecraft, loader string) []Reaso
 	if !containsFold(version.GameVersions, minecraft) {
 		reasons = append(reasons, Reason{Code: "minecraft_mismatch", Message: "Version does not support Minecraft " + minecraft + "."})
 	}
-	if !containsFold(version.Loaders, loader) {
-		reasons = append(reasons, Reason{Code: "loader_mismatch", Message: "Version does not support " + loader + "."})
+	if !containsAnyFold(version.Loaders, loaders) {
+		reasons = append(reasons, Reason{
+			Code: "loader_mismatch",
+			Message: "Version does not support an enabled loader (" + strings.Join(loaders, ", ") + ").",
+		})
 	}
 	return reasons
+}
+
+func compatibleLoaders(opts Options) []string {
+	values := []string{opts.Loader}
+	values = append(values, opts.AdditionalLoaders...)
+	seen := map[string]struct{}{}
+	result := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.ToLower(strings.TrimSpace(value))
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	if len(result) == 0 {
+		return []string{"neoforge"}
+	}
+	return result
+}
+
+func containsAnyFold(values, wanted []string) bool {
+	for _, candidate := range wanted {
+		if containsFold(values, candidate) {
+			return true
+		}
+	}
+	return false
+}
+
+func usesAdditionalLoader(version modrinthVersion, opts Options) bool {
+	if containsFold(version.Loaders, opts.Loader) {
+		return false
+	}
+	for _, loader := range opts.AdditionalLoaders {
+		if containsFold(version.Loaders, loader) {
+			return true
+		}
+	}
+	return false
+}
+
+func listModrinthVersionsWithChangelogForOptions(
+	ctx context.Context,
+	client *ModrinthClient,
+	projectID string,
+	opts Options,
+) ([]modrinthVersion, error) {
+	seen := map[string]modrinthVersion{}
+	for _, loader := range compatibleLoaders(opts) {
+		versions, err := client.ListCompatibleVersionsWithChangelog(
+			ctx,
+			projectID,
+			opts.Minecraft,
+			loader,
+		)
+		if err != nil {
+			return nil, err
+		}
+		for _, version := range versions {
+			seen[version.ID] = version
+		}
+	}
+	result := make([]modrinthVersion, 0, len(seen))
+	for _, version := range seen {
+		result = append(result, version)
+	}
+	return result, nil
 }
 
 type dependencyResolver struct {
@@ -499,7 +592,7 @@ func (r dependencyResolver) resolve(
 			})
 			return result
 		}
-		if rejected := rejectionReasons(target, r.opts.Minecraft, r.opts.Loader); len(rejected) > 0 {
+		if rejected := rejectionReasonsForOptions(target, r.opts); len(rejected) > 0 {
 			result.Action = "unresolved"
 			promote(candidate, ClassificationBlocked, Reason{
 				Code: "required_dependency_incompatible",
@@ -534,6 +627,12 @@ func (r dependencyResolver) resolve(
 			})
 		}
 
+		if usesAdditionalLoader(target, r.opts) {
+			promote(candidate, ClassificationReview, Reason{
+				Code: "required_dependency_connector_loader",
+				Message: "A required dependency resolves to a Fabric release through Sinytra Connector.",
+			})
+		}
 		if target.VersionType != "" && target.VersionType != "release" {
 			promote(candidate, ClassificationReview, Reason{
 				Code: "required_dependency_prerelease",
@@ -586,13 +685,13 @@ func (r dependencyResolver) resolveTarget(
 		return version, nil
 	}
 
-	versions, err := r.client.ListCompatibleVersions(r.ctx, projectID, r.opts.Minecraft, r.opts.Loader)
+	versions, err := r.client.ListVersions(r.ctx, projectID)
 	if err != nil {
 		return modrinthVersion{}, fmt.Errorf("required dependency %s versions could not be loaded: %w", projectID, err)
 	}
 	compatible := make([]modrinthVersion, 0, len(versions))
 	for _, version := range versions {
-		if len(rejectionReasons(version, r.opts.Minecraft, r.opts.Loader)) == 0 {
+		if len(rejectionReasonsForOptions(version, r.opts)) == 0 {
 			compatible = append(compatible, version)
 		}
 	}

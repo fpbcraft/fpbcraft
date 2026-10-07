@@ -46,6 +46,7 @@ export interface CatalogProject {
   project_url?: string;
   downloads?: number;
   environment?: string[];
+  loaders?: string[];
   installed: boolean;
   installed_key?: string;
 }
@@ -63,6 +64,7 @@ export interface CatalogVersion {
   sha512?: string;
   manual_download?: boolean;
   manual_url?: string;
+  loaders?: string[];
 }
 
 export interface RuntimeLogEntry {
@@ -127,6 +129,7 @@ export interface ManagementMod {
   provider?: string;
   project_id?: string;
   project_url?: string;
+  icon_url?: string;
   side: string;
   deployment: Location;
   automodpack_group?: string;
@@ -134,6 +137,7 @@ export interface ManagementMod {
   preferred_automodpack_group?: string;
   management: 'managed' | 'unmanaged' | 'unresolved' | 'external' | string;
   path: string;
+  sha1?: string;
   sha512?: string;
 }
 
@@ -303,6 +307,8 @@ export interface PlanFinding {
   code: string;
   message: string;
   candidate_key?: string;
+  name?: string;
+  path?: string;
 }
 
 export interface PlanArtifact {

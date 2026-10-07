@@ -27,6 +27,7 @@ type CatalogPlanCreator func(context.Context, service.CatalogPlanRequest) (plann
 type PendingChangesLoader func() service.PendingChanges
 type PendingUpdatesStager func([]string) (service.PendingChanges, error)
 type PendingCatalogStager func(context.Context, service.CatalogPlanRequest) (service.PendingChanges, error)
+type PendingPlacementStager func(string, string, string) (service.PendingChanges, error)
 type PendingChangeRemover func(string) (service.PendingChanges, error)
 type PendingChangesDiscarder func() (service.PendingChanges, error)
 type PendingChangesReviewer func(context.Context) (planning.Plan, error)
@@ -75,6 +76,7 @@ type ServerOptions struct {
 	PendingChanges PendingChangesLoader
 	StagePendingUpdates PendingUpdatesStager
 	StagePendingCatalog PendingCatalogStager
+	StagePendingPlacement PendingPlacementStager
 	RemovePendingChange PendingChangeRemover
 	DiscardPendingChanges PendingChangesDiscarder
 	ReviewPendingChanges PendingChangesReviewer
@@ -130,6 +132,7 @@ type Server struct {
 	pendingChanges PendingChangesLoader
 	stagePendingUpdates PendingUpdatesStager
 	stagePendingCatalog PendingCatalogStager
+	stagePendingPlacement PendingPlacementStager
 	removePendingChange PendingChangeRemover
 	discardPendingChanges PendingChangesDiscarder
 	reviewPendingChanges PendingChangesReviewer
@@ -194,6 +197,7 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 		pendingChanges: opts.PendingChanges,
 		stagePendingUpdates: opts.StagePendingUpdates,
 		stagePendingCatalog: opts.StagePendingCatalog,
+		stagePendingPlacement: opts.StagePendingPlacement,
 		removePendingChange: opts.RemovePendingChange,
 		discardPendingChanges: opts.DiscardPendingChanges,
 		reviewPendingChanges: opts.ReviewPendingChanges,
@@ -243,6 +247,7 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("GET /api/pending-changes", server.pendingChangesHandler)
 	mux.HandleFunc("POST /api/pending-changes/updates", server.stagePendingUpdatesHandler)
 	mux.HandleFunc("POST /api/pending-changes/catalog", server.stagePendingCatalogHandler)
+	mux.HandleFunc("POST /api/pending-changes/placement", server.stagePendingPlacementHandler)
 	mux.HandleFunc("DELETE /api/pending-changes/{id}", server.removePendingChangeHandler)
 	mux.HandleFunc("DELETE /api/pending-changes", server.discardPendingChangesHandler)
 	mux.HandleFunc("POST /api/pending-changes/review", server.reviewPendingChangesHandler)
@@ -478,6 +483,35 @@ func (s *Server) stagePendingCatalogHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	pending, err := s.stagePendingCatalog(r.Context(), request)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, pending)
+}
+
+func (s *Server) stagePendingPlacementHandler(w http.ResponseWriter, r *http.Request) {
+	if s.stagePendingPlacement == nil {
+		writeError(w, http.StatusServiceUnavailable, "pending placement staging is not configured")
+		return
+	}
+	var request struct {
+		Path             string `json:"path"`
+		Placement        string `json:"placement"`
+		AutoModpackGroup string `json:"automodpack_group,omitempty"`
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 32<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid pending placement request: "+err.Error())
+		return
+	}
+	pending, err := s.stagePendingPlacement(
+		request.Path,
+		request.Placement,
+		request.AutoModpackGroup,
+	)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return

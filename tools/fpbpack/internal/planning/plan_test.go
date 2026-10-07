@@ -755,3 +755,421 @@ func TestBuildMovesClientArtifactBetweenAutoModpackGroups(t *testing.T) {
 		t.Fatalf("target path = %q", op.TargetPath)
 	}
 }
+
+
+func TestBuildReconcilesDependencyThatAppearedAfterResolution(t *testing.T) {
+	now := time.Date(2026, 10, 7, 12, 0, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: now,
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:main", Provider: "modrinth", ProjectID: "main", Name: "Main",
+			Deployment: inventory.LocationServer, Classification: updatecheck.ClassificationReview,
+			Installed: updatecheck.Release{ID: "main-old"},
+			Target: &updatecheck.Release{
+				ID: "main-new", Filename: "main-new.jar",
+				URL: "https://cdn.example/main.jar", SHA512: "main-new-hash",
+			},
+			Dependencies: []updatecheck.Dependency{{
+				Provider: "modrinth", ProjectID: "kotlin", VersionID: "kotlin-v1",
+				Name: "Kotlin for Forge", Type: "required", Action: "add",
+				Deployment: inventory.LocationServer,
+				Target: &updatecheck.Release{
+					ID: "kotlin-v1", Filename: "kotlin.jar",
+					URL: "https://cdn.example/kotlin.jar", SHA512: "kotlin-exact",
+				},
+			}},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{GeneratedAt: now, ServerModsPath: "mods"},
+		Mods: []management.Mod{
+			{
+				ID: "modrinth:main", Provider: "modrinth", ProjectID: "main",
+				Name: "Main", Management: "managed", Deployment: inventory.LocationServer,
+				Path: "mods/main-old.jar", SHA512: "main-old-hash",
+			},
+			{
+				ID: "modrinth:kotlin", Provider: "modrinth", ProjectID: "kotlin",
+				Name: "Kotlin for Forge", Management: "managed", Deployment: inventory.LocationServer,
+				Path: "mods/kotlin.jar", SHA512: "kotlin-exact",
+			},
+		},
+	}
+
+	plan, err := Build([]string{"modrinth:main"}, report, snapshot, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Status != StatusReady {
+		t.Fatalf("stale dependency addition should reconcile, blockers=%+v", plan.Blockers)
+	}
+	if len(plan.Changes) != 1 {
+		t.Fatalf("satisfied dependency should not create a second change: %+v", plan.Changes)
+	}
+	for _, blocker := range plan.Blockers {
+		if blocker.Code == "dependency_state_changed" {
+			t.Fatalf("legacy dependency_state_changed blocker survived: %+v", blocker)
+		}
+	}
+}
+
+func TestBuildAllowsGroupedModToUseCommonServerDependency(t *testing.T) {
+	now := time.Date(2026, 10, 7, 12, 0, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: now,
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:visual", Provider: "modrinth", ProjectID: "visual", Name: "Visual Mod",
+			Deployment: inventory.LocationClient, AutoModpackGroup: "visual-client-mods",
+			Classification: updatecheck.ClassificationReview,
+			Installed: updatecheck.Release{ID: "visual-old"},
+			Target: &updatecheck.Release{
+				ID: "visual-new", Filename: "visual-new.jar",
+				URL: "https://cdn.example/visual.jar", SHA512: "visual-new-hash",
+			},
+			Dependencies: []updatecheck.Dependency{{
+				Provider: "modrinth", ProjectID: "library", Name: "Shared Library",
+				Type: "required", Action: "add", Deployment: inventory.LocationClient,
+				AutoModpackGroup: "visual-client-mods",
+				Target: &updatecheck.Release{
+					ID: "latest", Filename: "library.jar",
+					URL: "https://cdn.example/library.jar", SHA512: "library-exact",
+				},
+			}},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{
+			GeneratedAt: now,
+			ServerModsPath: "mods",
+			ClientGroupModsPaths: map[string]string{
+				"visual-client-mods": "automodpack/host-modpack/visual-client-mods/mods",
+			},
+		},
+		Mods: []management.Mod{
+			{
+				ID: "modrinth:visual", Provider: "modrinth", ProjectID: "visual",
+				Name: "Visual Mod", Management: "managed", Deployment: inventory.LocationClient,
+				AutoModpackGroup: "visual-client-mods",
+				Path: "automodpack/host-modpack/visual-client-mods/mods/visual-old.jar",
+				SHA512: "visual-old-hash",
+			},
+			{
+				ID: "modrinth:library", Provider: "modrinth", ProjectID: "library",
+				Name: "Shared Library", Management: "managed", Deployment: inventory.LocationServer,
+				Path: "mods/library.jar", SHA512: "library-exact",
+			},
+		},
+	}
+
+	plan, err := Build([]string{"modrinth:visual"}, report, snapshot, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Status != StatusReady {
+		t.Fatalf("server/common dependency should satisfy grouped mod: %+v", plan.Blockers)
+	}
+	if len(plan.Changes) != 1 {
+		t.Fatalf("dependency was incorrectly duplicated into AutoModpack group: %+v", plan.Changes)
+	}
+}
+
+func TestBuildUsesCrossProviderModrinthIdentityForDependency(t *testing.T) {
+	now := time.Date(2026, 10, 7, 12, 0, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: now,
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:main", Provider: "modrinth", ProjectID: "main", Name: "Main",
+			Deployment: inventory.LocationClient, AutoModpackGroup: "main",
+			Classification: updatecheck.ClassificationReview,
+			Target: &updatecheck.Release{
+				ID: "main-new", Filename: "main.jar",
+				URL: "https://cdn.example/main.jar", SHA512: "main-new",
+			},
+			Dependencies: []updatecheck.Dependency{{
+				Provider: "modrinth", ProjectID: "library-modrinth", Name: "Library",
+				Type: "required", Action: "add", Deployment: inventory.LocationClient,
+				Target: &updatecheck.Release{
+					ID: "provider-latest", Filename: "library.jar",
+					URL: "https://cdn.example/library.jar", SHA512: "different-provider-latest",
+				},
+			}},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{
+			GeneratedAt: now,
+			ServerModsPath: "mods",
+			Mods: []inventory.ModFile{{
+				Location: inventory.LocationServer,
+				Path: "mods/library.jar",
+				SHA512: "installed-library",
+				Modrinth: &inventory.ModrinthMatch{
+					ProjectID: "library-modrinth",
+					VersionID: "installed-version",
+				},
+			}},
+		},
+		Mods: []management.Mod{
+			{
+				ID: "modrinth:main", Provider: "modrinth", ProjectID: "main",
+				Name: "Main", Management: "managed", Deployment: inventory.LocationClient,
+				Path: "automodpack/host-modpack/main/mods/main-old.jar", SHA512: "main-old",
+			},
+			{
+				ID: "curseforge:123", Provider: "curseforge", ProjectID: "123",
+				Name: "Library", Management: "managed", Deployment: inventory.LocationServer,
+				Path: "mods/library.jar", SHA512: "installed-library",
+			},
+		},
+	}
+
+	plan, err := Build([]string{"modrinth:main"}, report, snapshot, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Status != StatusReady || len(plan.Changes) != 1 {
+		t.Fatalf(
+			"cross-provider managed alias should satisfy an unversioned dependency: changes=%+v blockers=%+v",
+			plan.Changes,
+			plan.Blockers,
+		)
+	}
+}
+
+func TestFindingsExposeAffectedModAndPath(t *testing.T) {
+	now := time.Date(2026, 10, 7, 12, 0, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: now,
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:main", Provider: "modrinth", ProjectID: "main", Name: "Main",
+			Deployment: inventory.LocationServer,
+			Classification: updatecheck.ClassificationReview,
+			Target: &updatecheck.Release{
+				ID: "new", Filename: "main.jar",
+				URL: "https://cdn.example/main.jar", SHA512: "new",
+			},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{GeneratedAt: now, ServerModsPath: "mods"},
+		Mods: []management.Mod{{
+			ID: "modrinth:main", Provider: "modrinth", ProjectID: "main",
+			Name: "Main", Management: "managed", Deployment: inventory.LocationServer,
+			Path: "mods/main-old.jar", SHA512: "old",
+		}},
+	}
+	plan, err := Build([]string{"modrinth:main"}, report, snapshot, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Warnings) == 0 {
+		t.Fatalf("expected review warning")
+	}
+	if plan.Warnings[0].Name == "" || plan.Warnings[0].Path == "" {
+		t.Fatalf("warning lacks mod/file context: %+v", plan.Warnings[0])
+	}
+}
+
+
+func TestBuildAllowsPurePlacementMoveWithoutDownloadURL(t *testing.T) {
+	now := time.Date(2026, 10, 7, 14, 0, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: now,
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:example",
+			Provider: "modrinth",
+			ProjectID: "example",
+			Name: "Example",
+			Deployment: inventory.LocationClient,
+			AutoModpackGroup: "visual-client-mods",
+			Classification: updatecheck.ClassificationSafe,
+			Intent: "placement",
+			Installed: updatecheck.Release{
+				ID: "v1", Number: "1.0", Filename: "example.jar", SHA512: "same-bytes",
+			},
+			Target: &updatecheck.Release{
+				ID: "v1", Number: "1.0", Filename: "example.jar", SHA512: "same-bytes",
+			},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{
+			GeneratedAt: now,
+			ServerModsPath: "mods",
+			ClientGroupModsPaths: map[string]string{
+				"visual-client-mods": "automodpack/host-modpack/visual-client-mods/mods",
+			},
+		},
+		Mods: []management.Mod{{
+			ID: "modrinth:example",
+			Provider: "modrinth",
+			ProjectID: "example",
+			Name: "Example",
+			Management: "managed",
+			Deployment: inventory.LocationServer,
+			Path: "mods/example.jar",
+			Filename: "example.jar",
+			SHA512: "same-bytes",
+		}},
+	}
+
+	plan, err := Build([]string{"modrinth:example"}, report, snapshot, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Status != StatusReady {
+		t.Fatalf("pure move should not require a provider URL: %+v", plan.Blockers)
+	}
+	if len(plan.Changes) != 1 || len(plan.Changes[0].Operations) != 1 {
+		t.Fatalf("unexpected move changes: %+v", plan.Changes)
+	}
+	op := plan.Changes[0].Operations[0]
+	if op.Action != "replace" ||
+		op.CurrentPath != "mods/example.jar" ||
+		op.TargetPath != "automodpack/host-modpack/visual-client-mods/mods/example.jar" {
+		t.Fatalf("unexpected move operation: %+v", op)
+	}
+}
+
+
+func TestBuildUsesCrossProviderCurseForgeIdentityForDependency(t *testing.T) {
+	now := time.Date(2026, 10, 7, 15, 0, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: now,
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:main",
+			Provider: "modrinth",
+			ProjectID: "main",
+			Name: "Main",
+			Deployment: inventory.LocationServer,
+			Classification: updatecheck.ClassificationReview,
+			Installed: updatecheck.Release{ID: "old"},
+			Target: &updatecheck.Release{
+				ID: "new", Filename: "main.jar",
+				URL: "https://cdn.example/main.jar", SHA512: "main-new",
+			},
+			Dependencies: []updatecheck.Dependency{{
+				Provider: "curseforge",
+				ProjectID: "456",
+				Name: "Shared Library",
+				Type: "required",
+				Action: "add",
+				Deployment: inventory.LocationServer,
+				Target: &updatecheck.Release{
+					ID: "999",
+					Filename: "shared-library.jar",
+					URL: "https://cdn.example/shared.jar",
+					SHA1: "provider-target-sha1",
+				},
+			}},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{
+			GeneratedAt: now,
+			ServerModsPath: "mods",
+			Mods: []inventory.ModFile{{
+				Location: inventory.LocationServer,
+				Path: "mods/shared-library.jar",
+				SHA1: "installed-sha1",
+				SHA512: "installed-sha512",
+				CurseForge: &inventory.CurseForgeMatch{
+					ProjectID: 456,
+					FileID: 777,
+					Filename: "shared-library.jar",
+				},
+			}},
+		},
+		Mods: []management.Mod{
+			{
+				ID: "modrinth:main",
+				Provider: "modrinth",
+				ProjectID: "main",
+				Name: "Main",
+				Management: "managed",
+				Deployment: inventory.LocationServer,
+				Path: "mods/main-old.jar",
+				SHA512: "main-old",
+			},
+			{
+				ID: "modrinth:shared",
+				Provider: "modrinth",
+				ProjectID: "shared",
+				Name: "Shared Library",
+				Management: "managed",
+				Deployment: inventory.LocationServer,
+				Path: "mods/shared-library.jar",
+				SHA1: "installed-sha1",
+				SHA512: "installed-sha512",
+			},
+		},
+	}
+
+	plan, err := Build([]string{"modrinth:main"}, report, snapshot, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Status != StatusReady {
+		t.Fatalf("CurseForge dependency should be satisfied by the cross-provider live JAR: %+v", plan.Blockers)
+	}
+	if len(plan.Changes) != 1 {
+		t.Fatalf("cross-provider dependency was duplicated: %+v", plan.Changes)
+	}
+}
+
+func TestDependencyBlockerNamesDependencyInsteadOfOnlyParent(t *testing.T) {
+	now := time.Date(2026, 10, 7, 15, 30, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: now,
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:main",
+			Provider: "modrinth",
+			ProjectID: "main",
+			Name: "Main",
+			Deployment: inventory.LocationServer,
+			Classification: updatecheck.ClassificationReview,
+			Target: &updatecheck.Release{
+				ID: "new", Filename: "main.jar",
+				URL: "https://cdn.example/main.jar", SHA512: "new",
+			},
+			Dependencies: []updatecheck.Dependency{{
+				Provider: "modrinth",
+				ProjectID: "missing-library",
+				Name: "Missing Library",
+				Type: "required",
+				Action: "unresolved",
+			}},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Mods: []management.Mod{{
+			ID: "modrinth:main",
+			Provider: "modrinth",
+			ProjectID: "main",
+			Name: "Main",
+			Management: "managed",
+			Deployment: inventory.LocationServer,
+			Path: "mods/main.jar",
+		}},
+	}
+	plan, err := Build([]string{"modrinth:main"}, report, snapshot, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Blockers) == 0 {
+		t.Fatal("expected dependency blocker")
+	}
+	var found *Finding
+	for index := range plan.Blockers {
+		if plan.Blockers[index].Code == "dependency_unresolved" {
+			found = &plan.Blockers[index]
+			break
+		}
+	}
+	if found == nil {
+		t.Fatalf("missing dependency blocker: %+v", plan.Blockers)
+	}
+	if found.Name != "Missing Library" || found.CandidateKey != "modrinth:missing-library" {
+		t.Fatalf("dependency blocker context = %+v", *found)
+	}
+}

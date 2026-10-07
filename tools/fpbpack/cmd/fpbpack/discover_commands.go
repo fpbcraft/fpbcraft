@@ -142,6 +142,7 @@ func runServe(args []string) int {
 			PendingChanges: app.PendingChanges,
 			StagePendingUpdates: app.StagePendingUpdates,
 			StagePendingCatalog: app.StagePendingCatalogChange,
+			StagePendingPlacement: app.StagePendingPlacement,
 			RemovePendingChange: app.RemovePendingChange,
 			DiscardPendingChanges: app.DiscardPendingChanges,
 			ReviewPendingChanges: app.ReviewPendingChanges,

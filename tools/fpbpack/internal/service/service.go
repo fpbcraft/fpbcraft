@@ -191,7 +191,23 @@ func normalizeOptions(options *Options) {
 func (s *Service) Snapshot() (management.Snapshot, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.snapshot, nil
+
+	snapshot := s.snapshot
+	snapshot.Mods = append([]management.Mod(nil), s.snapshot.Mods...)
+	if s.hasUpdate && len(s.updates.Candidates) > 0 {
+		icons := make(map[string]string, len(s.updates.Candidates))
+		for _, candidate := range s.updates.Candidates {
+			if strings.TrimSpace(candidate.IconURL) != "" {
+				icons[candidate.Key] = candidate.IconURL
+			}
+		}
+		for index := range snapshot.Mods {
+			if icon := icons[snapshot.Mods[index].ID]; icon != "" {
+				snapshot.Mods[index].IconURL = icon
+			}
+		}
+	}
+	return snapshot, nil
 }
 
 func (s *Service) Catalog() (catalog.Report, error) {
@@ -360,6 +376,9 @@ func (s *Service) Refresh(ctx context.Context) (err error) {
 	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "inventory.json"), inv); err != nil {
 		return fmt.Errorf("write inventory cache: %w", err)
 	}
+	if _, err := s.reconcileCatalogWithInventory(inv); err != nil {
+		return fmt.Errorf("reconcile catalog locations: %w", err)
+	}
 
 	acceptedCatalog, err := s.catalogSnapshot()
 	if err != nil {
@@ -368,10 +387,12 @@ func (s *Service) Refresh(ctx context.Context) (err error) {
 	s.setRefreshProgress("providers", "Refreshing provider metadata", 0, len(acceptedCatalog.Managed), 20)
 	updateCtx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
+	loaders := compatibleLoadersForInventory(s.options.Loader, inv)
 	report := updatecheck.Discover(updateCtx, acceptedCatalog, updatecheck.Options{
-		Minecraft:       s.options.Minecraft,
-		Mode:            updatecheck.RefreshModeBackground,
-		Loader:          s.options.Loader,
+		Minecraft:         s.options.Minecraft,
+		Mode:              updatecheck.RefreshModeBackground,
+		Loader:            loaders[0],
+		AdditionalLoaders: additionalLoaders(loaders),
 		ModrinthBaseURL: s.options.ModrinthBaseURL,
 		CurseForgeBaseURL: s.options.CurseForgeBaseURL,
 		CurseForgeAPIKey: func() string {
@@ -435,6 +456,9 @@ func (s *Service) RefreshInventory(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
+	if _, err := s.reconcileCatalogWithInventory(inv); err != nil {
+		return fmt.Errorf("reconcile catalog locations: %w", err)
+	}
 	currentCatalog, snapshotErr := s.catalogSnapshot()
 	if snapshotErr != nil {
 		return fmt.Errorf("snapshot current catalog: %w", snapshotErr)
@@ -463,10 +487,12 @@ func (s *Service) CheckUpdates(ctx context.Context) (err error) {
 	s.setRefreshProgress("providers", "Checking providers for updates", 0, len(acceptedCatalog.Managed), 5)
 	updateCtx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
+	loaders := s.catalogCompatibleLoaders()
 	report := updatecheck.Discover(updateCtx, acceptedCatalog, updatecheck.Options{
-		Minecraft:       s.options.Minecraft,
-		Mode:            updatecheck.RefreshModeInteractive,
-		Loader:          s.options.Loader,
+		Minecraft:         s.options.Minecraft,
+		Mode:              updatecheck.RefreshModeInteractive,
+		Loader:            loaders[0],
+		AdditionalLoaders: additionalLoaders(loaders),
 		ModrinthBaseURL: s.options.ModrinthBaseURL,
 		CurseForgeBaseURL: s.options.CurseForgeBaseURL,
 		CurseForgeAPIKey: func() string {
@@ -525,15 +551,47 @@ func (s *Service) scanInventory(ctx context.Context) (inventory.Inventory, error
 		return inventory.Inventory{}, err
 	}
 
-	lookupCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
-	defer cancel()
-	matches, lookupErr := (inventory.ModrinthClient{BaseURL: s.options.ModrinthBaseURL}).Match(lookupCtx, inv.Mods)
+	modrinthCtx, cancelModrinth := context.WithTimeout(ctx, 45*time.Second)
+	matches, lookupErr := (inventory.ModrinthClient{BaseURL: s.options.ModrinthBaseURL}).Match(modrinthCtx, inv.Mods)
+	cancelModrinth()
 	if lookupErr != nil {
 		inv.ModrinthError = lookupErr.Error()
 		inv.RecalculateSummary()
-		return inv, nil
+	} else {
+		inventory.ApplyModrinthMatches(&inv, matches)
 	}
-	inventory.ApplyModrinthMatches(&inv, matches)
+
+	if key, _ := s.effectiveCurseForgeAPIKey(); strings.TrimSpace(key) != "" {
+		fingerprints := make([]uint32, 0, len(inv.Mods))
+		for _, mod := range inv.Mods {
+			if mod.CurseForgeFingerprint != 0 {
+				fingerprints = append(fingerprints, mod.CurseForgeFingerprint)
+			}
+		}
+		curseForgeCtx, cancelCurseForge := context.WithTimeout(ctx, 45*time.Second)
+		curseForgeMatches, curseForgeErr := (&updatecheck.CurseForgeClient{
+			BaseURL: s.options.CurseForgeBaseURL,
+			APIKey:  key,
+			Mode:    updatecheck.RefreshModeBackground,
+		}).MatchFingerprints(curseForgeCtx, fingerprints)
+		cancelCurseForge()
+		if curseForgeErr != nil {
+			inv.CurseForgeError = curseForgeErr.Error()
+		} else {
+			for index := range inv.Mods {
+				match, ok := curseForgeMatches[inv.Mods[index].CurseForgeFingerprint]
+				if !ok {
+					continue
+				}
+				copy := match
+				inv.Mods[index].CurseForge = &copy
+			}
+			inv.CurseForgeChecked = true
+			inv.CurseForgeError = ""
+		}
+		inv.RecalculateSummary()
+	}
+
 	return inv, nil
 }
 

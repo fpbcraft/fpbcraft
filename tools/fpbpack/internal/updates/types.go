@@ -16,6 +16,7 @@ type CatalogProject struct {
 	ProjectURL  string   `json:"project_url,omitempty"`
 	Downloads   int64    `json:"downloads,omitempty"`
 	Environment []string `json:"environment,omitempty"`
+	Loaders     []string `json:"loaders,omitempty"`
 	Installed   bool     `json:"installed"`
 	InstalledKey string  `json:"installed_key,omitempty"`
 }
@@ -33,6 +34,7 @@ type CatalogVersion struct {
 	SHA512       string    `json:"sha512,omitempty"`
 	ManualDownload bool   `json:"manual_download,omitempty"`
 	ManualURL    string    `json:"manual_url,omitempty"`
+	Loaders      []string  `json:"loaders,omitempty"`
 }
 
 type Classification string

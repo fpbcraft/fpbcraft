@@ -325,6 +325,11 @@ export function CatalogManagerDialog({
                             <Pill tone={project.installed ? 'good' : 'neutral'}>
                               {project.installed ? 'already managed' : project.provider}
                             </Pill>
+                            {project.loaders?.map((loader) => (
+                              <Pill tone={loader === 'fabric' ? 'warn' : 'neutral'} key={loader}>
+                                {loader === 'fabric' ? 'Fabric · Connector' : loader}
+                              </Pill>
+                            ))}
                           </div>
                           {project.summary ? (
                             <p className="mt-1 line-clamp-2 text-xs leading-5 text-base-content/50">
@@ -488,6 +493,15 @@ export function CatalogManagerDialog({
                       {version.filename ? <span className="mono">{version.filename}</span> : null}
                       {version.environment ? <span>{version.environment}</span> : null}
                     </div>
+                    {version.loaders?.length ? (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {version.loaders.map((loader) => (
+                          <Pill tone={loader === 'fabric' ? 'warn' : 'neutral'} key={loader}>
+                            {loader === 'fabric' ? 'Fabric · Connector' : loader}
+                          </Pill>
+                        ))}
+                      </div>
+                    ) : null}
                     {version.changelog ? (
                       <p className="mt-2 line-clamp-3 whitespace-pre-wrap text-xs leading-5 text-base-content/55">
                         {version.changelog}

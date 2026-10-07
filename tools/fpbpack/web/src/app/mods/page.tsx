@@ -25,7 +25,6 @@ import type {
   ManagementMod,
   PendingChanges,
   UpdateCandidate,
-  UpdatePlan,
   UpdateRule,
 } from '@/lib/management';
 
@@ -103,7 +102,7 @@ function isRemovableMod(mod: ManagementMod) {
 }
 
 export default function ModsPage() {
-  const {state, connectionStatus, reload} = useManagement();
+  const {state, connectionStatus, reload, refreshInventory} = useManagement();
   const router = useRouter();
   const [q, setQ] = useState('');
   const [deployment, setDeployment] = useState('all');
@@ -149,6 +148,10 @@ export default function ModsPage() {
 
   const blockerPaths = useMemo(
     () => new Set(blockers.map((finding) => normalizePath(finding.path)).filter(Boolean)),
+    [blockers],
+  );
+  const hasMovedCatalogDrift = useMemo(
+    () => blockers.some((finding) => finding.code === 'managed_artifact_moved'),
     [blockers],
   );
 
@@ -595,6 +598,24 @@ export default function ModsPage() {
         preferredPlacement !== selectedMod.preferred_deployment ||
         (preferredPlacement === 'client' &&
           targetGroup !== normalizedGroup(selectedMod, true));
+      const liveMoveNeeded =
+        preferredPlacement !== selectedMod.deployment ||
+        (preferredPlacement === 'client' && targetGroup !== normalizedGroup(selectedMod));
+      if (reviewMove && liveMoveNeeded) {
+        await api<PendingChanges>('/api/pending-changes/placement', {
+          method: 'POST',
+          body: JSON.stringify({
+            path: selectedMod.path,
+            placement: preferredPlacement,
+            automodpack_group: preferredPlacement === 'client' ? targetGroup : undefined,
+          }),
+        });
+        await reload({silent: true});
+        closeMod();
+        router.push('/pending');
+        return;
+      }
+
       if (preferredChanged) {
         await api<ModManagementResult>('/api/mod-management', {
           method: 'POST',
@@ -605,20 +626,6 @@ export default function ModsPage() {
             automodpack_group: preferredPlacement === 'client' ? targetGroup : undefined,
           }),
         });
-      }
-
-      const liveMoveNeeded =
-        preferredPlacement !== selectedMod.deployment ||
-        (preferredPlacement === 'client' && targetGroup !== normalizedGroup(selectedMod));
-      if (reviewMove && liveMoveNeeded) {
-        const plan = await api<UpdatePlan>('/api/placement-plans', {
-          method: 'POST',
-          body: JSON.stringify({path: selectedMod.path}),
-        });
-        await reload({silent: true});
-        closeMod();
-        router.push('/review?id=' + encodeURIComponent(plan.id));
-        return;
       }
 
       setManagementMessage(
@@ -697,6 +704,19 @@ export default function ModsPage() {
     }
   };
 
+  const reconcileMovedMods = async () => {
+    setManagementError(null);
+    setManagementMessage(null);
+    try {
+      await refreshInventory();
+      setManagementMessage(
+        'Inventory reconciliation started. Byte-identical managed JARs that were moved manually will be adopted at their live paths automatically.',
+      );
+    } catch (error: unknown) {
+      setManagementError(error instanceof Error ? error.message : String(error));
+    }
+  };
+
   const refreshModMetadata = async (path: string) => {
     setManagementBusy(true);
     setManagementError(null);
@@ -761,7 +781,19 @@ export default function ModsPage() {
                 Resolve blocking catalog issues
               </h2>
             </div>
-            <Pill tone="bad">{blockers.length}</Pill>
+            <div className="flex items-center gap-2">
+              {hasMovedCatalogDrift ? (
+                <button
+                  className="btn btn-xs btn-primary"
+                  type="button"
+                  disabled={state.status.refresh?.refreshing}
+                  onClick={() => void reconcileMovedMods()}
+                >
+                  <RefreshCw size={12} /> Reconcile all moved mods
+                </button>
+              ) : null}
+              <Pill tone="bad">{blockers.length}</Pill>
+            </div>
           </div>
           <div className="divide-y divide-base-300">
             {blockers.map((finding, index) => {
@@ -1075,9 +1107,9 @@ export default function ModsPage() {
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
-                        {candidate?.icon_url ? (
+                        {(candidate?.icon_url || mod.icon_url) ? (
                           <img
-                            src={candidate.icon_url}
+                            src={candidate?.icon_url || mod.icon_url}
                             alt=""
                             className="size-7 rounded-md border border-base-300 object-cover"
                           />
@@ -1200,9 +1232,9 @@ export default function ModsPage() {
         >
           <div className="modal-box max-h-[90vh] max-w-3xl overflow-y-auto max-sm:h-full max-sm:max-h-none max-sm:w-full max-sm:rounded-none">
             <div className="flex items-start gap-3 border-b border-base-300 pb-4">
-              {selectedCandidate?.icon_url ? (
+              {selectedCandidate?.icon_url || selectedMod.icon_url ? (
                 <img
-                  src={selectedCandidate.icon_url}
+                  src={selectedCandidate?.icon_url || selectedMod.icon_url}
                   alt=""
                   className="size-12 rounded-lg border border-base-300 object-cover"
                 />
@@ -1432,13 +1464,14 @@ export default function ModsPage() {
                       }
                       onClick={() => void savePlacement(true)}
                     >
-                      Review move
+                      Add move to pending
                     </button>
                   </div>
                   <p className="mt-2 text-xs text-base-content/40">
                     Current: {placementLabel(selectedMod)}. Preferred: {placementLabel(selectedMod, true)}.
-                    Saving only updates the preferred target. Applying a move still uses the verified,
-                    backed-up change flow; this includes moves between two AutoModpack groups.
+                    Saving only updates the preferred target. “Add move to pending” stages the
+                    filesystem move alongside your other pending changes; this includes moves between
+                    two AutoModpack groups.
                   </p>
                 </div>
 

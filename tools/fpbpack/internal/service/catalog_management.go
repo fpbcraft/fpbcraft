@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -34,17 +35,21 @@ func (s *Service) SearchCatalog(
 		return []updatecheck.CatalogProject{}, nil
 	}
 
-	var (
-		result []updatecheck.CatalogProject
-		err    error
-	)
+	loaders := s.catalogCompatibleLoaders()
+	merged := map[string]updatecheck.CatalogProject{}
 	switch provider {
 	case "modrinth":
 		client := &updatecheck.ModrinthClient{
 			BaseURL: s.options.ModrinthBaseURL,
-			Mode:    updatecheck.RefreshModeInteractive,
+			Mode: updatecheck.RefreshModeInteractive,
 		}
-		result, err = client.SearchCatalogProjects(ctx, query, s.options.Minecraft, s.options.Loader, 20)
+		for _, loader := range loaders {
+			projects, err := client.SearchCatalogProjects(ctx, query, s.options.Minecraft, loader, 20)
+			if err != nil {
+				return nil, err
+			}
+			mergeCatalogProjects(merged, projects)
+		}
 	case "curseforge":
 		key, source := s.effectiveCurseForgeAPIKey()
 		if strings.TrimSpace(key) == "" {
@@ -53,17 +58,34 @@ func (s *Service) SearchCatalog(
 		client := &updatecheck.CurseForgeClient{
 			BaseURL: s.options.CurseForgeBaseURL,
 			APIKey:  key,
-			Mode:    updatecheck.RefreshModeInteractive,
+			Mode: updatecheck.RefreshModeInteractive,
 		}
-		result, err = client.SearchCatalogProjects(ctx, query, s.options.Minecraft, s.options.Loader, 20)
-		if err != nil && source != "" {
-			return nil, fmt.Errorf("CurseForge search using %s credential: %w", source, err)
+		for _, loader := range loaders {
+			projects, err := client.SearchCatalogProjects(ctx, query, s.options.Minecraft, loader, 20)
+			if err != nil {
+				if source != "" {
+					return nil, fmt.Errorf("CurseForge search using %s credential: %w", source, err)
+				}
+				return nil, err
+			}
+			mergeCatalogProjects(merged, projects)
 		}
 	default:
 		return nil, fmt.Errorf("unsupported catalog provider %q", provider)
 	}
-	if err != nil {
-		return nil, err
+
+	result := make([]updatecheck.CatalogProject, 0, len(merged))
+	for _, project := range merged {
+		result = append(result, project)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].Downloads != result[j].Downloads {
+			return result[i].Downloads > result[j].Downloads
+		}
+		return strings.ToLower(result[i].Name) < strings.ToLower(result[j].Name)
+	})
+	if len(result) > 20 {
+		result = result[:20]
 	}
 
 	s.mu.RLock()
@@ -81,6 +103,25 @@ func (s *Service) SearchCatalog(
 	return result, nil
 }
 
+func mergeCatalogProjects(
+	target map[string]updatecheck.CatalogProject,
+	projects []updatecheck.CatalogProject,
+) {
+	for _, project := range projects {
+		key := project.Provider + ":" + project.ProjectID
+		current, exists := target[key]
+		if !exists {
+			target[key] = project
+			continue
+		}
+		current.Loaders = mergeStrings(current.Loaders, project.Loaders)
+		if project.Downloads > current.Downloads {
+			current.Downloads = project.Downloads
+		}
+		target[key] = current
+	}
+}
+
 func (s *Service) CatalogVersions(
 	ctx context.Context,
 	provider string,
@@ -91,13 +132,22 @@ func (s *Service) CatalogVersions(
 	if projectID == "" {
 		return nil, fmt.Errorf("project ID is required")
 	}
+
+	loaders := s.catalogCompatibleLoaders()
+	merged := map[string]updatecheck.CatalogVersion{}
 	switch provider {
 	case "modrinth":
 		client := &updatecheck.ModrinthClient{
 			BaseURL: s.options.ModrinthBaseURL,
-			Mode:    updatecheck.RefreshModeInteractive,
+			Mode: updatecheck.RefreshModeInteractive,
 		}
-		return client.CatalogVersions(ctx, projectID, s.options.Minecraft, s.options.Loader)
+		for _, loader := range loaders {
+			versions, err := client.CatalogVersions(ctx, projectID, s.options.Minecraft, loader)
+			if err != nil {
+				return nil, err
+			}
+			mergeCatalogVersions(merged, versions)
+		}
 	case "curseforge":
 		key, _ := s.effectiveCurseForgeAPIKey()
 		if strings.TrimSpace(key) == "" {
@@ -106,12 +156,60 @@ func (s *Service) CatalogVersions(
 		client := &updatecheck.CurseForgeClient{
 			BaseURL: s.options.CurseForgeBaseURL,
 			APIKey:  key,
-			Mode:    updatecheck.RefreshModeInteractive,
+			Mode: updatecheck.RefreshModeInteractive,
 		}
-		return client.CatalogVersions(ctx, projectID, s.options.Minecraft, s.options.Loader)
+		for _, loader := range loaders {
+			versions, err := client.CatalogVersions(ctx, projectID, s.options.Minecraft, loader)
+			if err != nil {
+				return nil, err
+			}
+			mergeCatalogVersions(merged, versions)
+		}
 	default:
 		return nil, fmt.Errorf("unsupported catalog provider %q", provider)
 	}
+
+	result := make([]updatecheck.CatalogVersion, 0, len(merged))
+	for _, version := range merged {
+		result = append(result, version)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].PublishedAt.After(result[j].PublishedAt)
+	})
+	return result, nil
+}
+
+func mergeCatalogVersions(
+	target map[string]updatecheck.CatalogVersion,
+	versions []updatecheck.CatalogVersion,
+) {
+	for _, version := range versions {
+		current, exists := target[version.ID]
+		if !exists {
+			target[version.ID] = version
+			continue
+		}
+		current.Loaders = mergeStrings(current.Loaders, version.Loaders)
+		target[version.ID] = current
+	}
+}
+
+func mergeStrings(left, right []string) []string {
+	seen := map[string]struct{}{}
+	result := make([]string, 0, len(left)+len(right))
+	for _, value := range append(append([]string(nil), left...), right...) {
+		value = strings.ToLower(strings.TrimSpace(value))
+		if value == "" {
+			continue
+		}
+		if _, exists := seen[value]; exists {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	sort.Strings(result)
+	return result
 }
 
 func normalizeCatalogPlanRequest(request CatalogPlanRequest) CatalogPlanRequest {
@@ -287,10 +385,12 @@ func (s *Service) catalogCandidate(
 	current *catalog.Entry,
 	cat catalog.Report,
 ) (updatecheck.Candidate, error) {
+	loaders := s.catalogCompatibleLoaders()
 	opts := updatecheck.Options{
-		Minecraft: s.options.Minecraft,
-		Loader:    s.options.Loader,
-		Mode:      updatecheck.RefreshModeInteractive,
+		Minecraft:         s.options.Minecraft,
+		Loader:            loaders[0],
+		AdditionalLoaders: additionalLoaders(loaders),
+		Mode:              updatecheck.RefreshModeInteractive,
 	}
 	switch provider {
 	case "modrinth":

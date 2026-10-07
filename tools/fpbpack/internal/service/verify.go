@@ -44,18 +44,6 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 		if !needsTargetArtifact {
 			continue
 		}
-		if change.Artifact.ManualDownload {
-			message := "This artifact must be downloaded manually from the provider before Apply."
-			if change.Artifact.ManualURL != "" {
-				message += " Manual download: " + change.Artifact.ManualURL
-			}
-			plan.Blockers = append(plan.Blockers, planning.Finding{
-				Code: "manual_download_required",
-				CandidateKey: change.CandidateKey,
-				Message: message,
-			})
-			continue
-		}
 		cacheKey := change.Artifact.SHA512
 		if cacheKey == "" && change.Artifact.SHA256 != "" {
 			cacheKey = "sha256-" + change.Artifact.SHA256
@@ -65,6 +53,92 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 		}
 		cacheRelative := filepath.ToSlash(filepath.Join("cache", "artifacts", cacheKey+".jar"))
 		cachePath := filepath.Join(s.options.StateDir, filepath.FromSlash(cacheRelative))
+
+		if sourcePath, ok := reusableCurrentArtifact(*change); ok {
+			relative, relErr := safeRelativePath(sourcePath)
+			if relErr != nil {
+				plan.Blockers = append(plan.Blockers, planning.Finding{
+					Code: "artifact_verification_failed", CandidateKey: change.CandidateKey,
+					Name: change.Name, Path: sourcePath, Message: relErr.Error(),
+				})
+				continue
+			}
+			source := filepath.Join(s.options.ServerRoot, relative)
+			hashes, hashErr := artifactFileHashes(source)
+			if hashErr != nil || !hashesMatch(
+				hashes,
+				change.Artifact.SHA512,
+				change.Artifact.SHA256,
+				change.Artifact.SHA1,
+			) {
+				message := "current artifact cannot be reused for the staged placement move"
+				if hashErr != nil {
+					message += ": " + hashErr.Error()
+				}
+				plan.Blockers = append(plan.Blockers, planning.Finding{
+					Code: "artifact_verification_failed", CandidateKey: change.CandidateKey,
+					Name: change.Name, Path: sourcePath, Message: message,
+				})
+				continue
+			}
+			bytes, copiedSHA, copyErr := copyFileWithSHA512(source, cachePath)
+			if copyErr != nil || !strings.EqualFold(copiedSHA, hashes.SHA512) {
+				message := "cache current artifact for placement move"
+				if copyErr != nil {
+					message += ": " + copyErr.Error()
+				}
+				plan.Blockers = append(plan.Blockers, planning.Finding{
+					Code: "artifact_verification_failed", CandidateKey: change.CandidateKey,
+					Name: change.Name, Path: sourcePath, Message: message,
+				})
+				continue
+			}
+			hashes.Bytes = bytes
+			verified := hashes
+			change.Artifact.SHA512 = verified.SHA512
+			change.Target.SHA512 = verified.SHA512
+			if change.Artifact.SHA1 == "" {
+				change.Artifact.SHA1 = verified.SHA1
+			}
+			if change.Artifact.SHA256 == "" {
+				change.Artifact.SHA256 = verified.SHA256
+			}
+			if change.Target.SHA1 == "" {
+				change.Target.SHA1 = verified.SHA1
+			}
+			if change.Target.SHA256 == "" {
+				change.Target.SHA256 = verified.SHA256
+			}
+			for operationIndex := range change.Operations {
+				change.Operations[operationIndex].TargetSHA512 = verified.SHA512
+			}
+			plan.Prefetched = append(plan.Prefetched, planning.PrefetchedArtifact{
+				Filename: change.Artifact.Filename,
+				SHA512: verified.SHA512,
+				CachePath: cacheRelative,
+				Bytes: verified.Bytes,
+			})
+			continue
+		}
+
+		if change.Artifact.ManualDownload {
+			message := "This artifact must be downloaded manually from the provider before Apply."
+			if change.Artifact.ManualURL != "" {
+				message += " Manual download: " + change.Artifact.ManualURL
+			}
+			path := change.Artifact.Filename
+			if len(change.Operations) > 0 {
+				path = change.Operations[0].TargetPath
+			}
+			plan.Blockers = append(plan.Blockers, planning.Finding{
+				Code:         "manual_download_required",
+				CandidateKey: change.CandidateKey,
+				Name:         change.Name,
+				Path:         path,
+				Message:      message,
+			})
+			continue
+		}
 		verified, err := ensureArtifact(
 			ctx,
 			change.Artifact.URL,
@@ -74,10 +148,20 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 			cachePath,
 		)
 		if err != nil {
+			path := change.Artifact.Filename
+			if len(change.Operations) > 0 {
+				if change.Operations[0].CurrentPath != "" {
+					path = change.Operations[0].CurrentPath
+				} else {
+					path = change.Operations[0].TargetPath
+				}
+			}
 			plan.Blockers = append(plan.Blockers, planning.Finding{
-				Code: "artifact_verification_failed",
+				Code:         "artifact_verification_failed",
 				CandidateKey: change.CandidateKey,
-				Message: fmt.Sprintf("%s: %v", change.Name, err),
+				Name:         change.Name,
+				Path:         path,
+				Message:      fmt.Sprintf("%s: %v", change.Name, err),
 			})
 			continue
 		}
@@ -117,6 +201,27 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 	now := time.Now().UTC()
 	plan.Verified = true
 	plan.VerifiedAt = &now
+}
+
+func reusableCurrentArtifact(change planning.Change) (string, bool) {
+	if len(change.Operations) != 1 {
+		return "", false
+	}
+	operation := change.Operations[0]
+	if operation.Action != "replace" ||
+		strings.TrimSpace(operation.CurrentPath) == "" ||
+		strings.TrimSpace(operation.TargetPath) == "" ||
+		filepath.ToSlash(filepath.Clean(operation.CurrentPath)) ==
+			filepath.ToSlash(filepath.Clean(operation.TargetPath)) {
+		return "", false
+	}
+	targetHash := strings.TrimSpace(change.Artifact.SHA512)
+	if targetHash == "" {
+		targetHash = strings.TrimSpace(change.Target.SHA512)
+	}
+	return operation.CurrentPath,
+		targetHash != "" &&
+			strings.EqualFold(strings.TrimSpace(operation.CurrentSHA512), targetHash)
 }
 
 func ensureArtifact(
