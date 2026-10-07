@@ -8,7 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/catalog"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/planning"
 	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
@@ -113,6 +115,93 @@ func (s *Service) StagePendingCatalogChange(
 	return clonePendingChanges(s.state.PendingChanges), nil
 }
 
+func (s *Service) StagePendingPlacement(
+	path string,
+	placement string,
+	autoModpackGroup string,
+) (PendingChanges, error) {
+	path = normalizeCatalogPath(path)
+	if path == "" {
+		return PendingChanges{}, fmt.Errorf("mod path is required")
+	}
+
+	s.catalogMu.Lock()
+	defer s.catalogMu.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	mod, ok := s.liveModByPath(path)
+	if !ok {
+		return PendingChanges{}, fmt.Errorf("live mod %q was not found", path)
+	}
+	entry, ok := s.managedEntryByPath(path)
+	if !ok {
+		return PendingChanges{}, fmt.Errorf("placement changes require a verified managed source")
+	}
+
+	if _, err := s.setPreferredPlacement(path, placement, autoModpackGroup); err != nil {
+		return PendingChanges{}, err
+	}
+	entry, ok = s.managedEntryByPath(path)
+	if !ok {
+		return PendingChanges{}, fmt.Errorf("managed artifact disappeared while staging placement")
+	}
+	currentGroup := normalizeAutoModpackGroup(mod.Location, mod.Group)
+	targetGroup := normalizeAutoModpackGroup(entry.Deployment, entry.AutoModpackGroup)
+	if entry.Deployment == mod.Location &&
+		(entry.Deployment != inventory.LocationClient || currentGroup == targetGroup) {
+		return PendingChanges{}, fmt.Errorf("current placement already matches the preferred placement")
+	}
+
+	key := catalog.EntryKey(entry)
+	version := managedInstalledVersion(entry)
+	change := PendingChange{
+		ID:               key,
+		Action:           "placement",
+		CandidateKey:     key,
+		Name:             entry.Name,
+		Provider:         entry.Provider,
+		ProjectID:        entry.ProjectID,
+		Path:             path,
+		InstalledVersion: version,
+		TargetVersion:    version,
+		Placement:        entry.Deployment,
+		AutoModpackGroup: targetGroup,
+	}
+
+	for index := range s.state.PendingChanges.Changes {
+		existing := &s.state.PendingChanges.Changes[index]
+		if existing.CandidateKey != key {
+			continue
+		}
+		if existing.Action == "remove" {
+			return PendingChanges{}, fmt.Errorf(
+				"%s is already pending removal; remove that pending change before staging a move",
+				entry.Name,
+			)
+		}
+		existing.Placement = entry.Deployment
+		existing.AutoModpackGroup = targetGroup
+		if existing.Path == "" {
+			existing.Path = path
+		}
+		if existing.CatalogRequest != nil {
+			existing.CatalogRequest.Placement = entry.Deployment
+			existing.CatalogRequest.AutoModpackGroup = targetGroup
+		}
+		if err := s.persistPendingChangesLocked(); err != nil {
+			return PendingChanges{}, err
+		}
+		return clonePendingChanges(s.state.PendingChanges), nil
+	}
+
+	s.state.PendingChanges.Changes = upsertPendingChange(s.state.PendingChanges.Changes, change)
+	if err := s.persistPendingChangesLocked(); err != nil {
+		return PendingChanges{}, err
+	}
+	return clonePendingChanges(s.state.PendingChanges), nil
+}
+
 func (s *Service) RemovePendingChange(id string) (PendingChanges, error) {
 	id = strings.TrimSpace(id)
 	if id == "" {
@@ -186,7 +275,8 @@ func (s *Service) ReviewPendingChanges(ctx context.Context) (planning.Plan, erro
 	candidates := make([]updatecheck.Candidate, 0, len(pending.Changes))
 	for _, change := range pending.Changes {
 		var candidate updatecheck.Candidate
-		if change.Action == "update" {
+		switch change.Action {
+		case "update":
 			if !hasUpdate {
 				return planning.Plan{}, fmt.Errorf("update discovery has not completed yet")
 			}
@@ -194,8 +284,17 @@ func (s *Service) ReviewPendingChanges(ctx context.Context) (planning.Plan, erro
 			if !ok {
 				return planning.Plan{}, fmt.Errorf("%s is no longer present in the current update report; remove or restage that pending change", change.Name)
 			}
+			current.Deployment = change.Placement
+			current.AutoModpackGroup = normalizeAutoModpackGroup(change.Placement, change.AutoModpackGroup)
+			inheritClientDependencyGroups(current.Dependencies, current.AutoModpackGroup)
 			candidate = current
-		} else {
+		case "placement":
+			resolved, err := pendingPlacementCandidate(change, snapshot, cat)
+			if err != nil {
+				return planning.Plan{}, fmt.Errorf("resolve pending move for %s: %w", change.Name, err)
+			}
+			candidate = resolved
+		default:
 			if change.CatalogRequest == nil {
 				return planning.Plan{}, fmt.Errorf("pending %s change for %s is missing its catalog request", change.Action, change.Name)
 			}
@@ -281,6 +380,82 @@ func (s *Service) ReviewPendingChanges(ctx context.Context) (planning.Plan, erro
 		return planning.Plan{}, fmt.Errorf("persist reviewed pending changes: %w", err)
 	}
 	return plan, nil
+}
+
+func pendingPlacementCandidate(
+	change PendingChange,
+	snapshot management.Snapshot,
+	cat catalog.Report,
+) (updatecheck.Candidate, error) {
+	entry, ok := managedCatalogEntryByPath(cat, change.Path)
+	if !ok {
+		return updatecheck.Candidate{}, fmt.Errorf("managed artifact %q was not found", change.Path)
+	}
+	if catalog.EntryKey(entry) != change.CandidateKey {
+		return updatecheck.Candidate{}, fmt.Errorf("managed artifact identity changed after the move was staged")
+	}
+	targetGroup := normalizeAutoModpackGroup(change.Placement, change.AutoModpackGroup)
+	currentPreferredGroup := normalizeAutoModpackGroup(entry.Deployment, entry.AutoModpackGroup)
+	if entry.Deployment != change.Placement ||
+		(entry.Deployment == inventory.LocationClient && currentPreferredGroup != targetGroup) {
+		return updatecheck.Candidate{}, fmt.Errorf("preferred placement changed after the move was staged; restage the move")
+	}
+
+	var mod *management.Mod
+	for index := range snapshot.Mods {
+		if normalizeCatalogPath(snapshot.Mods[index].Path) == normalizeCatalogPath(change.Path) {
+			copy := snapshot.Mods[index]
+			mod = &copy
+			break
+		}
+	}
+	if mod == nil {
+		return updatecheck.Candidate{}, fmt.Errorf("live artifact %q is no longer present", change.Path)
+	}
+	currentGroup := normalizeAutoModpackGroup(mod.Deployment, mod.AutoModpackGroup)
+	if mod.Deployment == change.Placement &&
+		(change.Placement != inventory.LocationClient || currentGroup == targetGroup) {
+		return updatecheck.Candidate{}, fmt.Errorf("live artifact already matches the staged placement")
+	}
+
+	versionID := managedInstalledVersion(entry)
+	number := strings.TrimSpace(mod.InstalledVersion)
+	if number == "" {
+		number = versionID
+	}
+	release := updatecheck.Release{
+		ID:       versionID,
+		Number:   number,
+		Name:     entry.Name,
+		Filename: mod.Filename,
+		URL:      entry.URL,
+		SHA1:     entry.SHA1,
+		SHA512:   entry.SHA512,
+	}
+	candidate := updatecheck.Candidate{
+		Key:              catalog.EntryKey(entry),
+		Provider:         entry.Provider,
+		ProjectID:        entry.ProjectID,
+		Name:             entry.Name,
+		Side:             entry.Side,
+		Deployment:       change.Placement,
+		AutoModpackGroup: targetGroup,
+		Environment:      entry.Environment,
+		Installed:        release,
+		Target:           &release,
+		Classification:   updatecheck.ClassificationSafe,
+		Intent:           "placement",
+		Reasons: []updatecheck.Reason{{
+			Code: "placement_change",
+			Message: fmt.Sprintf(
+				"Move %s from %s to %s.",
+				entry.Name,
+				placementLabel(mod.Deployment, currentGroup),
+				placementLabel(change.Placement, targetGroup),
+			),
+		}},
+	}
+	return candidate, nil
 }
 
 func pendingChangeFromCandidate(

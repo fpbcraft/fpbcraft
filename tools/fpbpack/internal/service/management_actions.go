@@ -849,7 +849,12 @@ func (s *Service) persistCatalogMutation() error {
 		return fmt.Errorf("persist management state: %w", err)
 	}
 	s.snapshot = management.BuildSnapshot(s.snapshot.Inventory, s.state.Catalog)
-	s.pruneUpdateCandidatesToCatalog()
+	if s.hasUpdate {
+		reconcileUpdateReportToCatalog(&s.updates, s.state.Catalog)
+		_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), s.updates)
+	} else {
+		s.pruneUpdateCandidatesToCatalog()
+	}
 	return nil
 }
 

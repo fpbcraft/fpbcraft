@@ -25,7 +25,6 @@ import type {
   ManagementMod,
   PendingChanges,
   UpdateCandidate,
-  UpdatePlan,
   UpdateRule,
 } from '@/lib/management';
 
@@ -599,6 +598,24 @@ export default function ModsPage() {
         preferredPlacement !== selectedMod.preferred_deployment ||
         (preferredPlacement === 'client' &&
           targetGroup !== normalizedGroup(selectedMod, true));
+      const liveMoveNeeded =
+        preferredPlacement !== selectedMod.deployment ||
+        (preferredPlacement === 'client' && targetGroup !== normalizedGroup(selectedMod));
+      if (reviewMove && liveMoveNeeded) {
+        await api<PendingChanges>('/api/pending-changes/placement', {
+          method: 'POST',
+          body: JSON.stringify({
+            path: selectedMod.path,
+            placement: preferredPlacement,
+            automodpack_group: preferredPlacement === 'client' ? targetGroup : undefined,
+          }),
+        });
+        await reload({silent: true});
+        closeMod();
+        router.push('/pending');
+        return;
+      }
+
       if (preferredChanged) {
         await api<ModManagementResult>('/api/mod-management', {
           method: 'POST',
@@ -609,20 +626,6 @@ export default function ModsPage() {
             automodpack_group: preferredPlacement === 'client' ? targetGroup : undefined,
           }),
         });
-      }
-
-      const liveMoveNeeded =
-        preferredPlacement !== selectedMod.deployment ||
-        (preferredPlacement === 'client' && targetGroup !== normalizedGroup(selectedMod));
-      if (reviewMove && liveMoveNeeded) {
-        const plan = await api<UpdatePlan>('/api/placement-plans', {
-          method: 'POST',
-          body: JSON.stringify({path: selectedMod.path}),
-        });
-        await reload({silent: true});
-        closeMod();
-        router.push('/review?id=' + encodeURIComponent(plan.id));
-        return;
       }
 
       setManagementMessage(
@@ -1461,13 +1464,14 @@ export default function ModsPage() {
                       }
                       onClick={() => void savePlacement(true)}
                     >
-                      Review move
+                      Add move to pending
                     </button>
                   </div>
                   <p className="mt-2 text-xs text-base-content/40">
                     Current: {placementLabel(selectedMod)}. Preferred: {placementLabel(selectedMod, true)}.
-                    Saving only updates the preferred target. Applying a move still uses the verified,
-                    backed-up change flow; this includes moves between two AutoModpack groups.
+                    Saving only updates the preferred target. “Add move to pending” stages the
+                    filesystem move alongside your other pending changes; this includes moves between
+                    two AutoModpack groups.
                   </p>
                 </div>
 

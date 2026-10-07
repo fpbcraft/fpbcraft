@@ -13,13 +13,14 @@ function actionLabel(action: string) {
   if (action === 'remove') return 'Remove';
   if (action === 'version') return 'Change version';
   if (action === 'update') return 'Update';
+  if (action === 'placement') return 'Move';
   return action;
 }
 
 function actionTone(action: string): 'good' | 'warn' | 'bad' | 'neutral' {
   if (action === 'install') return 'good';
   if (action === 'remove') return 'bad';
-  if (action === 'version' || action === 'update') return 'warn';
+  if (action === 'version' || action === 'update' || action === 'placement') return 'warn';
   return 'neutral';
 }
 
@@ -173,6 +174,13 @@ export default function PendingChangesPage() {
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-base-content/45">
                       {change.action === 'remove' ? (
                         <span>{change.installed_version || 'installed'} → removed</span>
+                      ) : change.action === 'placement' ? (
+                        <span>
+                          Move to{' '}
+                          {change.placement === 'client'
+                            ? 'AutoModpack/' + (change.automodpack_group || 'main')
+                            : 'server/common'}
+                        </span>
                       ) : (
                         <span>
                           {change.installed_version || 'not installed'} →{' '}

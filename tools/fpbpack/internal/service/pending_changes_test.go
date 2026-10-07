@@ -4,6 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/catalog"
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
 	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
 
@@ -111,5 +114,69 @@ func TestUpsertPendingChangeReplacesActionForSameArtifact(t *testing.T) {
 	}
 	if changes[0].Action != "remove" {
 		t.Fatalf("action = %q, want remove", changes[0].Action)
+	}
+}
+
+
+func TestStagePendingPlacementAddsMoveAndUpdatesPreference(t *testing.T) {
+	now := time.Now().UTC()
+	stateDir := t.TempDir()
+	mod := inventory.ModFile{
+		Location: inventory.LocationClient,
+		Group: "main",
+		Path: "automodpack/host-modpack/main/mods/example.jar",
+		Filename: "example.jar",
+		SHA512: "same-bytes",
+	}
+	entry := catalog.Entry{
+		Provider: "modrinth",
+		ProjectID: "example",
+		VersionID: "v1",
+		Name: "Example",
+		Filename: mod.Filename,
+		SHA512: mod.SHA512,
+		Deployment: inventory.LocationClient,
+		AutoModpackGroup: "main",
+		SourcePaths: []catalog.Source{{
+			Location: mod.Location,
+			Group: mod.Group,
+			Path: mod.Path,
+		}},
+	}
+	svc := &Service{
+		options: Options{StateDir: stateDir},
+		state: State{
+			SchemaVersion: StateSchemaVersion,
+			CreatedAt: now,
+			UpdatedAt: now,
+			Settings: RuntimeSettings{RetentionCount: DefaultRetentionCount},
+			Catalog: catalog.Report{Managed: []catalog.Entry{entry}},
+		},
+		snapshot: management.BuildSnapshot(
+			inventory.Inventory{
+				SchemaVersion: inventory.SchemaVersion,
+				GeneratedAt: now,
+				Mods: []inventory.ModFile{mod},
+			},
+			catalog.Report{Managed: []catalog.Entry{entry}},
+		),
+	}
+
+	pending, err := svc.StagePendingPlacement(
+		mod.Path,
+		"client",
+		"visual-client-mods",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pending.Changes) != 1 || pending.Changes[0].Action != "placement" {
+		t.Fatalf("unexpected pending move: %+v", pending.Changes)
+	}
+	if pending.Changes[0].AutoModpackGroup != "visual-client-mods" {
+		t.Fatalf("group = %q", pending.Changes[0].AutoModpackGroup)
+	}
+	if got := svc.state.Catalog.Managed[0].AutoModpackGroup; got != "visual-client-mods" {
+		t.Fatalf("preferred catalog group = %q", got)
 	}
 }
