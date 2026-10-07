@@ -23,6 +23,7 @@ import type {
   AutoModpackStatus,
   DiagnosticFinding,
   ManagementMod,
+  PendingChanges,
   UpdateCandidate,
   UpdatePlan,
   UpdateRule,
@@ -107,6 +108,7 @@ export default function ModsPage() {
   const [page, setPage] = useState(1);
   const [filtersReady, setFiltersReady] = useState(false);
   const [selectedMod, setSelectedMod] = useState<ManagementMod | null>(null);
+  const [selectedForRemoval, setSelectedForRemoval] = useState<Set<string>>(new Set());
   const [rules, setRules] = useState<Record<string, UpdateRule>>({});
   const [ruleError, setRuleError] = useState<string | null>(null);
   const [managementError, setManagementError] = useState<string | null>(null);
@@ -398,6 +400,34 @@ export default function ModsPage() {
   const totalPages = Math.max(1, Math.ceil(tableRows.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const rows = tableRows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const visibleRemovableIDs = rows
+    .filter((row): row is Extract<ModTableRow, {kind: 'mod'}> => row.kind === 'mod')
+    .filter((row) => removableMod(row.mod))
+    .map((row) => row.mod.id);
+  const allVisibleRemovableSelected =
+    visibleRemovableIDs.length > 0 &&
+    visibleRemovableIDs.every((id) => selectedForRemoval.has(id));
+
+  const toggleRemovalSelection = (id: string) => {
+    setSelectedForRemoval((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleVisibleRemovals = () => {
+    setSelectedForRemoval((current) => {
+      const next = new Set(current);
+      if (allVisibleRemovableSelected) {
+        visibleRemovableIDs.forEach((id) => next.delete(id));
+      } else {
+        visibleRemovableIDs.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
 
   const updateFilter = (setter: (value: string) => void, value: string) => {
     setter(value);
@@ -603,17 +633,60 @@ export default function ModsPage() {
     setCatalogDialog({mode: 'version', mod});
   };
 
-  const reviewRemoval = async (mod: ManagementMod) => {
+  const removableMod = (mod: ManagementMod) =>
+    mod.management === 'managed' &&
+    (mod.provider === 'modrinth' || mod.provider === 'curseforge');
+
+  const stageRemoval = async (mod: ManagementMod) => {
     setManagementBusy(true);
     setManagementError(null);
     setManagementMessage(null);
     try {
-      const plan = await api<UpdatePlan>('/api/catalog/plans', {
+      await api<PendingChanges>('/api/pending-changes/catalog', {
         method: 'POST',
         body: JSON.stringify({action: 'remove', path: mod.path}),
       });
+      setSelectedForRemoval((current) => {
+        const next = new Set(current);
+        next.delete(mod.id);
+        return next;
+      });
+      setManagementMessage(mod.name + ' removal added to pending changes.');
       closeMod();
-      router.push('/review?id=' + encodeURIComponent(plan.id));
+      await reload({silent: true});
+    } catch (error: unknown) {
+      setManagementError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setManagementBusy(false);
+    }
+  };
+
+  const stageSelectedRemovals = async () => {
+    const selectedMods = state.mods.filter(
+      (mod) => selectedForRemoval.has(mod.id) && removableMod(mod),
+    );
+    if (!selectedMods.length) return;
+
+    setManagementBusy(true);
+    setManagementError(null);
+    setManagementMessage(null);
+    try {
+      // Stage sequentially because safe removal may query provider dependency
+      // metadata and the service intentionally serializes catalog resolution.
+      for (const mod of selectedMods) {
+        await api<PendingChanges>('/api/pending-changes/catalog', {
+          method: 'POST',
+          body: JSON.stringify({action: 'remove', path: mod.path}),
+        });
+      }
+      setSelectedForRemoval(new Set());
+      setManagementMessage(
+        selectedMods.length +
+          ' removal' +
+          (selectedMods.length === 1 ? '' : 's') +
+          ' added to pending changes.',
+      );
+      await reload({silent: true});
     } catch (error: unknown) {
       setManagementError(error instanceof Error ? error.message : String(error));
     } finally {
@@ -857,6 +930,38 @@ export default function ModsPage() {
         </button>
       </div>
 
+      {selectedForRemoval.size > 0 ? (
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-box border border-error/30 bg-error/5 px-4 py-3">
+          <div>
+            <div className="text-sm font-medium">
+              {selectedForRemoval.size} selected for removal
+            </div>
+            <div className="text-xs text-base-content/45">
+              Nothing is removed until the pending changes are reviewed and applied.
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              className="btn btn-sm btn-ghost"
+              type="button"
+              disabled={managementBusy}
+              onClick={() => setSelectedForRemoval(new Set())}
+            >
+              Clear selection
+            </button>
+            <button
+              className="btn btn-sm btn-error"
+              type="button"
+              disabled={managementBusy}
+              onClick={() => void stageSelectedRemovals()}
+            >
+              <PackageMinus size={14} />
+              Add removals to pending changes
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <section className="panel overflow-hidden">
         <div className="flex items-center justify-between border-b border-base-300 px-4 py-2 text-xs text-base-content/45">
           <span>{tableRows.length} matching entries</span>
@@ -868,6 +973,16 @@ export default function ModsPage() {
           <table className="table table-sm">
             <thead>
               <tr>
+                <th className="w-10">
+                  <input
+                    type="checkbox"
+                    className="checkbox checkbox-xs"
+                    checked={allVisibleRemovableSelected}
+                    disabled={visibleRemovableIDs.length === 0 || managementBusy}
+                    onChange={toggleVisibleRemovals}
+                    aria-label="Select removable mods on this page"
+                  />
+                </th>
                 <th>Mod</th>
                 <th>Installed</th>
                 <th>Latest</th>
@@ -888,6 +1003,7 @@ export default function ModsPage() {
                       key={'diagnostic:' + row.finding.code + ':' + path}
                       className="border-base-300 bg-error/5"
                     >
+                      <td />
                       <td>
                         <div className="flex items-center gap-2">
                           <Wrench size={13} className="shrink-0 text-error" />
@@ -942,6 +1058,18 @@ export default function ModsPage() {
                     className="cursor-pointer border-base-300 hover:bg-base-300/25"
                     onClick={() => openMod(mod)}
                   >
+                    <td onClick={(event) => event.stopPropagation()}>
+                      {removableMod(mod) ? (
+                        <input
+                          type="checkbox"
+                          className="checkbox checkbox-xs"
+                          checked={selectedForRemoval.has(mod.id)}
+                          disabled={managementBusy}
+                          onChange={() => toggleRemovalSelection(mod.id)}
+                          aria-label={'Select ' + mod.name + ' for removal'}
+                        />
+                      ) : null}
+                    </td>
                     <td>
                       <div className="flex items-center gap-2">
                         {candidate?.icon_url ? (
@@ -1196,9 +1324,9 @@ export default function ModsPage() {
                         className="btn btn-sm btn-outline btn-error"
                         type="button"
                         disabled={managementBusy}
-                        onClick={() => void reviewRemoval(selectedMod)}
+                        onClick={() => void stageRemoval(selectedMod)}
                       >
-                        <PackageMinus size={14} /> Review removal
+                        <PackageMinus size={14} /> Add removal to pending changes
                       </button>
                     </>
                   ) : null}
@@ -1306,8 +1434,8 @@ export default function ModsPage() {
                   </div>
                   <p className="mt-2 text-xs text-base-content/40">
                     Current: {placementLabel(selectedMod)}. Preferred: {placementLabel(selectedMod, true)}.
-                    Saving only updates the preferred target. Review move creates a verified,
-                    backed-up plan; this includes moves between two AutoModpack groups.
+                    Saving only updates the preferred target. Applying a move still uses the verified,
+                    backed-up change flow; this includes moves between two AutoModpack groups.
                   </p>
                 </div>
 
