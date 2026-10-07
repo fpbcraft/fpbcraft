@@ -248,7 +248,9 @@ func (s *Service) DiscardPendingChanges() (PendingChanges, error) {
 }
 
 func (s *Service) ReviewPendingChanges(ctx context.Context) (planning.Plan, error) {
-	s.refreshMu.Lock()
+	if !s.refreshMu.TryLock() {
+		return planning.Plan{}, fmt.Errorf("provider refresh or another protected operation is in progress; retry pending review after it finishes")
+	}
 	defer s.refreshMu.Unlock()
 	s.catalogMu.Lock()
 	defer s.catalogMu.Unlock()

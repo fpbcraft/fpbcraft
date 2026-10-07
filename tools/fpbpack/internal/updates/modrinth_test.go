@@ -3,6 +3,7 @@ package updates
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -63,5 +64,61 @@ func TestModrinthVersionRequestsKeepBroadHistoryLightweight(t *testing.T) {
 		changelogQuery["game_versions"] != "[\"1.21.1\"]" ||
 		changelogQuery["loaders"] != "[\"neoforge\"]" {
 		t.Fatalf("compatible changelog request not filtered as expected: %+v", changelogQuery)
+	}
+}
+
+
+func TestModrinthGetVersionsBatchesAndDeduplicatesIDs(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		if r.URL.Path != "/versions" {
+			http.NotFound(w, r)
+			return
+		}
+		var ids []string
+		if err := json.Unmarshal([]byte(r.URL.Query().Get("ids")), &ids); err != nil {
+			t.Fatalf("decode ids: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		versions := make([]map[string]any, 0, len(ids))
+		for _, id := range ids {
+			versions = append(versions, map[string]any{
+				"id": id,
+				"project_id": "project-" + id,
+				"name": id,
+				"version_number": "1.0.0",
+				"version_type": "release",
+				"status": "listed",
+				"game_versions": []string{"1.21.1"},
+				"loaders": []string{"neoforge"},
+				"dependencies": []any{},
+				"files": []any{},
+			})
+		}
+		_ = json.NewEncoder(w).Encode(versions)
+	}))
+	defer server.Close()
+
+	ids := make([]string, 0, 205)
+	for index := 0; index < 205; index++ {
+		ids = append(ids, fmt.Sprintf("v-%03d", index))
+	}
+	ids = append(ids, "v-001", "v-002", "")
+
+	client := &ModrinthClient{
+		BaseURL: server.URL,
+		HTTPClient: server.Client(),
+		Mode: RefreshModeInteractive,
+	}
+	versions, err := client.GetVersions(context.Background(), ids)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(versions) != 205 {
+		t.Fatalf("versions = %d, want 205", len(versions))
+	}
+	if requests != 3 {
+		t.Fatalf("requests = %d, want 3", requests)
 	}
 }

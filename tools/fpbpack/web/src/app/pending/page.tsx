@@ -75,8 +75,8 @@ export default function PendingChangesPage() {
       const reviewed = await api<UpdatePlan>('/api/pending-changes/review', {
         method: 'POST',
       });
-      await reload({silent: true});
       router.push('/review?id=' + encodeURIComponent(reviewed.id));
+      void reload({silent: true});
     } catch (value: unknown) {
       setError(value instanceof Error ? value.message : String(value));
     } finally {
@@ -223,10 +223,13 @@ export default function PendingChangesPage() {
 
           <div className="mt-4 flex flex-col gap-3 rounded-box border border-base-300 bg-base-100 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="text-sm font-medium">Ready to review the complete set?</div>
-              <div className="mt-0.5 text-xs text-base-content/45">
-                FPBPack will resolve dependencies, verify exact artifacts, and prepare the
-                restore point before Apply becomes available.
+              <div className="text-sm font-medium">
+                {reviewing ? 'Preparing the review…' : 'Ready to review the complete set?'}
+              </div>
+              <div className="mt-0.5 text-xs text-base-content/45" aria-live="polite">
+                {reviewing
+                  ? 'Resolving dependency metadata, verifying exact artifacts, and preparing the restore point. Large change sets can take a moment.'
+                  : 'FPBPack will resolve dependencies, verify exact artifacts, and prepare the restore point before Apply becomes available.'}
               </div>
             </div>
             <button
@@ -240,7 +243,7 @@ export default function PendingChangesPage() {
               ) : (
                 <ArrowRight size={14} />
               )}
-              Review pending changes
+              {reviewing ? 'Preparing review…' : 'Review pending changes'}
             </button>
           </div>
         </>
