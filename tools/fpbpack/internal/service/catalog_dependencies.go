@@ -35,23 +35,41 @@ func (s *Service) currentRequiredBy(
 			BaseURL: s.options.ModrinthBaseURL,
 			Mode:    updatecheck.RefreshModeInteractive,
 		}
+
+		entries := make([]catalog.Entry, 0, len(cat.Managed))
+		versionIDs := make([]string, 0, len(cat.Managed))
 		for _, entry := range cat.Managed {
 			if entry.Provider != "modrinth" || entry.ProjectID == target.ProjectID {
 				continue
 			}
-			if strings.TrimSpace(entry.VersionID) == "" {
+			versionID := strings.TrimSpace(entry.VersionID)
+			if versionID == "" {
 				return nil, fmt.Errorf(
 					"cannot verify whether %s depends on %s because its installed Modrinth version ID is missing",
 					entry.Name,
 					target.Name,
 				)
 			}
-			version, err := client.GetVersion(ctx, entry.VersionID)
-			if err != nil {
+			entries = append(entries, entry)
+			versionIDs = append(versionIDs, versionID)
+		}
+
+		versions, err := client.GetVersions(ctx, versionIDs)
+		if err != nil {
+			return nil, fmt.Errorf("verify installed Modrinth dependency metadata: %w", err)
+		}
+
+		unresolvedByVersion := map[string][]string{}
+		unresolvedIDs := make([]string, 0)
+		for _, entry := range entries {
+			versionID := strings.TrimSpace(entry.VersionID)
+			version, ok := versions[versionID]
+			if !ok {
 				return nil, fmt.Errorf(
-					"verify installed dependency metadata for %s: %w",
+					"cannot verify whether %s depends on %s because Modrinth did not return installed version %s",
 					entry.Name,
-					err,
+					target.Name,
+					versionID,
 				)
 			}
 			for _, dependency := range version.Dependencies {
@@ -59,20 +77,42 @@ func (s *Service) currentRequiredBy(
 					continue
 				}
 				projectID := strings.TrimSpace(dependency.ProjectID)
-				if projectID == "" && strings.TrimSpace(dependency.VersionID) != "" {
-					dependencyVersion, err := client.GetVersion(ctx, dependency.VersionID)
-					if err != nil {
-						return nil, fmt.Errorf(
-							"resolve installed dependency of %s: %w",
-							entry.Name,
-							err,
-						)
-					}
-					projectID = dependencyVersion.ProjectID
-				}
 				if projectID == target.ProjectID {
 					appendName(entry.Name)
 					break
+				}
+				dependencyVersionID := strings.TrimSpace(dependency.VersionID)
+				if projectID != "" || dependencyVersionID == "" {
+					continue
+				}
+				if _, exists := unresolvedByVersion[dependencyVersionID]; !exists {
+					unresolvedIDs = append(unresolvedIDs, dependencyVersionID)
+				}
+				unresolvedByVersion[dependencyVersionID] = append(
+					unresolvedByVersion[dependencyVersionID],
+					entry.Name,
+				)
+			}
+		}
+
+		if len(unresolvedIDs) > 0 {
+			dependencyVersions, err := client.GetVersions(ctx, unresolvedIDs)
+			if err != nil {
+				return nil, fmt.Errorf("resolve installed Modrinth dependency metadata: %w", err)
+			}
+			for _, dependencyVersionID := range unresolvedIDs {
+				dependencyVersion, ok := dependencyVersions[dependencyVersionID]
+				if !ok {
+					return nil, fmt.Errorf(
+						"cannot resolve installed dependency version %s from Modrinth",
+						dependencyVersionID,
+					)
+				}
+				if strings.TrimSpace(dependencyVersion.ProjectID) != target.ProjectID {
+					continue
+				}
+				for _, entryName := range unresolvedByVersion[dependencyVersionID] {
+					appendName(entryName)
 				}
 			}
 		}
