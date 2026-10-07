@@ -140,9 +140,13 @@ Update discovery supports the source types FPBPack can verify safely:
 - CurseForge: official API discovery, project links, changelogs, and conservative required-dependency resolution when a key is configured in the GUI or through `FPBPACK_CURSEFORGE_API_KEY`; files that disable third-party downloads remain Review candidates with a direct manual CurseForge file link;
 - GitHub releases: only for artifacts already verified against an explicit GitHub release source. GitHub candidates require an unambiguous JAR asset with a SHA-256 digest and are always classified Review because GitHub does not provide Minecraft/loader compatibility metadata.
 
+When the live inventory contains Sinytra Connector, catalog search, exact-version browsing, update discovery, and required-dependency resolution also accept compatible Fabric releases in addition to native NeoForge releases. Connector-mediated Fabric targets are always surfaced as Review rather than silently treated as native NeoForge candidates.
+
+When a CurseForge API key is configured, serve-mode inventory refresh also submits the JARs' exact Murmur2 fingerprints to CurseForge. These exact identities are retained alongside Modrinth SHA-512 matches so dependency planning can recognize the same installed JAR across providers instead of proposing a duplicate solely because the dependent mod names a different provider.
+
 Pinned/unmanaged artifacts stay pinned/unmanaged; FPBPack does not guess an update source for them.
 
-Blocking source/catalog findings can be repaired in the GUI. **Updates → Fix issues** opens **Mods → Needs attention**. From an affected mod you can retry automatic identification, keep the JAR intentionally unmanaged, or verify an explicit Modrinth, CurseForge, or GitHub source. Explicit provider assignments are accepted only when the selected provider artifact hash matches the installed JAR.
+Blocking source/catalog findings can be repaired in the GUI. The dedicated **Issues** page aggregates inventory drift, provider failures, blocked updates, pending-review findings, and AutoModpack problems and routes each issue to the relevant fix/retry surface. **Mods → Needs attention** remains the file-oriented remediation view. From an affected mod you can retry automatic identification, keep the JAR intentionally unmanaged, or verify an explicit Modrinth, CurseForge, or GitHub source. Explicit provider assignments are accepted only when the selected provider artifact hash matches the installed JAR.
 
 Provider traffic is rate-aware: background work is deliberately slower/lower-concurrency than interactive per-mod refreshes, and provider requests retry 429/408/5xx responses with `Retry-After` / rate-limit-reset handling and bounded exponential fallback.
 
@@ -176,7 +180,9 @@ The management API covers discovery, remediation, planning, server control, Appl
 - `GET /api/catalog/projects/{provider}/{id}/versions`
 - `POST /api/catalog/plans`
 - `GET|POST /api/plans`, `GET /api/plans/{id}`
-- `POST /api/placement-plans`
+- `GET /api/pending-changes`, `POST /api/pending-changes/updates`, `POST /api/pending-changes/catalog`
+- `POST /api/pending-changes/placement`, `POST /api/pending-changes/review`
+- `POST /api/placement-plans` (legacy/direct placement-plan API)
 - `POST /api/plans/{id}/manual-artifact?candidate_key=...`
 - `POST /api/plans/{id}/apply`
 - `GET /api/history`
@@ -201,7 +207,7 @@ The embedded GUI has a dedicated **AutoModpack** section. FPBPack reads `automod
 
 Config saves are guarded by the SHA-256 of the version loaded by the browser, backed up under `state-dir/automodpack/config-backups`, validated, and atomically written. Group IDs are persistent identities; use the explicit **Migrate ID** action when renaming one so FPBPack can update group references, the `host-modpack/<group>` directory, and accepted catalog assignments together.
 
-Inventory and catalog management are group-aware. Client mods can target `AutoModpack/main` or any configured optional group, and **Review move** supports moving a managed JAR between groups through the same stopped-server Apply/Restore safety boundary used for updates. New catalog installs and exact-version changes can choose their AutoModpack group directly.
+Inventory and catalog management are group-aware. Client mods can target `AutoModpack/main` or any configured optional group, and **Add move to pending** stages a managed JAR move between groups alongside updates/version changes/removals. The combined batch is reviewed once and uses the same stopped-server Apply/Restore safety boundary. New catalog installs and exact-version changes can choose their AutoModpack group directly.
 
 FPBPack also exposes AutoModpack operations through the existing Crafty connection: config reload, host restart, generation preview/publish, group summary, host activity, and generation rollback. Published generation history comes from AutoModpack's own append-only `automodpack/server/journal.jsonl`; FPBPack does not create a competing generation store.
 
@@ -245,16 +251,19 @@ For an existing Modrinth/CurseForge-managed artifact, **Change version** uses th
 
 Install and exact-version plans resolve required provider dependencies into the same reviewed batch. FPBPack deliberately leaves no-longer-needed dependencies installed; removing them remains an explicit user action.
 
-Catalog operations never install/remove a JAR immediately. They enter the same protected workflow as updates:
+Catalog operations never install/remove/move a JAR immediately. They enter the same protected workflow as updates:
 
 ```text
-Add / Change version / Review removal
-    → Review exact plan
+Add / Change version / Remove / Move / Update
+    → Pending changes
+    → Review one exact combined plan
     → Stop server
     → Apply
     → Verify
     → History / Restore
 ```
+
+Pending review findings carry the affected mod/dependency name and file path whenever one exists, so repeated warnings or blockers remain attributable to the exact artifact they describe.
 
 ## Apply & Restore
 
