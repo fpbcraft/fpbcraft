@@ -169,7 +169,7 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 		}
 		if candidate.Classification != updatecheck.ClassificationSafe &&
 			candidate.Classification != updatecheck.ClassificationReview {
-			addBlocker(&plan, "candidate_not_plannable", key, "Only Safe and Review candidates can be included in an update plan.")
+			addBlocker(&plan, "candidate_not_plannable", key, "Only Safe and Review candidates can be included in pending changes.")
 			continue
 		}
 		intent := strings.TrimSpace(candidate.Intent)
@@ -222,7 +222,7 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 			plan.Warnings = append(plan.Warnings, Finding{
 				Code: "catalog_remove",
 				CandidateKey: key,
-				Message: "This plan removes the managed JAR and its accepted catalog entry. Restore can put both back.",
+				Message: "These changes remove the managed JAR and its accepted catalog entry. Restore can put both back.",
 			})
 			continue
 		}
@@ -646,7 +646,7 @@ func (p Plan) HistoryEvent() HistoryEvent {
 		PlanID: p.ID,
 		BackupID: p.BackupID,
 		Mods: len(p.Changes),
-		Summary: fmt.Sprintf("Update plan with %d mod change(s)", len(p.Changes)),
+		Summary: fmt.Sprintf("Reviewed %d mod change(s)", len(p.Changes)),
 	}
 }
 
