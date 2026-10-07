@@ -178,6 +178,44 @@ func (client *ModrinthClient) GetVersion(ctx context.Context, versionID string) 
 	return version, nil
 }
 
+func (client *ModrinthClient) GetVersions(ctx context.Context, versionIDs []string) (map[string]modrinthVersion, error) {
+	result := make(map[string]modrinthVersion, len(versionIDs))
+	seen := map[string]struct{}{}
+	unique := make([]string, 0, len(versionIDs))
+	for _, versionID := range versionIDs {
+		versionID = strings.TrimSpace(versionID)
+		if versionID == "" {
+			continue
+		}
+		if _, ok := seen[versionID]; ok {
+			continue
+		}
+		seen[versionID] = struct{}{}
+		unique = append(unique, versionID)
+	}
+
+	const batchSize = 100
+	for start := 0; start < len(unique); start += batchSize {
+		end := start + batchSize
+		if end > len(unique) {
+			end = len(unique)
+		}
+		encoded, err := json.Marshal(unique[start:end])
+		if err != nil {
+			return nil, err
+		}
+		endpoint := client.baseURL() + "/versions?ids=" + url.QueryEscape(string(encoded))
+		var versions []modrinthVersion
+		if err := client.getJSON(ctx, endpoint, &versions); err != nil {
+			return nil, fmt.Errorf("Modrinth versions: %w", err)
+		}
+		for _, version := range versions {
+			result[version.ID] = version
+		}
+	}
+	return result, nil
+}
+
 func (client *ModrinthClient) ListVersions(ctx context.Context, projectID string) ([]modrinthVersion, error) {
 	return client.listVersions(ctx, projectID, "", "", false)
 }
