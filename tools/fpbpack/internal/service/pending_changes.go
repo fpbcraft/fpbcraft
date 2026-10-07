@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -253,9 +254,17 @@ func (s *Service) ReviewPendingChanges(ctx context.Context) (planning.Plan, erro
 	if err != nil {
 		return planning.Plan{}, err
 	}
+	// Reviewing is itself a pending-state revision. The frozen execution
+	// snapshot records that exact revision so Apply can reject a review that
+	// became stale because the user later edited or discarded pending changes.
+	plan.PendingRevision = pending.Revision + 1
 	plan, err = s.persistPlannedChange(ctx, plan)
 	if err != nil {
 		return planning.Plan{}, err
+	}
+	plan.PendingRevision = pending.Revision + 1
+	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "plans", plan.ID+".json"), plan); err != nil {
+		return planning.Plan{}, fmt.Errorf("persist pending revision on reviewed changes: %w", err)
 	}
 
 	s.mu.Lock()
@@ -264,7 +273,7 @@ func (s *Service) ReviewPendingChanges(ctx context.Context) (planning.Plan, erro
 		return planning.Plan{}, fmt.Errorf("pending changes changed while the verified review was being created; review the current changes again")
 	}
 	s.state.PendingChanges.ReviewedPlanID = plan.ID
-	s.state.PendingChanges.Revision++
+	s.state.PendingChanges.Revision = plan.PendingRevision
 	reviewedAt := time.Now().UTC()
 	s.state.PendingChanges.UpdatedAt = &reviewedAt
 	s.state.UpdatedAt = reviewedAt
