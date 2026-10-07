@@ -24,7 +24,7 @@ interface Issue {
   context?: string;
   href?: string;
   action: string;
-  reconcile?: boolean;
+  actionKind?: 'refresh-all' | 'refresh-inventory';
 }
 
 export default function IssuesPage() {
@@ -86,16 +86,34 @@ export default function IssuesPage() {
       .filter((finding) => finding.level === 'blocking' || finding.level === 'warning')
       .forEach((finding, index) => {
         const moved = finding.code === 'managed_artifact_moved';
+        const providerLookup =
+          finding.code === 'modrinth_lookup_failed' ||
+          finding.code === 'curseforge_lookup_failed';
+        const refreshInventoryIssue = finding.code === 'inventory_schema_mismatch';
+        const modHref = finding.path
+          ? '/mods?attention=1&mod=' + encodeURIComponent(finding.path)
+          : '/mods?attention=1';
+
         add({
           id: 'diagnostic:' + finding.code + ':' + index,
           level: finding.level === 'blocking' ? 'blocking' : 'warning',
-          source: 'Inventory',
+          source: providerLookup ? 'Provider' : 'Inventory',
           title: finding.mod || finding.code.replaceAll('_', ' '),
           message: finding.message,
           context: finding.path,
-          href: moved ? undefined : '/mods?attention=1',
-          action: moved ? 'Reconcile moved mods' : 'Fix in Mods',
-          reconcile: moved,
+          href: moved || providerLookup || refreshInventoryIssue ? undefined : modHref,
+          action: moved
+            ? 'Reconcile moved mods'
+            : providerLookup
+              ? 'Retry provider refresh'
+              : refreshInventoryIssue
+                ? 'Refresh inventory'
+                : 'Open affected mod',
+          actionKind: providerLookup
+            ? 'refresh-all'
+            : moved || refreshInventoryIssue
+              ? 'refresh-inventory'
+              : undefined,
         });
       });
 
@@ -119,8 +137,8 @@ export default function IssuesPage() {
           title: candidate.name,
           message: candidate.refresh_error || 'Provider metadata is stale.',
           context: candidate.installed.filename,
-          href: '/mods?attention=1',
-          action: 'Refresh metadata',
+          href: '/mods?attention=1&mod=' + encodeURIComponent(candidate.key),
+          action: 'Open affected mod',
         });
       }
     });
@@ -193,11 +211,15 @@ export default function IssuesPage() {
   const blocking = issues.filter((issue) => issue.level === 'blocking').length;
   const warnings = issues.length - blocking;
 
-  const reconcile = async () => {
+  const runAction = async (kind: NonNullable<Issue['actionKind']>) => {
     setBusy(true);
     setError(null);
     try {
-      await refreshInventory();
+      if (kind === 'refresh-all') {
+        await refresh();
+      } else {
+        await refreshInventory();
+      }
       await reload({silent: true});
     } catch (value: unknown) {
       setError(value instanceof Error ? value.message : String(value));
@@ -271,12 +293,12 @@ export default function IssuesPage() {
                     </div>
                   ) : null}
                 </div>
-                {issue.reconcile ? (
+                {issue.actionKind ? (
                   <button
                     className="btn btn-sm btn-primary"
                     type="button"
                     disabled={busy || state.status.refresh?.refreshing}
-                    onClick={() => void reconcile()}
+                    onClick={() => void runAction(issue.actionKind!)}
                   >
                     <RefreshCw size={13} /> {issue.action}
                   </button>
