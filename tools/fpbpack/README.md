@@ -277,7 +277,7 @@ Check updates → select candidates → Review exact plan
 
 Apply stages target JARs in their final filesystem directory and verifies SHA-512 before renaming them into place. Immediately before mutation it rechecks all blocking diagnostics, accepted managed identity/path/hash, target occupancy, and prefetched artifacts. A restore point contains both affected pre-change files and the complete accepted catalog state. If post-apply verification or persistence fails, FPBPack attempts to roll the filesystem and accepted state back to that restore point.
 
-Current placement and preferred placement are separate. Changing a preference does not silently move a JAR. **Review move** creates a same-version verified placement plan, caches the current bytes as its target artifact, creates a restore point, and sends the move through the same stopped-server Apply path. This works even when no version update exists.
+Current placement and preferred placement are separate. Changing a preference does not silently move a JAR. **Add move to pending** records the same-version placement change in the shared pending batch. Review then verifies and caches the current bytes as the target artifact, creates the restore point, and sends the move through the same stopped-server Apply path. This works even when no version update exists.
 
 History records plan, Apply, manual-artifact verification, and Restore operations. Restore shows the exact affected paths, requires explicit confirmation, preserves unmanaged artifacts, and leaves server start manual.
 
