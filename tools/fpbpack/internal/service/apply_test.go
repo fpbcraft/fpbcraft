@@ -13,11 +13,68 @@ import (
 	"time"
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/catalog"
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/doctor"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/planning"
 	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
+
+
+func TestFormatBlockingDiagnosticsIncludesActionableContext(t *testing.T) {
+	report := doctor.Report{
+		Summary: doctor.Summary{Blocking: 2},
+		Findings: []doctor.Finding{
+			{
+				Code: "managed_artifact_moved",
+				Level: doctor.LevelBlocking,
+				Message: "managed artifact expected at mods/example.jar but matching bytes now exist elsewhere",
+				Mod: "Example",
+				Path: "mods/example.jar",
+			},
+			{
+				Code: "external_artifact_added",
+				Level: doctor.LevelBlocking,
+				Message: "artifact exists in a managed deployment directory but is not present in the accepted catalog state",
+				Mod: "Extra Mod",
+				Path: "mods/extra.jar",
+			},
+		},
+	}
+
+	got := formatBlockingDiagnostics(report, 5)
+	for _, want := range []string{
+		"2 blocking diagnostic(s)",
+		"[managed_artifact_moved]",
+		"Example (mods/example.jar)",
+		"managed artifact expected at mods/example.jar",
+		"[external_artifact_added]",
+		"Extra Mod (mods/extra.jar)",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("formatted diagnostics %q missing %q", got, want)
+		}
+	}
+}
+
+func TestFormatBlockingDiagnosticsTruncatesWithRemainingCount(t *testing.T) {
+	report := doctor.Report{
+		Summary: doctor.Summary{Blocking: 3},
+		Findings: []doctor.Finding{
+			{Code: "one", Level: doctor.LevelBlocking, Message: "first"},
+			{Code: "two", Level: doctor.LevelBlocking, Message: "second"},
+			{Code: "three", Level: doctor.LevelBlocking, Message: "third"},
+		},
+	}
+
+	got := formatBlockingDiagnostics(report, 2)
+	if !strings.Contains(got, "+1 more") {
+		t.Fatalf("formatted diagnostics %q missing remaining count", got)
+	}
+	if strings.Contains(got, "[three]") {
+		t.Fatalf("formatted diagnostics %q exceeded detail limit", got)
+	}
+}
 
 func TestApplyAndRestoreMovesPreferredPlacementSafely(t *testing.T) {
 	serverRoot := t.TempDir()

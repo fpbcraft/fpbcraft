@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/catalog"
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/doctor"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/planning"
@@ -149,8 +150,8 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 	nextSnapshot := management.BuildSnapshot(inv, nextCatalog)
 	if nextSnapshot.Diagnostics.Summary.Blocking > 0 {
 		return ApplyResult{}, fmt.Errorf(
-			"post-apply verification found %d blocking diagnostic(s)",
-			nextSnapshot.Diagnostics.Summary.Blocking,
+			"post-apply verification found %s",
+			formatBlockingDiagnostics(nextSnapshot.Diagnostics, 5),
 		)
 	}
 
@@ -291,8 +292,8 @@ func (s *Service) RestoreBackup(ctx context.Context, backupID string) (result Re
 	nextSnapshot := management.BuildSnapshot(inv, manifest.Catalog)
 	if nextSnapshot.Diagnostics.Summary.Blocking > 0 {
 		return RestoreResult{}, fmt.Errorf(
-			"restored inventory has %d blocking diagnostic(s)",
-			nextSnapshot.Diagnostics.Summary.Blocking,
+			"restored inventory has %s",
+			formatBlockingDiagnostics(nextSnapshot.Diagnostics, 5),
 		)
 	}
 
@@ -381,25 +382,56 @@ func (s *Service) validateCurrentManagedState() error {
 	if snapshot.Diagnostics.Summary.Blocking == 0 {
 		return nil
 	}
-	messages := make([]string, 0, 3)
-	for _, finding := range snapshot.Diagnostics.Findings {
-		if finding.Level != "blocking" {
+	return fmt.Errorf("%s", formatBlockingDiagnostics(snapshot.Diagnostics, 5))
+}
+
+func formatBlockingDiagnostics(report doctor.Report, limit int) string {
+	if limit < 1 {
+		limit = 1
+	}
+	details := make([]string, 0, limit)
+	total := 0
+	for _, finding := range report.Findings {
+		if finding.Level != doctor.LevelBlocking {
 			continue
 		}
-		message := finding.Message
-		if finding.Mod != "" {
-			message = finding.Mod + ": " + message
+		total++
+		if len(details) >= limit {
+			continue
 		}
-		messages = append(messages, message)
-		if len(messages) == 3 {
-			break
+
+		context := strings.TrimSpace(finding.Mod)
+		path := strings.TrimSpace(finding.Path)
+		if path != "" {
+			if context != "" {
+				context += " (" + path + ")"
+			} else {
+				context = path
+			}
 		}
+		message := strings.TrimSpace(finding.Message)
+		if context != "" {
+			message = context + ": " + message
+		}
+		code := strings.TrimSpace(finding.Code)
+		if code != "" {
+			message = "[" + code + "] " + message
+		}
+		details = append(details, message)
 	}
-	return fmt.Errorf(
-		"%d blocking diagnostic(s): %s",
-		snapshot.Diagnostics.Summary.Blocking,
-		strings.Join(messages, "; "),
-	)
+
+	if total == 0 {
+		total = report.Summary.Blocking
+	}
+	summary := fmt.Sprintf("%d blocking diagnostic(s)", total)
+	if len(details) == 0 {
+		return summary
+	}
+	summary += ": " + strings.Join(details, "; ")
+	if total > len(details) {
+		summary += fmt.Sprintf("; +%d more", total-len(details))
+	}
+	return summary
 }
 
 func (s *Service) validatePlanCatalogState(plan planning.Plan) error {
