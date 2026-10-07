@@ -31,6 +31,8 @@ type Finding struct {
 	Code         string `json:"code"`
 	Message      string `json:"message"`
 	CandidateKey string `json:"candidate_key,omitempty"`
+	Name         string `json:"name,omitempty"`
+	Path         string `json:"path,omitempty"`
 }
 
 type Artifact struct {
@@ -303,7 +305,12 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 		if finding.Mod != "" {
 			message = finding.Mod + ": " + message
 		}
-		addBlocker(&plan, "diagnostic_"+finding.Code, "", message)
+		plan.Blockers = append(plan.Blockers, Finding{
+			Code:    "diagnostic_" + finding.Code,
+			Message: message,
+			Name:    finding.Mod,
+			Path:    finding.Path,
+		})
 	}
 
 	sort.Slice(plan.Changes, func(i, j int) bool {
@@ -314,6 +321,7 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 	})
 	coalesceSatisfiedManagedAdds(&plan, snapshot.Mods)
 	validateOperationCollisions(&plan, snapshot.Mods)
+	annotateFindingContexts(&plan, snapshot)
 	plan.Warnings = uniqueFindings(plan.Warnings)
 	plan.Blockers = uniqueFindings(plan.Blockers)
 	plan.RequiresServerStop = len(plan.Changes) > 0
@@ -364,32 +372,87 @@ func appendDependencyClosure(
 			}
 
 			mod, installed := mods[depKey]
+			aliasProvider := false
+			if !installed {
+				mod, installed, aliasProvider = findInstalledDependencyAlias(dependency, target, mods, inv)
+			}
+			if installed && dependency.Action == "add" &&
+				dependencyRequirementSatisfied(dependency, target, mod, inv) {
+				path := mod.Path
+				if strings.TrimSpace(path) == "" {
+					path = mod.Filename
+				}
+				plan.Warnings = append(plan.Warnings, Finding{
+					Code:         "dependency_already_satisfied",
+					CandidateKey: depKey,
+					Name:         name,
+					Path:         path,
+					Message: fmt.Sprintf(
+						"%s is already satisfied by the managed artifact at %s; no filesystem change is needed.",
+						name,
+						path,
+					),
+				})
+				continue
+			}
+			if installed && dependency.Action == "add" && aliasProvider {
+				plan.Blockers = append(plan.Blockers, Finding{
+					Code:         "dependency_cross_provider_version_mismatch",
+					CandidateKey: depKey,
+					Name:         name,
+					Path:         mod.Path,
+					Message: fmt.Sprintf(
+						"%s is installed through %s, but those bytes do not satisfy the exact %s dependency target. Choose the dependency version/provider explicitly instead of installing a duplicate.",
+						name,
+						mod.Provider,
+						dependency.Provider,
+					),
+				})
+				continue
+			}
+
+			effectiveGroup := dependency.AutoModpackGroup
+			if installed && dependencyCanRemainAt(dependency.Environment, mod.Deployment) {
+				deployment = mod.Deployment
+				effectiveGroup = mod.AutoModpackGroup
+			}
 			operation := FileOperation{
 				Action: "add",
-				TargetPath: filepath.ToSlash(filepath.Join(modsPath(inv, deployment, dependency.AutoModpackGroup), target.Filename)),
+				TargetPath: filepath.ToSlash(filepath.Join(modsPath(inv, deployment, effectiveGroup), target.Filename)),
 				TargetSHA512: target.SHA512,
 			}
 			installedRelease := updatecheck.Release{}
-			if dependency.Action == "update" {
+			if dependency.Action == "update" || installed {
 				if !installed {
 					addBlocker(plan, "dependency_installed_artifact_missing", depKey, "A dependency update was resolved, but the installed dependency could not be matched to the live inventory.")
 				} else {
 					operation.Action = "replace"
 					operation.CurrentPath = mod.Path
 					if mod.Deployment == deployment &&
-						(deployment != inventory.LocationClient || normalizedGroup(mod.Deployment, mod.AutoModpackGroup) == normalizedGroup(deployment, dependency.AutoModpackGroup)) {
+						(deployment != inventory.LocationClient || normalizedGroup(mod.Deployment, mod.AutoModpackGroup) == normalizedGroup(deployment, effectiveGroup)) {
 						operation.TargetPath = filepath.ToSlash(filepath.Join(filepath.Dir(mod.Path), target.Filename))
 					}
 					operation.CurrentSHA512 = mod.SHA512
 					installedRelease = updatecheck.Release{
-						ID: dependency.InstalledVersion,
-						Name: mod.Name,
+						ID:       dependency.InstalledVersion,
+						Name:     mod.Name,
 						Filename: mod.Filename,
-						SHA512: mod.SHA512,
+						SHA1:     mod.SHA1,
+						SHA512:   mod.SHA512,
+					}
+					if dependency.Action == "add" {
+						plan.Warnings = append(plan.Warnings, Finding{
+							Code:         "dependency_state_reconciled",
+							CandidateKey: depKey,
+							Name:         name,
+							Path:         mod.Path,
+							Message: fmt.Sprintf(
+								"%s appeared in the live inventory after dependency resolution. The pending review was reconciled to update that artifact instead of blocking.",
+								name,
+							),
+						})
 					}
 				}
-			} else if installed {
-				addBlocker(plan, "dependency_state_changed", depKey, "A dependency was resolved as an addition but is now present in the live inventory.")
 			}
 
 			change := Change{
@@ -409,7 +472,7 @@ func appendDependencyClosure(
 					SHA256: target.SHA256,
 					SHA512: target.SHA512,
 					Deployment: string(deployment),
-					AutoModpackGroup: normalizedGroup(deployment, dependency.AutoModpackGroup),
+					AutoModpackGroup: normalizedGroup(deployment, effectiveGroup),
 					Environment: dependency.Environment,
 					ManualDownload: target.ManualDownload,
 					ManualURL: target.ManualURL,
@@ -515,36 +578,166 @@ func normalizedGroup(deployment inventory.Location, group string) string {
 	return group
 }
 
-func coalesceSatisfiedManagedAdds(plan *Plan, mods []management.Mod) {
-	liveByPath := make(map[string]management.Mod, len(mods))
+func findInstalledDependencyAlias(
+	dependency updatecheck.Dependency,
+	target updatecheck.Release,
+	mods map[string]management.Mod,
+	inv inventory.Inventory,
+) (management.Mod, bool, bool) {
+	byPath := make(map[string]management.Mod)
 	for _, mod := range mods {
-		if strings.TrimSpace(mod.Path) == "" {
+		if strings.TrimSpace(mod.Path) == "" || mod.Management != "managed" {
 			continue
 		}
-		liveByPath[filepath.ToSlash(filepath.Clean(mod.Path))] = mod
+		byPath[filepath.ToSlash(filepath.Clean(mod.Path))] = mod
+	}
+
+	var exact *management.Mod
+	for _, mod := range byPath {
+		if !releaseMatchesManagedMod(target, mod) {
+			continue
+		}
+		if exact != nil && exact.Path != mod.Path {
+			exact = nil
+			break
+		}
+		copy := mod
+		exact = &copy
+	}
+	if exact != nil {
+		return *exact, true, exact.Provider != dependency.Provider
+	}
+
+	var matched *management.Mod
+	for _, file := range inv.Mods {
+		matches := false
+		switch dependency.Provider {
+		case "modrinth":
+			matches = file.Modrinth != nil && file.Modrinth.ProjectID == dependency.ProjectID
+		case "curseforge":
+			matches = file.CurseForge != nil &&
+				fmt.Sprintf("%d", file.CurseForge.ProjectID) == dependency.ProjectID
+		}
+		if !matches {
+			continue
+		}
+		mod, ok := byPath[filepath.ToSlash(filepath.Clean(file.Path))]
+		if !ok {
+			continue
+		}
+		if matched != nil && matched.Path != mod.Path {
+			return management.Mod{}, false, false
+		}
+		copy := mod
+		matched = &copy
+	}
+	if matched == nil {
+		return management.Mod{}, false, false
+	}
+	return *matched, true, matched.Provider != dependency.Provider
+}
+
+func dependencyRequirementSatisfied(
+	dependency updatecheck.Dependency,
+	target updatecheck.Release,
+	mod management.Mod,
+	inv inventory.Inventory,
+) bool {
+	if releaseMatchesManagedMod(target, mod) {
+		return true
+	}
+	if strings.TrimSpace(dependency.VersionID) == "" {
+		return true
+	}
+	for _, file := range inv.Mods {
+		if filepath.ToSlash(filepath.Clean(file.Path)) != filepath.ToSlash(filepath.Clean(mod.Path)) {
+			continue
+		}
+		switch dependency.Provider {
+		case "modrinth":
+			return file.Modrinth != nil &&
+				file.Modrinth.ProjectID == dependency.ProjectID &&
+				file.Modrinth.VersionID == dependency.VersionID
+		case "curseforge":
+			return file.CurseForge != nil &&
+				fmt.Sprintf("%d", file.CurseForge.ProjectID) == dependency.ProjectID &&
+				fmt.Sprintf("%d", file.CurseForge.FileID) == dependency.VersionID
+		}
+	}
+	return false
+}
+
+func releaseMatchesManagedMod(target updatecheck.Release, mod management.Mod) bool {
+	if strings.TrimSpace(target.SHA512) != "" &&
+		strings.TrimSpace(mod.SHA512) != "" &&
+		strings.EqualFold(strings.TrimSpace(target.SHA512), strings.TrimSpace(mod.SHA512)) {
+		return true
+	}
+	return strings.TrimSpace(target.SHA1) != "" &&
+		strings.TrimSpace(mod.SHA1) != "" &&
+		strings.EqualFold(strings.TrimSpace(target.SHA1), strings.TrimSpace(mod.SHA1))
+}
+
+func dependencyCanRemainAt(environment string, deployment inventory.Location) bool {
+	switch strings.ToLower(strings.TrimSpace(environment)) {
+	case "client_only", "singleplayer_only":
+		return deployment == inventory.LocationClient
+	case "server_only", "dedicated_server_only":
+		return deployment == inventory.LocationServer
+	default:
+		return true
+	}
+}
+
+func coalesceSatisfiedManagedAdds(plan *Plan, mods []management.Mod) {
+	liveByPath := make(map[string]management.Mod, len(mods))
+	liveBySHA512 := map[string]management.Mod{}
+	liveBySHA1 := map[string]management.Mod{}
+	for _, mod := range mods {
+		if strings.TrimSpace(mod.Path) != "" {
+			liveByPath[filepath.ToSlash(filepath.Clean(mod.Path))] = mod
+		}
+		if mod.Management != "managed" {
+			continue
+		}
+		if hash := strings.ToLower(strings.TrimSpace(mod.SHA512)); hash != "" {
+			liveBySHA512[hash] = mod
+		}
+		if hash := strings.ToLower(strings.TrimSpace(mod.SHA1)); hash != "" {
+			liveBySHA1[hash] = mod
+		}
 	}
 
 	changes := make([]Change, 0, len(plan.Changes))
 	for _, change := range plan.Changes {
 		operations := make([]FileOperation, 0, len(change.Operations))
 		for _, operation := range change.Operations {
-			// Only dependency-driven additions may be satisfied by an already
-			// present byte-identical managed JAR. An explicit user-requested
-			// install must retain its operation so normal occupied-target
-			// validation can reject ambiguous cross-provider ownership.
-			if change.Requested ||
-				!change.DependencyDriven ||
-				operation.Action != "add" ||
-				strings.TrimSpace(operation.TargetSHA512) == "" {
+			if change.Requested || !change.DependencyDriven || operation.Action != "add" {
 				operations = append(operations, operation)
 				continue
 			}
 
-			targetPath := filepath.ToSlash(filepath.Clean(operation.TargetPath))
-			live, occupied := liveByPath[targetPath]
-			if !occupied ||
-				live.Management != "managed" ||
-				!strings.EqualFold(strings.TrimSpace(live.SHA512), strings.TrimSpace(operation.TargetSHA512)) {
+			var (
+				live  management.Mod
+				found bool
+			)
+			if hash := strings.ToLower(strings.TrimSpace(change.Artifact.SHA512)); hash != "" {
+				live, found = liveBySHA512[hash]
+			}
+			if !found {
+				if hash := strings.ToLower(strings.TrimSpace(change.Artifact.SHA1)); hash != "" {
+					live, found = liveBySHA1[hash]
+				}
+			}
+			if !found {
+				targetPath := filepath.ToSlash(filepath.Clean(operation.TargetPath))
+				if candidate, occupied := liveByPath[targetPath]; occupied &&
+					candidate.Management == "managed" &&
+					releaseMatchesManagedMod(change.Target, candidate) {
+					live, found = candidate, true
+				}
+			}
+			if !found {
 				operations = append(operations, operation)
 				continue
 			}
@@ -554,12 +747,14 @@ func coalesceSatisfiedManagedAdds(plan *Plan, mods []management.Mod) {
 				name = live.Filename
 			}
 			plan.Warnings = append(plan.Warnings, Finding{
-				Code: "dependency_already_satisfied",
+				Code:         "dependency_already_satisfied",
 				CandidateKey: change.CandidateKey,
+				Name:         name,
+				Path:         live.Path,
 				Message: fmt.Sprintf(
 					"Provider metadata described %s as an addition, but the exact required managed bytes are already present at %s; no filesystem change is needed for this dependency.",
 					name,
-					targetPath,
+					live.Path,
 				),
 			})
 		}
@@ -570,6 +765,62 @@ func coalesceSatisfiedManagedAdds(plan *Plan, mods []management.Mod) {
 		changes = append(changes, change)
 	}
 	plan.Changes = changes
+}
+
+func annotateFindingContexts(plan *Plan, snapshot management.Snapshot) {
+	changes := make(map[string]Change, len(plan.Changes))
+	for _, change := range plan.Changes {
+		changes[change.CandidateKey] = change
+	}
+	mods := make(map[string]management.Mod, len(snapshot.Mods))
+	for _, mod := range snapshot.Mods {
+		mods[mod.ID] = mod
+		if mod.Provider != "" && mod.ProjectID != "" {
+			key := mod.Provider + ":" + mod.ProjectID
+			if _, exists := mods[key]; !exists {
+				mods[key] = mod
+			}
+		}
+	}
+
+	annotate := func(findings []Finding) {
+		for index := range findings {
+			finding := &findings[index]
+			if change, ok := changes[finding.CandidateKey]; ok {
+				if finding.Name == "" {
+					finding.Name = change.Name
+				}
+				if finding.Path == "" {
+					finding.Path = findingPathForChange(change)
+				}
+				continue
+			}
+			if mod, ok := mods[finding.CandidateKey]; ok {
+				if finding.Name == "" {
+					finding.Name = mod.Name
+				}
+				if finding.Path == "" {
+					finding.Path = mod.Path
+				}
+			}
+		}
+	}
+	annotate(plan.Blockers)
+	annotate(plan.Warnings)
+}
+
+func findingPathForChange(change Change) string {
+	for _, operation := range change.Operations {
+		if strings.TrimSpace(operation.CurrentPath) != "" {
+			return operation.CurrentPath
+		}
+	}
+	for _, operation := range change.Operations {
+		if strings.TrimSpace(operation.TargetPath) != "" {
+			return operation.TargetPath
+		}
+	}
+	return change.Artifact.Filename
 }
 
 func validateOperationCollisions(plan *Plan, mods []management.Mod) {

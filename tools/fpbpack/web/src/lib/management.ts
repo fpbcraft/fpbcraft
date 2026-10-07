@@ -305,6 +305,8 @@ export interface PlanFinding {
   code: string;
   message: string;
   candidate_key?: string;
+  name?: string;
+  path?: string;
 }
 
 export interface PlanArtifact {

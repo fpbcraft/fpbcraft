@@ -49,10 +49,16 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 			if change.Artifact.ManualURL != "" {
 				message += " Manual download: " + change.Artifact.ManualURL
 			}
+			path := change.Artifact.Filename
+			if len(change.Operations) > 0 {
+				path = change.Operations[0].TargetPath
+			}
 			plan.Blockers = append(plan.Blockers, planning.Finding{
-				Code: "manual_download_required",
+				Code:         "manual_download_required",
 				CandidateKey: change.CandidateKey,
-				Message: message,
+				Name:         change.Name,
+				Path:         path,
+				Message:      message,
 			})
 			continue
 		}
