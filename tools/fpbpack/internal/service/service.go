@@ -387,10 +387,12 @@ func (s *Service) Refresh(ctx context.Context) (err error) {
 	s.setRefreshProgress("providers", "Refreshing provider metadata", 0, len(acceptedCatalog.Managed), 20)
 	updateCtx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
+	loaders := compatibleLoadersForInventory(s.options.Loader, inv)
 	report := updatecheck.Discover(updateCtx, acceptedCatalog, updatecheck.Options{
-		Minecraft:       s.options.Minecraft,
-		Mode:            updatecheck.RefreshModeBackground,
-		Loader:          s.options.Loader,
+		Minecraft:         s.options.Minecraft,
+		Mode:              updatecheck.RefreshModeBackground,
+		Loader:            loaders[0],
+		AdditionalLoaders: additionalLoaders(loaders),
 		ModrinthBaseURL: s.options.ModrinthBaseURL,
 		CurseForgeBaseURL: s.options.CurseForgeBaseURL,
 		CurseForgeAPIKey: func() string {
@@ -485,10 +487,12 @@ func (s *Service) CheckUpdates(ctx context.Context) (err error) {
 	s.setRefreshProgress("providers", "Checking providers for updates", 0, len(acceptedCatalog.Managed), 5)
 	updateCtx, cancel := context.WithTimeout(ctx, 15*time.Minute)
 	defer cancel()
+	loaders := s.catalogCompatibleLoaders()
 	report := updatecheck.Discover(updateCtx, acceptedCatalog, updatecheck.Options{
-		Minecraft:       s.options.Minecraft,
-		Mode:            updatecheck.RefreshModeInteractive,
-		Loader:          s.options.Loader,
+		Minecraft:         s.options.Minecraft,
+		Mode:              updatecheck.RefreshModeInteractive,
+		Loader:            loaders[0],
+		AdditionalLoaders: additionalLoaders(loaders),
 		ModrinthBaseURL: s.options.ModrinthBaseURL,
 		CurseForgeBaseURL: s.options.CurseForgeBaseURL,
 		CurseForgeAPIKey: func() string {

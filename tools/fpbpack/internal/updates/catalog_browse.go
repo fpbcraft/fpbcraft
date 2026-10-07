@@ -69,6 +69,7 @@ func (client *ModrinthClient) SearchCatalogProjects(
 			ProjectURL:  "https://modrinth.com/mod/" + hit.Slug,
 			Downloads:   hit.Downloads,
 			Environment: append([]string(nil), hit.Environment...),
+			Loaders:     []string{strings.ToLower(strings.TrimSpace(loader))},
 		})
 	}
 	return result, nil
@@ -106,6 +107,7 @@ func (client *ModrinthClient) CatalogVersions(
 			Environment: version.Environment,
 			Changelog:   strings.TrimSpace(version.Changelog),
 			SHA512:      release.SHA512,
+			Loaders:     append([]string(nil), version.Loaders...),
 		})
 	}
 	return result, nil
@@ -128,8 +130,12 @@ func (client *ModrinthClient) CatalogCandidate(
 	if version.ProjectID != projectID {
 		return Candidate{}, fmt.Errorf("Modrinth version %s belongs to project %s, not %s", versionID, version.ProjectID, projectID)
 	}
-	if rejected := rejectionReasons(version, opts.Minecraft, opts.Loader); len(rejected) > 0 {
-		return Candidate{}, fmt.Errorf("selected Modrinth version is not compatible with Minecraft %s and %s", opts.Minecraft, opts.Loader)
+	if rejected := rejectionReasonsForOptions(version, opts); len(rejected) > 0 {
+		return Candidate{}, fmt.Errorf(
+			"selected Modrinth version is not compatible with Minecraft %s and an enabled loader (%s)",
+			opts.Minecraft,
+			strings.Join(compatibleLoaders(opts), ", "),
+		)
 	}
 	projects, err := client.ListProjects(ctx, []string{projectID})
 	if err != nil {
@@ -174,6 +180,12 @@ func (client *ModrinthClient) CatalogCandidate(
 		promote(&candidate, ClassificationBlocked, Reason{
 			Code:    "environment_mismatch",
 			Message: "The selected release environment is incompatible with the chosen placement.",
+		})
+	}
+	if usesAdditionalLoader(version, opts) {
+		promote(&candidate, ClassificationReview, Reason{
+			Code: "connector_loader",
+			Message: "This selected release is a Fabric build enabled through Sinytra Connector.",
 		})
 	}
 	if version.VersionType != "" && version.VersionType != "release" {
@@ -247,6 +259,7 @@ func (client *CurseForgeClient) SearchCatalogProjects(
 			IconURL:    project.Logo.ThumbnailURL,
 			ProjectURL: projectURL,
 			Downloads:  project.DownloadCount,
+			Loaders:    []string{strings.ToLower(strings.TrimSpace(loader))},
 		})
 	}
 	return result, nil
@@ -281,6 +294,7 @@ func (client *CurseForgeClient) CatalogVersions(
 			Channel:     curseForgeReleaseType(file.ReleaseType),
 			Filename:    file.FileName,
 			SHA1:        curseForgeSHA1(file),
+			Loaders:     []string{strings.ToLower(strings.TrimSpace(loader))},
 		})
 	}
 	return result, nil
@@ -300,7 +314,7 @@ func (client *CurseForgeClient) CatalogCandidate(
 	if err != nil {
 		return Candidate{}, err
 	}
-	files, err := client.ListFiles(ctx, projectID, opts.Minecraft, opts.Loader)
+	files, loadersByFile, err := listCurseForgeFilesForOptions(ctx, client, projectID, opts)
 	if err != nil {
 		return Candidate{}, err
 	}
@@ -366,6 +380,13 @@ func (client *CurseForgeClient) CatalogCandidate(
 			Code:    "explicit_version_selection",
 			Message: "This exact CurseForge file was selected explicitly in Catalog Management.",
 		}},
+	}
+	if loader := loadersByFile[targetFile.ID]; loader != "" &&
+		!strings.EqualFold(loader, opts.Loader) {
+		promote(&candidate, ClassificationReview, Reason{
+			Code: "connector_loader",
+			Message: "This selected CurseForge file is a Fabric build enabled through Sinytra Connector.",
+		})
 	}
 	if release.Channel != "" && release.Channel != "release" {
 		promote(&candidate, ClassificationReview, Reason{

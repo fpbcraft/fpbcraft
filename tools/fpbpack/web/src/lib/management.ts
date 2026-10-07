@@ -46,6 +46,7 @@ export interface CatalogProject {
   project_url?: string;
   downloads?: number;
   environment?: string[];
+  loaders?: string[];
   installed: boolean;
   installed_key?: string;
 }
@@ -63,6 +64,7 @@ export interface CatalogVersion {
   sha512?: string;
   manual_download?: boolean;
   manual_url?: string;
+  loaders?: string[];
 }
 
 export interface RuntimeLogEntry {

@@ -774,9 +774,11 @@ func (s *Service) setPreferredPlacement(path, placement string, autoModpackGroup
 
 func (s *Service) refreshSingleManagedEntry(ctx context.Context, entry catalog.Entry) error {
 	key := catalog.EntryKey(entry)
+	loaders := s.catalogCompatibleLoaders()
 	report := updatecheck.Discover(ctx, catalog.Report{Managed: []catalog.Entry{entry}}, updatecheck.Options{
 		Minecraft: s.options.Minecraft,
-		Loader: s.options.Loader,
+		Loader: loaders[0],
+		AdditionalLoaders: additionalLoaders(loaders),
 		Mode: updatecheck.RefreshModeInteractive,
 		ModrinthBaseURL: s.options.ModrinthBaseURL,
 		CurseForgeBaseURL: s.options.CurseForgeBaseURL,

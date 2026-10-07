@@ -57,7 +57,7 @@ func discoverCurseForgeCandidate(
 	candidate.Installed = releaseFromCurseForge(current, "")
 	candidate.Installed.SHA512 = entry.SHA512
 
-	files, err := client.ListFiles(ctx, entry.ProjectID, opts.Minecraft, opts.Loader)
+	files, loadersByFile, err := listCurseForgeFilesForOptions(ctx, client, entry.ProjectID, opts)
 	if err != nil {
 		candidate.Classification = ClassificationBlocked
 		candidate.Reasons = []Reason{{Code: "provider_lookup_failed", Message: err.Error()}}
@@ -99,6 +99,13 @@ func discoverCurseForgeCandidate(
 		}
 	}
 	candidate.Target = &target
+	if loader := loadersByFile[targetFile.ID]; loader != "" &&
+		!strings.EqualFold(loader, opts.Loader) {
+		promote(&candidate, ClassificationReview, Reason{
+			Code: "connector_loader",
+			Message: "The newest compatible CurseForge file is a Fabric build enabled through Sinytra Connector.",
+		})
+	}
 	if target.SHA1 == "" {
 		promote(&candidate, ClassificationBlocked, Reason{
 			Code: "target_checksum_missing",
@@ -196,7 +203,12 @@ func (r curseForgeDependencyResolver) resolve(
 			result.Name = projectID
 		}
 
-		files, err := r.client.ListFiles(r.ctx, projectID, r.opts.Minecraft, r.opts.Loader)
+		files, loadersByFile, err := listCurseForgeFilesForOptions(
+			r.ctx,
+			r.client,
+			projectID,
+			r.opts,
+		)
 		if err != nil {
 			result.Action = "unresolved"
 			promote(candidate, ClassificationBlocked, Reason{
@@ -223,6 +235,13 @@ func (r curseForgeDependencyResolver) resolve(
 			return compatible[i].FileDate.After(compatible[j].FileDate)
 		})
 		targetFile := compatible[0]
+		if loader := loadersByFile[targetFile.ID]; loader != "" &&
+			!strings.EqualFold(loader, r.opts.Loader) {
+			promote(candidate, ClassificationReview, Reason{
+				Code: "required_dependency_connector_loader",
+				Message: "Required dependency " + result.Name + " resolves to a Fabric build through Sinytra Connector.",
+			})
+		}
 		downloadURL, downloadErr := r.client.DownloadURL(r.ctx, projectID, targetFile)
 		release := releaseFromCurseForge(targetFile, downloadURL)
 		if downloadErr != nil {
@@ -287,6 +306,33 @@ func (r curseForgeDependencyResolver) resolve(
 		result.Action = "none"
 	}
 	return result
+}
+
+func listCurseForgeFilesForOptions(
+	ctx context.Context,
+	client *CurseForgeClient,
+	projectID string,
+	opts Options,
+) ([]curseForgeFile, map[int]string, error) {
+	seen := map[int]curseForgeFile{}
+	loadersByFile := map[int]string{}
+	for _, loader := range compatibleLoaders(opts) {
+		files, err := client.ListFiles(ctx, projectID, opts.Minecraft, loader)
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, file := range files {
+			if _, exists := seen[file.ID]; !exists {
+				seen[file.ID] = file
+				loadersByFile[file.ID] = loader
+			}
+		}
+	}
+	result := make([]curseForgeFile, 0, len(seen))
+	for _, file := range seen {
+		result = append(result, file)
+	}
+	return result, loadersByFile, nil
 }
 
 func isCurseForgeManualDownload(err error) bool {
