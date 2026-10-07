@@ -16,6 +16,7 @@ import {
   type ManagementMod,
   type ManagementState,
   type ManagementStatus,
+  type PendingChanges,
   type UpdateReport,
 } from '@/lib/management';
 
@@ -46,10 +47,11 @@ async function fetchApi<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 async function loadManagementState(): Promise<ManagementState> {
-  const [status, modsResponse, diagnostics] = await Promise.all([
+  const [status, modsResponse, diagnostics, pending] = await Promise.all([
     fetchApi<ManagementStatus>('/api/status'),
     fetchApi<{mods: ManagementMod[]}>('/api/mods'),
     fetchApi<DiagnosticReport>('/api/diagnostics'),
+    fetchApi<PendingChanges>('/api/pending-changes'),
   ]);
 
   let updates = emptyUpdateReport();
@@ -76,6 +78,10 @@ async function loadManagementState(): Promise<ManagementState> {
     updates: {
       ...updates,
       candidates: Array.isArray(updates.candidates) ? updates.candidates : [],
+    },
+    pending: {
+      ...pending,
+      changes: Array.isArray(pending.changes) ? pending.changes : [],
     },
     source: 'api',
     errors,

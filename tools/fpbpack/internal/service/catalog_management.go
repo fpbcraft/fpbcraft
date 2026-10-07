@@ -114,104 +114,111 @@ func (s *Service) CatalogVersions(
 	}
 }
 
-func (s *Service) CreateCatalogPlan(ctx context.Context, request CatalogPlanRequest) (planning.Plan, error) {
+func normalizeCatalogPlanRequest(request CatalogPlanRequest) CatalogPlanRequest {
 	request.Action = strings.ToLower(strings.TrimSpace(request.Action))
 	request.Provider = strings.ToLower(strings.TrimSpace(request.Provider))
 	request.ProjectID = strings.TrimSpace(request.ProjectID)
 	request.VersionID = strings.TrimSpace(request.VersionID)
 	request.Path = normalizeCatalogPath(request.Path)
 	request.AutoModpackGroup = strings.TrimSpace(request.AutoModpackGroup)
+	return request
+}
 
-	if !s.refreshMu.TryLock() {
-		return planning.Plan{}, fmt.Errorf("provider refresh is in progress; retry catalog planning after it finishes")
-	}
-	defer s.refreshMu.Unlock()
-	s.catalogMu.Lock()
-	defer s.catalogMu.Unlock()
-
-	s.mu.RLock()
-	snapshot := s.snapshot
-	cat := s.state.Catalog
-	s.mu.RUnlock()
+func (s *Service) catalogCandidateForPlanRequest(
+	ctx context.Context,
+	request CatalogPlanRequest,
+	cat catalog.Report,
+) (updatecheck.Candidate, CatalogPlanRequest, error) {
+	request = normalizeCatalogPlanRequest(request)
 
 	var candidate updatecheck.Candidate
 	switch request.Action {
 	case "install":
 		if request.Provider != "modrinth" && request.Provider != "curseforge" {
-			return planning.Plan{}, fmt.Errorf("install supports Modrinth or CurseForge projects")
+			return updatecheck.Candidate{}, request, fmt.Errorf("install supports Modrinth or CurseForge projects")
 		}
 		if request.ProjectID == "" || request.VersionID == "" {
-			return planning.Plan{}, fmt.Errorf("provider project and exact version are required")
+			return updatecheck.Candidate{}, request, fmt.Errorf("provider project and exact version are required")
 		}
 		for _, entry := range cat.Managed {
 			if entry.Provider == request.Provider && entry.ProjectID == request.ProjectID {
-				return planning.Plan{}, fmt.Errorf("%s project %s is already managed; use Change version instead", request.Provider, request.ProjectID)
+				return updatecheck.Candidate{}, request, fmt.Errorf("%s project %s is already managed; use Change version instead", request.Provider, request.ProjectID)
 			}
 		}
 		placement, err := normalizeCatalogPlacement(request.Placement, inventory.LocationServer)
 		if err != nil {
-			return planning.Plan{}, err
+			return updatecheck.Candidate{}, request, err
 		}
 		candidate, err = s.catalogCandidate(ctx, request.Provider, request.ProjectID, request.VersionID, placement, "install", nil, cat)
 		if err != nil {
-			return planning.Plan{}, err
+			return updatecheck.Candidate{}, request, err
 		}
+		request.Placement = placement
 		candidate.AutoModpackGroup = normalizeAutoModpackGroup(placement, request.AutoModpackGroup)
+		request.AutoModpackGroup = candidate.AutoModpackGroup
 		inheritClientDependencyGroups(candidate.Dependencies, candidate.AutoModpackGroup)
 
 	case "version":
 		entry, ok := managedCatalogEntryByPath(cat, request.Path)
 		if !ok {
-			return planning.Plan{}, fmt.Errorf("managed artifact %q was not found", request.Path)
+			return updatecheck.Candidate{}, request, fmt.Errorf("managed artifact %q was not found", request.Path)
 		}
 		if entry.Provider != "modrinth" && entry.Provider != "curseforge" {
-			return planning.Plan{}, fmt.Errorf("exact version browsing currently supports Modrinth and CurseForge managed artifacts")
+			return updatecheck.Candidate{}, request, fmt.Errorf("exact version browsing currently supports Modrinth and CurseForge managed artifacts")
 		}
 		if request.VersionID == "" {
-			return planning.Plan{}, fmt.Errorf("exact version is required")
+			return updatecheck.Candidate{}, request, fmt.Errorf("exact version is required")
 		}
 		placement, err := normalizeCatalogPlacement(request.Placement, entry.Deployment)
 		if err != nil {
-			return planning.Plan{}, err
+			return updatecheck.Candidate{}, request, err
 		}
 		candidate, err = s.catalogCandidate(ctx, entry.Provider, entry.ProjectID, request.VersionID, placement, "version", &entry, cat)
 		if err != nil {
-			return planning.Plan{}, err
+			return updatecheck.Candidate{}, request, err
 		}
 		group := request.AutoModpackGroup
 		if strings.TrimSpace(group) == "" {
 			group = entry.AutoModpackGroup
 		}
+		request.Provider = entry.Provider
+		request.ProjectID = entry.ProjectID
+		request.Placement = placement
 		candidate.AutoModpackGroup = normalizeAutoModpackGroup(placement, group)
+		request.AutoModpackGroup = candidate.AutoModpackGroup
 		inheritClientDependencyGroups(candidate.Dependencies, candidate.AutoModpackGroup)
 
 	case "remove":
 		entry, ok := managedCatalogEntryByPath(cat, request.Path)
 		if !ok {
-			return planning.Plan{}, fmt.Errorf("managed artifact %q was not found", request.Path)
+			return updatecheck.Candidate{}, request, fmt.Errorf("managed artifact %q was not found", request.Path)
 		}
 		if entry.Provider != "modrinth" && entry.Provider != "curseforge" {
-			return planning.Plan{}, fmt.Errorf(
+			return updatecheck.Candidate{}, request, fmt.Errorf(
 				"safe removal currently requires Modrinth or CurseForge dependency metadata",
 			)
 		}
 		requiredBy, err := s.currentRequiredBy(ctx, entry, cat)
 		if err != nil {
-			return planning.Plan{}, err
+			return updatecheck.Candidate{}, request, err
 		}
 		versionID := entry.VersionID
 		if entry.Provider == "curseforge" && entry.FileID != 0 {
 			versionID = strconv.FormatUint(uint64(entry.FileID), 10)
 		}
+		request.Provider = entry.Provider
+		request.ProjectID = entry.ProjectID
+		request.Placement = entry.Deployment
+		request.AutoModpackGroup = normalizeAutoModpackGroup(entry.Deployment, entry.AutoModpackGroup)
 		candidate = updatecheck.Candidate{
-			Key:            catalog.EntryKey(entry),
-			Provider:       entry.Provider,
-			ProjectID:      entry.ProjectID,
-			Name:           entry.Name,
-			Side:           entry.Side,
-			Deployment:     entry.Deployment,
-			AutoModpackGroup: normalizeAutoModpackGroup(entry.Deployment, entry.AutoModpackGroup),
-			Environment:    entry.Environment,
+			Key:              catalog.EntryKey(entry),
+			Provider:         entry.Provider,
+			ProjectID:        entry.ProjectID,
+			Name:             entry.Name,
+			Side:             entry.Side,
+			Deployment:       entry.Deployment,
+			AutoModpackGroup: request.AutoModpackGroup,
+			Environment:      entry.Environment,
 			Installed: updatecheck.Release{
 				ID:       versionID,
 				Number:   versionID,
@@ -231,7 +238,28 @@ func (s *Service) CreateCatalogPlan(ctx context.Context, request CatalogPlanRequ
 		}
 
 	default:
-		return planning.Plan{}, fmt.Errorf("unsupported catalog action %q", request.Action)
+		return updatecheck.Candidate{}, request, fmt.Errorf("unsupported catalog action %q", request.Action)
+	}
+
+	return candidate, request, nil
+}
+
+func (s *Service) CreateCatalogPlan(ctx context.Context, request CatalogPlanRequest) (planning.Plan, error) {
+	if !s.refreshMu.TryLock() {
+		return planning.Plan{}, fmt.Errorf("provider refresh is in progress; retry catalog planning after it finishes")
+	}
+	defer s.refreshMu.Unlock()
+	s.catalogMu.Lock()
+	defer s.catalogMu.Unlock()
+
+	s.mu.RLock()
+	snapshot := s.snapshot
+	cat := s.state.Catalog
+	s.mu.RUnlock()
+
+	candidate, _, err := s.catalogCandidateForPlanRequest(ctx, request, cat)
+	if err != nil {
+		return planning.Plan{}, err
 	}
 
 	now := time.Now().UTC()

@@ -9,6 +9,7 @@ import {
   History,
   Home,
   PackageSearch,
+  ListChecks,
   ScrollText,
   Settings,
   ShieldCheck,
@@ -20,6 +21,7 @@ const nav = [
   {href: '/', label: 'Overview', icon: Home},
   {href: '/updates', label: 'Updates', icon: PackageSearch},
   {href: '/mods', label: 'Mods', icon: Boxes},
+  {href: '/pending', label: 'Pending changes', icon: ListChecks},
   {href: '/automodpack', label: 'AutoModpack', icon: Cable},
   {href: '/history', label: 'History', icon: History},
   {href: '/tools', label: 'Tools', icon: Terminal},
@@ -63,6 +65,11 @@ export function Shell({children}: {children: ReactNode}) {
                 >
                   <Icon size={16} strokeWidth={1.8} aria-hidden="true" />
                   <span>{item.label}</span>
+                  {item.href === '/pending' && state.pending.changes.length > 0 ? (
+                    <span className="badge badge-primary badge-xs ml-auto">
+                      {state.pending.changes.length}
+                    </span>
+                  ) : null}
                 </Link>
               );
             })}
@@ -101,7 +108,7 @@ export function Shell({children}: {children: ReactNode}) {
             ) : null}
             <div className="mt-2 flex items-center gap-2 text-[0.7rem] text-base-content/35">
               <ShieldCheck size={13} aria-hidden="true" />
-              <span>Verified plans · protected Apply</span>
+              <span>Verified changes · protected Apply</span>
             </div>
           </div>
         </div>

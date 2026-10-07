@@ -2,15 +2,15 @@
 
 import {useEffect, useMemo, useState} from 'react';
 import {ExternalLink, PackagePlus, Search, X} from 'lucide-react';
-import {useRouter} from 'next/navigation';
 import {api} from '@/lib/api';
+import {useManagement} from '@/components/management-provider';
 import {Pill, formatDate} from '@/components/ui';
 import type {
   CatalogProject,
   CatalogVersion,
   AutoModpackStatus,
   ManagementMod,
-  UpdatePlan,
+  PendingChanges,
 } from '@/lib/management';
 
 type Provider = 'modrinth' | 'curseforge';
@@ -25,7 +25,7 @@ export function CatalogManagerDialog({
   mod?: ManagementMod;
   onClose: () => void;
 }) {
-  const router = useRouter();
+  const {reload} = useManagement();
   const fixedProvider =
     mod?.provider === 'modrinth' || mod?.provider === 'curseforge'
       ? mod.provider
@@ -46,7 +46,7 @@ export function CatalogManagerDialog({
   const [channel, setChannel] = useState<'all' | 'release' | 'beta' | 'alpha'>('release');
   const [searching, setSearching] = useState(false);
   const [loadingVersions, setLoadingVersions] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const [staging, setStaging] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -190,12 +190,12 @@ export function CatalogManagerDialog({
     }
   };
 
-  const createPlan = async () => {
+  const stageChange = async () => {
     if (!selectedProject || !selectedVersionID) return;
-    setCreating(true);
+    setStaging(true);
     setError(null);
     try {
-      const plan = await api<UpdatePlan>('/api/catalog/plans', {
+      await api<PendingChanges>('/api/pending-changes/catalog', {
         method: 'POST',
         body: JSON.stringify(
           mode === 'install'
@@ -216,12 +216,12 @@ export function CatalogManagerDialog({
               },
         ),
       });
+      await reload({silent: true});
       onClose();
-      router.push('/review?id=' + encodeURIComponent(plan.id));
     } catch (value: unknown) {
       setError(value instanceof Error ? value.message : String(value));
     } finally {
-      setCreating(false);
+      setStaging(false);
     }
   };
 
@@ -236,8 +236,8 @@ export function CatalogManagerDialog({
             </h2>
             <p className="mt-1 text-sm text-base-content/55">
               {mode === 'install'
-                ? 'Search compatible provider projects, choose an exact release, then review the verified plan before anything changes.'
-                : 'Choose an exact compatible provider release. Downgrades and reinstalls use the same Review → Apply → Restore path.'}
+                ? 'Search compatible provider projects, choose an exact release, then add it to your pending changes.'
+                : 'Choose an exact compatible provider release. It will replace any pending update/version change for this mod.'}
             </p>
           </div>
           <button className="btn btn-sm btn-ghost" type="button" onClick={onClose}>
@@ -507,7 +507,7 @@ export function CatalogManagerDialog({
         <div className="modal-action items-center">
           {selectedVersion?.manual_download ? (
             <span className="mr-auto text-xs text-warning">
-              This release requires a manual provider download during Review.
+              This release will require a manual provider download before Apply.
             </span>
           ) : null}
           <button className="btn btn-ghost" type="button" onClick={onClose}>
@@ -516,11 +516,11 @@ export function CatalogManagerDialog({
           <button
             className="btn btn-primary"
             type="button"
-            disabled={creating || !selectedProject || !selectedVersionID}
-            onClick={() => void createPlan()}
+            disabled={staging || !selectedProject || !selectedVersionID}
+            onClick={() => void stageChange()}
           >
-            {creating ? <span className="loading loading-spinner loading-xs" /> : <PackagePlus size={14} />}
-            Review plan
+            {staging ? <span className="loading loading-spinner loading-xs" /> : <PackagePlus size={14} />}
+            Add to pending changes
           </button>
         </div>
       </div>

@@ -40,7 +40,7 @@ export default function HistoryPage() {
     setRestorePlan(null);
     setError(null);
     if (!event.plan_id) {
-      setError('This restore point has no linked plan to review.');
+      setError('This restore point has no linked change set to review.');
       return;
     }
     setRestorePlanLoading(true);

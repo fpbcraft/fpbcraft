@@ -59,10 +59,18 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 		return ApplyResult{}, err
 	}
 	if plan.Status != planning.StatusReady || !plan.Verified {
-		return ApplyResult{}, fmt.Errorf("plan %s is not ready and verified", plan.ID)
+		return ApplyResult{}, fmt.Errorf("reviewed changes %s are not ready and verified", plan.ID)
 	}
 	if plan.AppliedAt != nil {
-		return ApplyResult{}, fmt.Errorf("plan %s was already applied at %s", plan.ID, plan.AppliedAt.UTC().Format(time.RFC3339))
+		return ApplyResult{}, fmt.Errorf("reviewed changes %s were already applied at %s", plan.ID, plan.AppliedAt.UTC().Format(time.RFC3339))
+	}
+	if plan.PendingRevision != 0 {
+		s.mu.RLock()
+		pending := clonePendingChanges(s.state.PendingChanges)
+		s.mu.RUnlock()
+		if pending.ReviewedPlanID != plan.ID || pending.Revision != plan.PendingRevision {
+			return ApplyResult{}, fmt.Errorf("reviewed changes are stale because pending changes were edited or discarded; review the current pending changes again")
+		}
 	}
 	if err := s.requireServerStopped(ctx); err != nil {
 		return ApplyResult{}, err
@@ -71,7 +79,7 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 		return ApplyResult{}, fmt.Errorf("live management state is not clean: %w", err)
 	}
 	if err := s.validatePlanCatalogState(plan); err != nil {
-		return ApplyResult{}, fmt.Errorf("plan no longer matches accepted management state: %w", err)
+		return ApplyResult{}, fmt.Errorf("reviewed changes no longer match accepted management state: %w", err)
 	}
 
 	// Slice 2 may have persisted a ready plan without a restore manifest when
@@ -81,7 +89,7 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 		return ApplyResult{}, fmt.Errorf("prepare restore point: %w", err)
 	}
 	if plan.BackupID == "" {
-		return ApplyResult{}, fmt.Errorf("plan has no restore point")
+		return ApplyResult{}, fmt.Errorf("reviewed changes have no restore point")
 	}
 	if err := writeJSONAtomic(filepath.Join(s.options.StateDir, "plans", plan.ID+".json"), plan); err != nil {
 		return ApplyResult{}, fmt.Errorf("persist restore-point link: %w", err)
@@ -93,11 +101,11 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 		return ApplyResult{}, err
 	}
 	if manifest.PlanID != plan.ID {
-		return ApplyResult{}, fmt.Errorf("restore point %s belongs to a different plan", manifest.ID)
+		return ApplyResult{}, fmt.Errorf("restore point %s belongs to a different change set", manifest.ID)
 	}
 
 	if err := s.validatePlanLiveState(plan); err != nil {
-		return ApplyResult{}, fmt.Errorf("plan is stale: %w", err)
+		return ApplyResult{}, fmt.Errorf("reviewed changes are stale: %w", err)
 	}
 	staged, err := s.stagePlanTargets(plan)
 	if err != nil {
@@ -149,6 +157,14 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 	nextState := previousState
 	nextState.Catalog = nextCatalog
 	stateChangedAt := time.Now().UTC()
+	if nextState.PendingChanges.ReviewedPlanID == plan.ID {
+		nextState.PendingChanges = PendingChanges{
+			SchemaVersion: PendingChangesSchemaVersion,
+			Revision:      nextState.PendingChanges.Revision + 1,
+			UpdatedAt:     &stateChangedAt,
+			Changes:       []PendingChange{},
+		}
+	}
 	nextState.UpdatedAt = stateChangedAt
 	if planTouchesAutoModpack(plan) {
 		nextState.AutoModpack.PendingPublish = true
@@ -404,15 +420,15 @@ func (s *Service) validatePlanCatalogState(plan planning.Plan) error {
 				}
 				if operation.CurrentSHA512 != "" &&
 					!strings.EqualFold(entry.SHA512, operation.CurrentSHA512) {
-					return fmt.Errorf("%s accepted artifact hash changed after the plan was created", change.Name)
+					return fmt.Errorf("%s accepted artifact hash changed after these changes were reviewed", change.Name)
 				}
 				if operation.CurrentPath != "" && !sourcesContainPath(entry.SourcePaths, operation.CurrentPath) {
-					return fmt.Errorf("%s accepted source path changed after the plan was created", change.Name)
+					return fmt.Errorf("%s accepted source path changed after these changes were reviewed", change.Name)
 				}
 				if operation.Action == "replace" {
 					if expected := inventory.Location(change.Artifact.Deployment); expected != "" && entry.Deployment != expected {
 						return fmt.Errorf(
-							"%s preferred placement changed from %s to %s after the plan was created",
+							"%s preferred placement changed from %s to %s after these changes were reviewed",
 							change.Name,
 							expected,
 							entry.Deployment,
@@ -423,7 +439,7 @@ func (s *Service) validatePlanCatalogState(plan planning.Plan) error {
 						currentGroup := normalizeAutoModpackGroup(inventory.LocationClient, entry.AutoModpackGroup)
 						if expectedGroup != currentGroup {
 							return fmt.Errorf(
-								"%s preferred AutoModpack group changed from %s to %s after the plan was created",
+								"%s preferred AutoModpack group changed from %s to %s after these changes were reviewed",
 								change.Name,
 								expectedGroup,
 								currentGroup,
@@ -433,7 +449,7 @@ func (s *Service) validatePlanCatalogState(plan planning.Plan) error {
 				}
 			case "add":
 				if exists {
-					return fmt.Errorf("%s is now already managed; regenerate the plan", change.Name)
+					return fmt.Errorf("%s is now already managed; review the pending changes again", change.Name)
 				}
 			default:
 				return fmt.Errorf("%s has unsupported operation %q", change.Name, operation.Action)
@@ -488,7 +504,7 @@ func (s *Service) validatePlanLiveState(plan planning.Plan) error {
 			}
 			cachePath, ok := cacheByHash[strings.ToLower(operation.TargetSHA512)]
 			if !ok {
-				return fmt.Errorf("%s verified cached artifact is missing from the plan", change.Name)
+				return fmt.Errorf("%s verified cached artifact is missing from the reviewed changes", change.Name)
 			}
 			hash, err := sha512File(cachePath)
 			if err != nil {
@@ -678,7 +694,7 @@ func (s *Service) validateAppliedStateForRestore(plan planning.Plan) error {
 			path := filepath.Join(s.options.ServerRoot, relative)
 			if operation.Action == "remove" {
 				if _, err := os.Stat(path); err == nil {
-					return fmt.Errorf("%s was recreated after the removal plan was applied", operation.TargetPath)
+					return fmt.Errorf("%s was recreated after the removal was applied", operation.TargetPath)
 				} else if !os.IsNotExist(err) {
 					return err
 				}
@@ -689,7 +705,7 @@ func (s *Service) validateAppliedStateForRestore(plan planning.Plan) error {
 				return fmt.Errorf("%s: %w", operation.TargetPath, err)
 			}
 			if !strings.EqualFold(hash, operation.TargetSHA512) {
-				return fmt.Errorf("%s no longer matches the applied plan", operation.TargetPath)
+				return fmt.Errorf("%s no longer matches the applied change set", operation.TargetPath)
 			}
 		}
 	}

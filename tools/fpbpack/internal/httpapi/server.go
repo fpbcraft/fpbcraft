@@ -24,6 +24,12 @@ type CatalogLoader func() (catalog.Report, error)
 type CatalogSearcher func(context.Context, string, string) ([]updatecheck.CatalogProject, error)
 type CatalogVersionsLoader func(context.Context, string, string) ([]updatecheck.CatalogVersion, error)
 type CatalogPlanCreator func(context.Context, service.CatalogPlanRequest) (planning.Plan, error)
+type PendingChangesLoader func() service.PendingChanges
+type PendingUpdatesStager func([]string) (service.PendingChanges, error)
+type PendingCatalogStager func(context.Context, service.CatalogPlanRequest) (service.PendingChanges, error)
+type PendingChangeRemover func(string) (service.PendingChanges, error)
+type PendingChangesDiscarder func() (service.PendingChanges, error)
+type PendingChangesReviewer func(context.Context) (planning.Plan, error)
 type RefreshFunc func(context.Context) error
 type PlanCreator func(context.Context, []string) (planning.Plan, error)
 type PlacementPlanCreator func(context.Context, string) (planning.Plan, error)
@@ -66,6 +72,12 @@ type ServerOptions struct {
 	SearchCatalog CatalogSearcher
 	CatalogVersions CatalogVersionsLoader
 	CreateCatalogPlan CatalogPlanCreator
+	PendingChanges PendingChangesLoader
+	StagePendingUpdates PendingUpdatesStager
+	StagePendingCatalog PendingCatalogStager
+	RemovePendingChange PendingChangeRemover
+	DiscardPendingChanges PendingChangesDiscarder
+	ReviewPendingChanges PendingChangesReviewer
 	Refresh      RefreshFunc
 	RefreshInventory RefreshFunc
 	CheckUpdates RefreshFunc
@@ -115,6 +127,12 @@ type Server struct {
 	searchCatalog CatalogSearcher
 	catalogVersions CatalogVersionsLoader
 	createCatalogPlan CatalogPlanCreator
+	pendingChanges PendingChangesLoader
+	stagePendingUpdates PendingUpdatesStager
+	stagePendingCatalog PendingCatalogStager
+	removePendingChange PendingChangeRemover
+	discardPendingChanges PendingChangesDiscarder
+	reviewPendingChanges PendingChangesReviewer
 	refresh       RefreshFunc
 	refreshInventory RefreshFunc
 	checkUpdates  RefreshFunc
@@ -173,6 +191,12 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 		searchCatalog: opts.SearchCatalog,
 		catalogVersions: opts.CatalogVersions,
 		createCatalogPlan: opts.CreateCatalogPlan,
+		pendingChanges: opts.PendingChanges,
+		stagePendingUpdates: opts.StagePendingUpdates,
+		stagePendingCatalog: opts.StagePendingCatalog,
+		removePendingChange: opts.RemovePendingChange,
+		discardPendingChanges: opts.DiscardPendingChanges,
+		reviewPendingChanges: opts.ReviewPendingChanges,
 		refresh: opts.Refresh, refreshInventory: opts.RefreshInventory,
 		checkUpdates: opts.CheckUpdates, createPlan: opts.CreatePlan,
 		createPlacementPlan: opts.CreatePlacementPlan,
@@ -216,6 +240,12 @@ func NewHandlerWithOptions(loader Loader, version string, opts ServerOptions) ht
 	mux.HandleFunc("GET /api/catalog/search", server.catalogSearch)
 	mux.HandleFunc("GET /api/catalog/projects/{provider}/{id}/versions", server.catalogProjectVersions)
 	mux.HandleFunc("POST /api/catalog/plans", server.createCatalogPlanHandler)
+	mux.HandleFunc("GET /api/pending-changes", server.pendingChangesHandler)
+	mux.HandleFunc("POST /api/pending-changes/updates", server.stagePendingUpdatesHandler)
+	mux.HandleFunc("POST /api/pending-changes/catalog", server.stagePendingCatalogHandler)
+	mux.HandleFunc("DELETE /api/pending-changes/{id}", server.removePendingChangeHandler)
+	mux.HandleFunc("DELETE /api/pending-changes", server.discardPendingChangesHandler)
+	mux.HandleFunc("POST /api/pending-changes/review", server.reviewPendingChangesHandler)
 	mux.HandleFunc("GET /api/mods", server.mods)
 	mux.HandleFunc("GET /api/diagnostics", server.diagnostics)
 	mux.HandleFunc("GET /api/updates", server.updates)
@@ -396,6 +426,97 @@ func (s *Server) createCatalogPlanHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	plan, err := s.createCatalogPlan(r.Context(), request)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, plan)
+}
+
+func (s *Server) pendingChangesHandler(w http.ResponseWriter, _ *http.Request) {
+	if s.pendingChanges == nil {
+		writeError(w, http.StatusServiceUnavailable, "pending changes are not configured")
+		return
+	}
+	writeJSON(w, http.StatusOK, s.pendingChanges())
+}
+
+func (s *Server) stagePendingUpdatesHandler(w http.ResponseWriter, r *http.Request) {
+	if s.stagePendingUpdates == nil {
+		writeError(w, http.StatusServiceUnavailable, "pending update staging is not configured")
+		return
+	}
+	var request struct {
+		CandidateKeys []string `json:"candidate_keys"`
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid pending update request: "+err.Error())
+		return
+	}
+	pending, err := s.stagePendingUpdates(request.CandidateKeys)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, pending)
+}
+
+func (s *Server) stagePendingCatalogHandler(w http.ResponseWriter, r *http.Request) {
+	if s.stagePendingCatalog == nil {
+		writeError(w, http.StatusServiceUnavailable, "pending catalog staging is not configured")
+		return
+	}
+	var request service.CatalogPlanRequest
+	r.Body = http.MaxBytesReader(w, r.Body, 32<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid pending catalog request: "+err.Error())
+		return
+	}
+	pending, err := s.stagePendingCatalog(r.Context(), request)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, pending)
+}
+
+func (s *Server) removePendingChangeHandler(w http.ResponseWriter, r *http.Request) {
+	if s.removePendingChange == nil {
+		writeError(w, http.StatusServiceUnavailable, "pending changes are not configured")
+		return
+	}
+	pending, err := s.removePendingChange(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, pending)
+}
+
+func (s *Server) discardPendingChangesHandler(w http.ResponseWriter, _ *http.Request) {
+	if s.discardPendingChanges == nil {
+		writeError(w, http.StatusServiceUnavailable, "pending changes are not configured")
+		return
+	}
+	pending, err := s.discardPendingChanges()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, pending)
+}
+
+func (s *Server) reviewPendingChangesHandler(w http.ResponseWriter, r *http.Request) {
+	if s.reviewPendingChanges == nil {
+		writeError(w, http.StatusServiceUnavailable, "pending changes review is not configured")
+		return
+	}
+	plan, err := s.reviewPendingChanges(r.Context())
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
