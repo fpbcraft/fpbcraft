@@ -581,7 +581,7 @@ export default function SettingsPage() {
         <section className="panel xl:col-span-2">
           <div className="panel-header">
             <div>
-              <div className="section-label">Plan &amp; Protect</div>
+              <div className="section-label">Change history</div>
               <h2 className="mt-0.5 text-sm font-semibold">History and restore-point retention</h2>
             </div>
             <Pill tone="neutral">{savedRetention} retained</Pill>
@@ -589,10 +589,10 @@ export default function SettingsPage() {
           <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-2xl">
               <p className="text-sm text-base-content/65">
-                Keep the newest plan/history records and their linked restore points.
+                Keep the newest change-history records and their linked restore points.
               </p>
               <p className="mt-1 text-xs text-base-content/40">
-                Valid range: 1–100. Reducing this value prunes older completed plan records immediately.
+                Valid range: 1–100. Reducing this value prunes older completed change records immediately.
               </p>
             </div>
             <div className="flex items-end gap-2">
