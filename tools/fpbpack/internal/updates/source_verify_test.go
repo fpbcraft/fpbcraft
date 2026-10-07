@@ -112,3 +112,63 @@ func TestVerifyInstalledCurseForgeFileRequiresExactArtifactHash(t *testing.T) {
 		t.Fatal("expected mismatched installed SHA-1 to be rejected")
 	}
 }
+
+
+func TestMatchCurseForgeFingerprintsReturnsExactProviderIdentity(t *testing.T) {
+	const fingerprint uint32 = 197930586
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/fingerprints/432" {
+			http.NotFound(w, r)
+			return
+		}
+		if r.Header.Get("x-api-key") != "test-key" {
+			t.Fatalf("missing CurseForge API key")
+		}
+		var body struct {
+			Fingerprints []uint32 `json:"fingerprints"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatal(err)
+		}
+		if len(body.Fingerprints) != 1 || body.Fingerprints[0] != fingerprint {
+			t.Fatalf("fingerprints = %+v", body.Fingerprints)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"data": map[string]any{
+				"exactMatches": []map[string]any{{
+					"id": fingerprint,
+					"file": map[string]any{
+						"id": 999,
+						"modId": 123,
+						"isAvailable": true,
+						"displayName": "Example 2.0",
+						"fileName": "example.jar",
+						"releaseType": 1,
+						"fileFingerprint": fingerprint,
+						"gameVersions": []string{"1.21.1", "NeoForge"},
+					},
+				}},
+			},
+		})
+	}))
+	defer server.Close()
+
+	client := CurseForgeClient{
+		BaseURL: server.URL,
+		APIKey: "test-key",
+		HTTPClient: server.Client(),
+		Mode: RefreshModeInteractive,
+	}
+	matches, err := client.MatchFingerprints(context.Background(), []uint32{fingerprint, fingerprint, 0})
+	if err != nil {
+		t.Fatal(err)
+	}
+	match, ok := matches[fingerprint]
+	if !ok {
+		t.Fatalf("no match returned: %+v", matches)
+	}
+	if match.ProjectID != 123 || match.FileID != 999 || match.Filename != "example.jar" {
+		t.Fatalf("unexpected match: %+v", match)
+	}
+}

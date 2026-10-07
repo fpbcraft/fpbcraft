@@ -235,7 +235,18 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 		}
 
 		target := *candidate.Target
-		validateTargetArtifact(&plan, key, candidate.Name, target)
+		if intent == "placement" {
+			if target.Filename == "" || target.SHA512 == "" {
+				addBlocker(
+					&plan,
+					"placement_artifact_incomplete",
+					key,
+					"A placement move requires the current managed filename and SHA-512 so the installed bytes can be verified and reused.",
+				)
+			}
+		} else {
+			validateTargetArtifact(&plan, key, candidate.Name, target)
+		}
 
 		action := "replace"
 		currentPath := mod.Path

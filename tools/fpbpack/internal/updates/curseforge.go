@@ -1,7 +1,9 @@
 package updates
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"html"
 	"net/http"
@@ -10,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
 )
 
 const DefaultCurseForgeAPI = "https://api.curseforge.com/v1"
@@ -43,8 +47,9 @@ type curseForgeFile struct {
 	FileName     string    `json:"fileName"`
 	ReleaseType  int       `json:"releaseType"`
 	FileDate     time.Time `json:"fileDate"`
-	FileLength   int64     `json:"fileLength"`
-	DownloadURL  string    `json:"downloadUrl"`
+	FileLength      int64     `json:"fileLength"`
+	FileFingerprint uint32    `json:"fileFingerprint"`
+	DownloadURL     string    `json:"downloadUrl"`
 	GameVersions []string  `json:"gameVersions"`
 	Hashes       []struct {
 		Value string `json:"value"`
@@ -76,6 +81,15 @@ type curseForgeFilesResponse struct {
 
 type curseForgeStringResponse struct {
 	Data string `json:"data"`
+}
+
+type curseForgeFingerprintResponse struct {
+	Data struct {
+		ExactMatches []struct {
+			ID   uint32         `json:"id"`
+			File curseForgeFile `json:"file"`
+		} `json:"exactMatches"`
+	} `json:"data"`
 }
 
 type VerifiedCurseForgeSource struct {
@@ -157,6 +171,95 @@ func (client *CurseForgeClient) ResolveInstalledFile(
 		DisplayName: matched.DisplayName,
 		Filename: matched.FileName,
 	}, nil
+}
+
+func (client *CurseForgeClient) MatchFingerprints(
+	ctx context.Context,
+	fingerprints []uint32,
+) (map[uint32]inventory.CurseForgeMatch, error) {
+	const batchSize = 100
+	unique := make([]uint32, 0, len(fingerprints))
+	seen := map[uint32]struct{}{}
+	for _, fingerprint := range fingerprints {
+		if fingerprint == 0 {
+			continue
+		}
+		if _, exists := seen[fingerprint]; exists {
+			continue
+		}
+		seen[fingerprint] = struct{}{}
+		unique = append(unique, fingerprint)
+	}
+
+	result := make(map[uint32]inventory.CurseForgeMatch)
+	for start := 0; start < len(unique); start += batchSize {
+		end := start + batchSize
+		if end > len(unique) {
+			end = len(unique)
+		}
+		body, err := json.Marshal(map[string]any{
+			"fingerprints": unique[start:end],
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		base := strings.TrimRight(client.BaseURL, "/")
+		if base == "" {
+			base = DefaultCurseForgeAPI
+		}
+		httpClient := client.HTTPClient
+		if httpClient == nil {
+			httpClient = &http.Client{Timeout: 30 * time.Second}
+		}
+
+		var response curseForgeFingerprintResponse
+		if err := doJSONWithRetry(
+			ctx,
+			"curseforge",
+			client.Mode,
+			httpClient,
+			func() (*http.Request, error) {
+				request, err := http.NewRequestWithContext(
+					ctx,
+					http.MethodPost,
+					base+"/fingerprints/432",
+					bytes.NewReader(body),
+				)
+				if err != nil {
+					return nil, err
+				}
+				request.Header.Set("Content-Type", "application/json")
+				request.Header.Set("Accept", "application/json")
+				request.Header.Set("x-api-key", client.APIKey)
+				request.Header.Set("User-Agent", "fpbcraft/fpbpack")
+				return request, nil
+			},
+			&response,
+		); err != nil {
+			return nil, err
+		}
+
+		for _, exact := range response.Data.ExactMatches {
+			file := exact.File
+			fingerprint := file.FileFingerprint
+			if fingerprint == 0 {
+				fingerprint = exact.ID
+			}
+			if fingerprint == 0 || file.ID == 0 || file.ModID == 0 {
+				continue
+			}
+			result[fingerprint] = inventory.CurseForgeMatch{
+				ProjectID:    uint32(file.ModID),
+				FileID:       uint32(file.ID),
+				DisplayName:  file.DisplayName,
+				Filename:     file.FileName,
+				GameVersions: append([]string(nil), file.GameVersions...),
+				ReleaseType:  file.ReleaseType,
+			}
+		}
+	}
+	return result, nil
 }
 
 func (client *CurseForgeClient) Validate(ctx context.Context) error {

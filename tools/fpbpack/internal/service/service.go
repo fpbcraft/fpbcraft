@@ -551,15 +551,47 @@ func (s *Service) scanInventory(ctx context.Context) (inventory.Inventory, error
 		return inventory.Inventory{}, err
 	}
 
-	lookupCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
-	defer cancel()
-	matches, lookupErr := (inventory.ModrinthClient{BaseURL: s.options.ModrinthBaseURL}).Match(lookupCtx, inv.Mods)
+	modrinthCtx, cancelModrinth := context.WithTimeout(ctx, 45*time.Second)
+	matches, lookupErr := (inventory.ModrinthClient{BaseURL: s.options.ModrinthBaseURL}).Match(modrinthCtx, inv.Mods)
+	cancelModrinth()
 	if lookupErr != nil {
 		inv.ModrinthError = lookupErr.Error()
 		inv.RecalculateSummary()
-		return inv, nil
+	} else {
+		inventory.ApplyModrinthMatches(&inv, matches)
 	}
-	inventory.ApplyModrinthMatches(&inv, matches)
+
+	if key, _ := s.effectiveCurseForgeAPIKey(); strings.TrimSpace(key) != "" {
+		fingerprints := make([]uint32, 0, len(inv.Mods))
+		for _, mod := range inv.Mods {
+			if mod.CurseForgeFingerprint != 0 {
+				fingerprints = append(fingerprints, mod.CurseForgeFingerprint)
+			}
+		}
+		curseForgeCtx, cancelCurseForge := context.WithTimeout(ctx, 45*time.Second)
+		curseForgeMatches, curseForgeErr := (&updatecheck.CurseForgeClient{
+			BaseURL: s.options.CurseForgeBaseURL,
+			APIKey:  key,
+			Mode:    updatecheck.RefreshModeBackground,
+		}).MatchFingerprints(curseForgeCtx, fingerprints)
+		cancelCurseForge()
+		if curseForgeErr != nil {
+			inv.CurseForgeError = curseForgeErr.Error()
+		} else {
+			for index := range inv.Mods {
+				match, ok := curseForgeMatches[inv.Mods[index].CurseForgeFingerprint]
+				if !ok {
+					continue
+				}
+				copy := match
+				inv.Mods[index].CurseForge = &copy
+			}
+			inv.CurseForgeChecked = true
+			inv.CurseForgeError = ""
+		}
+		inv.RecalculateSummary()
+	}
+
 	return inv, nil
 }
 

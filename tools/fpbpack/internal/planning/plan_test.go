@@ -969,3 +969,64 @@ func TestFindingsExposeAffectedModAndPath(t *testing.T) {
 		t.Fatalf("warning lacks mod/file context: %+v", plan.Warnings[0])
 	}
 }
+
+
+func TestBuildAllowsPurePlacementMoveWithoutDownloadURL(t *testing.T) {
+	now := time.Date(2026, 10, 7, 14, 0, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: now,
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:example",
+			Provider: "modrinth",
+			ProjectID: "example",
+			Name: "Example",
+			Deployment: inventory.LocationClient,
+			AutoModpackGroup: "visual-client-mods",
+			Classification: updatecheck.ClassificationSafe,
+			Intent: "placement",
+			Installed: updatecheck.Release{
+				ID: "v1", Number: "1.0", Filename: "example.jar", SHA512: "same-bytes",
+			},
+			Target: &updatecheck.Release{
+				ID: "v1", Number: "1.0", Filename: "example.jar", SHA512: "same-bytes",
+			},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{
+			GeneratedAt: now,
+			ServerModsPath: "mods",
+			ClientGroupModsPaths: map[string]string{
+				"visual-client-mods": "automodpack/host-modpack/visual-client-mods/mods",
+			},
+		},
+		Mods: []management.Mod{{
+			ID: "modrinth:example",
+			Provider: "modrinth",
+			ProjectID: "example",
+			Name: "Example",
+			Management: "managed",
+			Deployment: inventory.LocationServer,
+			Path: "mods/example.jar",
+			Filename: "example.jar",
+			SHA512: "same-bytes",
+		}},
+	}
+
+	plan, err := Build([]string{"modrinth:example"}, report, snapshot, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Status != StatusReady {
+		t.Fatalf("pure move should not require a provider URL: %+v", plan.Blockers)
+	}
+	if len(plan.Changes) != 1 || len(plan.Changes[0].Operations) != 1 {
+		t.Fatalf("unexpected move changes: %+v", plan.Changes)
+	}
+	op := plan.Changes[0].Operations[0]
+	if op.Action != "replace" ||
+		op.CurrentPath != "mods/example.jar" ||
+		op.TargetPath != "automodpack/host-modpack/visual-client-mods/mods/example.jar" {
+		t.Fatalf("unexpected move operation: %+v", op)
+	}
+}
