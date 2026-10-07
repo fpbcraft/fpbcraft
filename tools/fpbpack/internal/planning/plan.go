@@ -85,6 +85,7 @@ type Plan struct {
 	InventoryGeneratedAt time.Time            `json:"inventory_generated_at"`
 	UpdatesGeneratedAt   time.Time            `json:"updates_generated_at"`
 	Selected             []string             `json:"selected"`
+	PendingRevision      uint64               `json:"pending_revision,omitempty"`
 	Changes              []Change             `json:"changes"`
 	Warnings             []Finding            `json:"warnings,omitempty"`
 	Blockers             []Finding            `json:"blockers,omitempty"`
