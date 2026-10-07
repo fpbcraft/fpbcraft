@@ -5,7 +5,7 @@ import {useRouter} from 'next/navigation';
 import {Clock3, ExternalLink, MoreHorizontal, Pin, RefreshCw, RotateCcw, Wrench, XCircle} from 'lucide-react';
 import {PageHeader, Pill, formatDate} from '@/components/ui';
 import {useManagement} from '@/components/management-provider';
-import type {UpdateCandidate, UpdateClassification, UpdatePlan, UpdateRule} from '@/lib/management';
+import type {PendingChanges, UpdateCandidate, UpdateClassification, UpdateRule} from '@/lib/management';
 import {api} from '@/lib/api';
 
 const groups: Array<{
@@ -264,8 +264,8 @@ export default function UpdatesPage() {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [checking, setChecking] = useState(false);
-  const [creatingPlan, setCreatingPlan] = useState(false);
-  const [planError, setPlanError] = useState<string | null>(null);
+  const [stagingChanges, setStagingChanges] = useState(false);
+  const [pendingError, setPendingError] = useState<string | null>(null);
   const [rules, setRules] = useState<Record<string, UpdateRule>>({});
   const [ruleError, setRuleError] = useState<string | null>(null);
 
@@ -337,20 +337,21 @@ export default function UpdatesPage() {
     }
   };
 
-  const createPlan = async () => {
+  const stageSelected = async () => {
     if (selected.size === 0) return;
-    setCreatingPlan(true);
-    setPlanError(null);
+    setStagingChanges(true);
+    setPendingError(null);
     try {
-      const plan = await api<UpdatePlan>('/api/plans', {
+      await api<PendingChanges>('/api/pending-changes/updates', {
         method: 'POST',
         body: JSON.stringify({candidate_keys: [...selected]}),
       });
-      router.push('/review?id=' + encodeURIComponent(plan.id));
+      setSelected(new Set());
+      await reload({silent: true});
     } catch (error: unknown) {
-      setPlanError(error instanceof Error ? error.message : String(error));
+      setPendingError(error instanceof Error ? error.message : String(error));
     } finally {
-      setCreatingPlan(false);
+      setStagingChanges(false);
     }
   };
 
@@ -390,7 +391,7 @@ export default function UpdatesPage() {
         <div className="alert alert-warning mb-4 rounded-box py-3 text-sm">
           <span className="flex-1">
             {state.diagnostics.summary.blocking} blocking diagnostic
-            {state.diagnostics.summary.blocking === 1 ? '' : 's'} will prevent plan readiness.
+            {state.diagnostics.summary.blocking === 1 ? '' : 's'} will prevent pending changes from being ready to apply.
           </span>
           <button
             type="button"
@@ -402,22 +403,22 @@ export default function UpdatesPage() {
         </div>
       ) : null}
 
-      {planError ? <div className="alert alert-error mb-4 rounded-box py-3 text-sm">{planError}</div> : null}
+      {pendingError ? <div className="alert alert-error mb-4 rounded-box py-3 text-sm">{pendingError}</div> : null}
       {ruleError ? <div className="alert alert-error mb-4 rounded-box py-3 text-sm">{ruleError}</div> : null}
 
       <div className="mb-4 flex items-center justify-between rounded-box border border-base-300 bg-base-100 px-4 py-3">
         <div>
           <div className="text-sm font-medium">{selected.size} selected</div>
-          <div className="text-xs text-base-content/45">Safe and review candidates can be included in a plan.</div>
+          <div className="text-xs text-base-content/45">Safe and review candidates can be added to the current pending changes.</div>
         </div>
         <button
           className="btn btn-sm btn-primary"
           type="button"
-          disabled={selected.size === 0 || creatingPlan}
-          onClick={() => void createPlan()}
+          disabled={selected.size === 0 || stagingChanges}
+          onClick={() => void stageSelected()}
         >
-          {creatingPlan ? <span className="loading loading-spinner loading-xs" /> : null}
-          Review plan
+          {stagingChanges ? <span className="loading loading-spinner loading-xs" /> : null}
+          Add to pending changes
         </button>
       </div>
 
