@@ -32,7 +32,7 @@ export default function ReviewPage() {
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get('id');
     if (!id) {
-      setError('No plan ID was provided.');
+      setError('No reviewed change set ID was provided.');
       return;
     }
     api<UpdatePlan>('/api/plans/' + encodeURIComponent(id))
@@ -119,7 +119,7 @@ export default function ReviewPage() {
   if (error) {
     return (
       <>
-        <PageHeader eyebrow="Plan" title="Review update plan" description="The requested plan could not be loaded." />
+        <PageHeader eyebrow="Pending changes" title="Review pending changes" description="The reviewed changes could not be loaded." />
         <div className="alert alert-error rounded-box text-sm">{error}</div>
       </>
     );
@@ -128,7 +128,7 @@ export default function ReviewPage() {
   if (!plan) {
     return (
       <>
-        <PageHeader eyebrow="Plan" title="Review update plan" description="Loading persisted plan…" />
+        <PageHeader eyebrow="Pending changes" title="Review pending changes" description="Loading verified changes…" />
         <div className="flex justify-center py-16"><span className="loading loading-spinner loading-md" /></div>
       </>
     );
@@ -144,9 +144,9 @@ export default function ReviewPage() {
         </Link>
       </div>
       <PageHeader
-        eyebrow="Plan & Protect"
-        title="Review update plan"
-        description={'Persisted ' + formatDate(plan.created_at) + ' · ' + plan.id}
+        eyebrow="Pending changes"
+        title="Review pending changes"
+        description={'Verified ' + formatDate(plan.created_at) + ' · ' + plan.id}
         action={<Pill tone={ready ? 'good' : 'bad'}>{plan.status}</Pill>}
       />
 
@@ -255,7 +255,7 @@ export default function ReviewPage() {
       <section className="panel overflow-hidden">
         <div className="panel-header">
           <div>
-            <div className="section-label">Exact plan</div>
+            <div className="section-label">Exact changes</div>
             <h2 className="mt-0.5 text-sm font-semibold">Artifact changes</h2>
           </div>
           <Pill tone="neutral">{plan.changes.length}</Pill>
@@ -406,8 +406,8 @@ export default function ReviewPage() {
             : ready && plan.verified && plan.backup_id
               ? state.status.server_state === 'stopped'
                 ? 'Targets and restore point are verified; live state is rechecked again before mutation.'
-                : 'The reviewed plan is protected, but the Minecraft server must be stopped first.'
-              : 'This plan cannot proceed while verification, restore protection, or blockers remain.'}
+                : 'The reviewed changes are protected, but the Minecraft server must be stopped first.'
+              : 'These changes cannot proceed while verification, restore protection, or blockers remain.'}
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
           {state.status.server_state === 'running' && !plan.applied_at ? (
@@ -446,7 +446,7 @@ export default function ReviewPage() {
               onClick={() => void applyPlan()}
             >
               {applying ? <span className="loading loading-spinner loading-xs" /> : null}
-              Apply reviewed plan
+              Apply changes
             </button>
           ) : null}
         </div>
