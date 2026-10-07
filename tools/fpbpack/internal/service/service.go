@@ -74,6 +74,7 @@ type State struct {
 	Settings      RuntimeSettings       `json:"settings"`
 	Crafty        CraftySettings        `json:"crafty,omitempty"`
 	AutoModpack   AutoModpackManagedState `json:"automodpack,omitempty"`
+	PendingChanges PendingChanges            `json:"pending_changes,omitempty"`
 	UpdateRules   map[string]UpdateRule `json:"update_rules,omitempty"`
 	Catalog       catalog.Report        `json:"catalog"`
 }
