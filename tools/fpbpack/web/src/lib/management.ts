@@ -225,11 +225,36 @@ export interface UpdateReport {
   candidates: UpdateCandidate[];
 }
 
+export type PendingChangeAction = 'update' | 'install' | 'version' | 'remove' | string;
+
+export interface PendingChange {
+  id: string;
+  action: PendingChangeAction;
+  candidate_key: string;
+  name: string;
+  provider?: string;
+  project_id?: string;
+  path?: string;
+  installed_version?: string;
+  target_version?: string;
+  placement?: Location;
+  automodpack_group?: string;
+}
+
+export interface PendingChanges {
+  schema_version: number;
+  revision: number;
+  updated_at?: string;
+  reviewed_plan_id?: string;
+  changes: PendingChange[];
+}
+
 export interface ManagementState {
   status: ManagementStatus;
   diagnostics: DiagnosticReport;
   mods: ManagementMod[];
   updates: UpdateReport;
+  pending: PendingChanges;
   source: 'api' | 'unavailable';
   errors: string[];
 }
@@ -268,6 +293,7 @@ export function emptyManagementState(): ManagementState {
     diagnostics,
     mods: [],
     updates: emptyUpdateReport(),
+    pending: {schema_version: 1, revision: 0, changes: []},
     source: 'unavailable',
     errors: [],
   };
