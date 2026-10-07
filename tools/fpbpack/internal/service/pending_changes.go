@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/catalog"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/planning"
 	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
@@ -382,6 +381,3 @@ func clonePendingChanges(value PendingChanges) PendingChanges {
 	return value
 }
 
-// Keep catalog imported here because pending changes intentionally share the
-// same accepted-catalog snapshot used by exact catalog candidate resolution.
-var _ catalog.Report
