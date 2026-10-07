@@ -1030,3 +1030,146 @@ func TestBuildAllowsPurePlacementMoveWithoutDownloadURL(t *testing.T) {
 		t.Fatalf("unexpected move operation: %+v", op)
 	}
 }
+
+
+func TestBuildUsesCrossProviderCurseForgeIdentityForDependency(t *testing.T) {
+	now := time.Date(2026, 10, 7, 15, 0, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: now,
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:main",
+			Provider: "modrinth",
+			ProjectID: "main",
+			Name: "Main",
+			Deployment: inventory.LocationServer,
+			Classification: updatecheck.ClassificationReview,
+			Installed: updatecheck.Release{ID: "old"},
+			Target: &updatecheck.Release{
+				ID: "new", Filename: "main.jar",
+				URL: "https://cdn.example/main.jar", SHA512: "main-new",
+			},
+			Dependencies: []updatecheck.Dependency{{
+				Provider: "curseforge",
+				ProjectID: "456",
+				Name: "Shared Library",
+				Type: "required",
+				Action: "add",
+				Deployment: inventory.LocationServer,
+				Target: &updatecheck.Release{
+					ID: "999",
+					Filename: "shared-library.jar",
+					URL: "https://cdn.example/shared.jar",
+					SHA1: "provider-target-sha1",
+				},
+			}},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Inventory: inventory.Inventory{
+			GeneratedAt: now,
+			ServerModsPath: "mods",
+			Mods: []inventory.ModFile{{
+				Location: inventory.LocationServer,
+				Path: "mods/shared-library.jar",
+				SHA1: "installed-sha1",
+				SHA512: "installed-sha512",
+				CurseForge: &inventory.CurseForgeMatch{
+					ProjectID: 456,
+					FileID: 777,
+					Filename: "shared-library.jar",
+				},
+			}},
+		},
+		Mods: []management.Mod{
+			{
+				ID: "modrinth:main",
+				Provider: "modrinth",
+				ProjectID: "main",
+				Name: "Main",
+				Management: "managed",
+				Deployment: inventory.LocationServer,
+				Path: "mods/main-old.jar",
+				SHA512: "main-old",
+			},
+			{
+				ID: "modrinth:shared",
+				Provider: "modrinth",
+				ProjectID: "shared",
+				Name: "Shared Library",
+				Management: "managed",
+				Deployment: inventory.LocationServer,
+				Path: "mods/shared-library.jar",
+				SHA1: "installed-sha1",
+				SHA512: "installed-sha512",
+			},
+		},
+	}
+
+	plan, err := Build([]string{"modrinth:main"}, report, snapshot, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Status != StatusReady {
+		t.Fatalf("CurseForge dependency should be satisfied by the cross-provider live JAR: %+v", plan.Blockers)
+	}
+	if len(plan.Changes) != 1 {
+		t.Fatalf("cross-provider dependency was duplicated: %+v", plan.Changes)
+	}
+}
+
+func TestDependencyBlockerNamesDependencyInsteadOfOnlyParent(t *testing.T) {
+	now := time.Date(2026, 10, 7, 15, 30, 0, 0, time.UTC)
+	report := updatecheck.Report{
+		GeneratedAt: now,
+		Candidates: []updatecheck.Candidate{{
+			Key: "modrinth:main",
+			Provider: "modrinth",
+			ProjectID: "main",
+			Name: "Main",
+			Deployment: inventory.LocationServer,
+			Classification: updatecheck.ClassificationReview,
+			Target: &updatecheck.Release{
+				ID: "new", Filename: "main.jar",
+				URL: "https://cdn.example/main.jar", SHA512: "new",
+			},
+			Dependencies: []updatecheck.Dependency{{
+				Provider: "modrinth",
+				ProjectID: "missing-library",
+				Name: "Missing Library",
+				Type: "required",
+				Action: "unresolved",
+			}},
+		}},
+	}
+	snapshot := management.Snapshot{
+		Mods: []management.Mod{{
+			ID: "modrinth:main",
+			Provider: "modrinth",
+			ProjectID: "main",
+			Name: "Main",
+			Management: "managed",
+			Deployment: inventory.LocationServer,
+			Path: "mods/main.jar",
+		}},
+	}
+	plan, err := Build([]string{"modrinth:main"}, report, snapshot, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.Blockers) == 0 {
+		t.Fatal("expected dependency blocker")
+	}
+	var found *Finding
+	for index := range plan.Blockers {
+		if plan.Blockers[index].Code == "dependency_unresolved" {
+			found = &plan.Blockers[index]
+			break
+		}
+	}
+	if found == nil {
+		t.Fatalf("missing dependency blocker: %+v", plan.Blockers)
+	}
+	if found.Name != "Missing Library" || found.CandidateKey != "modrinth:missing-library" {
+		t.Fatalf("dependency blocker context = %+v", *found)
+	}
+}

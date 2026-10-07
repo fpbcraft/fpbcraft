@@ -355,13 +355,41 @@ func appendDependencyClosure(
 ) {
 	for _, dependency := range dependencies {
 		depKey := dependency.Provider + ":" + dependency.ProjectID
+		name := dependency.Name
+		if name == "" {
+			name = dependency.ProjectID
+		}
 		switch dependency.Action {
 		case "unresolved", "conflict":
-			addBlocker(plan, "dependency_"+dependency.Action, parentKey, "A required dependency cannot be resolved safely for this target.")
+			finding := Finding{
+				Code:         "dependency_" + dependency.Action,
+				CandidateKey: depKey,
+				Name:         name,
+				Message: fmt.Sprintf(
+					"Required dependency %s cannot be resolved safely for this target.",
+					name,
+				),
+			}
+			if mod, ok := mods[depKey]; ok {
+				finding.Path = mod.Path
+			}
+			plan.Blockers = append(plan.Blockers, finding)
 			continue
 		case "add", "update":
 			if dependency.Target == nil {
-				addBlocker(plan, "dependency_target_not_resolved", parentKey, "A required dependency change does not have an exact target artifact.")
+				finding := Finding{
+					Code:         "dependency_target_not_resolved",
+					CandidateKey: depKey,
+					Name:         name,
+					Message: fmt.Sprintf(
+						"Required dependency %s does not have an exact target artifact.",
+						name,
+					),
+				}
+				if mod, ok := mods[depKey]; ok {
+					finding.Path = mod.Path
+				}
+				plan.Blockers = append(plan.Blockers, finding)
 				continue
 			}
 			target := *dependency.Target
@@ -373,10 +401,6 @@ func appendDependencyClosure(
 			}
 			visited[visitKey] = true
 
-			name := dependency.Name
-			if name == "" {
-				name = dependency.ProjectID
-			}
 			deployment := dependency.Deployment
 			if deployment == "" {
 				deployment = inventory.LocationServer

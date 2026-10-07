@@ -177,6 +177,10 @@ func (client *CurseForgeClient) MatchFingerprints(
 	ctx context.Context,
 	fingerprints []uint32,
 ) (map[uint32]inventory.CurseForgeMatch, error) {
+	if strings.TrimSpace(client.APIKey) == "" {
+		return nil, fmt.Errorf("CurseForge API key is not configured")
+	}
+
 	const batchSize = 100
 	unique := make([]uint32, 0, len(fingerprints))
 	seen := map[uint32]struct{}{}

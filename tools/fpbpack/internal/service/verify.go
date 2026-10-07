@@ -148,10 +148,20 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 			cachePath,
 		)
 		if err != nil {
+			path := change.Artifact.Filename
+			if len(change.Operations) > 0 {
+				if change.Operations[0].CurrentPath != "" {
+					path = change.Operations[0].CurrentPath
+				} else {
+					path = change.Operations[0].TargetPath
+				}
+			}
 			plan.Blockers = append(plan.Blockers, planning.Finding{
-				Code: "artifact_verification_failed",
+				Code:         "artifact_verification_failed",
 				CandidateKey: change.CandidateKey,
-				Message: fmt.Sprintf("%s: %v", change.Name, err),
+				Name:         change.Name,
+				Path:         path,
+				Message:      fmt.Sprintf("%s: %v", change.Name, err),
 			})
 			continue
 		}
