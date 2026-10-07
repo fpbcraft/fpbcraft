@@ -95,6 +95,13 @@ function updateTone(candidate?: UpdateCandidate): 'good' | 'warn' | 'bad' | 'neu
   return 'neutral';
 }
 
+function isRemovableMod(mod: ManagementMod) {
+  return (
+    mod.management === 'managed' &&
+    (mod.provider === 'modrinth' || mod.provider === 'curseforge')
+  );
+}
+
 export default function ModsPage() {
   const {state, connectionStatus, reload} = useManagement();
   const router = useRouter();
@@ -402,7 +409,7 @@ export default function ModsPage() {
   const rows = tableRows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   const visibleRemovableIDs = rows
     .filter((row): row is Extract<ModTableRow, {kind: 'mod'}> => row.kind === 'mod')
-    .filter((row) => removableMod(row.mod))
+    .filter((row) => isRemovableMod(row.mod))
     .map((row) => row.mod.id);
   const allVisibleRemovableSelected =
     visibleRemovableIDs.length > 0 &&
@@ -633,10 +640,6 @@ export default function ModsPage() {
     setCatalogDialog({mode: 'version', mod});
   };
 
-  const removableMod = (mod: ManagementMod) =>
-    mod.management === 'managed' &&
-    (mod.provider === 'modrinth' || mod.provider === 'curseforge');
-
   const stageRemoval = async (mod: ManagementMod) => {
     setManagementBusy(true);
     setManagementError(null);
@@ -663,7 +666,7 @@ export default function ModsPage() {
 
   const stageSelectedRemovals = async () => {
     const selectedMods = state.mods.filter(
-      (mod) => selectedForRemoval.has(mod.id) && removableMod(mod),
+      (mod) => selectedForRemoval.has(mod.id) && isRemovableMod(mod),
     );
     if (!selectedMods.length) return;
 
@@ -1059,7 +1062,7 @@ export default function ModsPage() {
                     onClick={() => openMod(mod)}
                   >
                     <td onClick={(event) => event.stopPropagation()}>
-                      {removableMod(mod) ? (
+                      {isRemovableMod(mod) ? (
                         <input
                           type="checkbox"
                           className="checkbox checkbox-xs"
