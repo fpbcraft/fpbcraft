@@ -71,6 +71,7 @@ func (s *Service) RunAutoModpackAction(ctx context.Context, request AutoModpackA
 		_, _, publishBaseline, _ = s.autoModpackPublishedContent()
 	}
 
+	s.logEvent("info", "automodpack", "Checking Crafty server availability for "+action)
 	status := s.CraftyStatus(ctx)
 	if !status.Configured {
 		return AutoModpackActionResult{}, fmt.Errorf("Crafty is not configured")
@@ -82,8 +83,10 @@ func (s *Service) RunAutoModpackAction(ctx context.Context, request AutoModpackA
 		return AutoModpackActionResult{}, fmt.Errorf("Minecraft server must be running to execute AutoModpack console commands")
 	}
 
+	s.logEvent("info", "automodpack", "Reading server console position")
 	config, token, _ := s.effectiveCraftyConfig()
 	beforeLines, beforeErr := s.craftyTerminalLines(ctx, config, token)
+	s.logEvent("info", "automodpack", "Sending server command: "+command)
 	if err := s.craftyRequestWithBody(
 		ctx,
 		config,
@@ -108,6 +111,7 @@ func (s *Service) RunAutoModpackAction(ctx context.Context, request AutoModpackA
 			return AutoModpackActionResult{}, fmt.Errorf("persist AutoModpack publish request: %w", err)
 		}
 	}
+	s.logEvent("info", "automodpack", "Capturing AutoModpack console response")
 	output := []string{}
 	outputErr := ""
 	if beforeErr != nil {
@@ -120,7 +124,13 @@ func (s *Service) RunAutoModpackAction(ctx context.Context, request AutoModpackA
 			output = captured
 		}
 	}
-	s.logEvent("info", "automodpack", "Sent server command: "+command)
+	if outputErr != "" {
+		s.logEvent("warn", "automodpack", "Server console capture: "+outputErr)
+	}
+	for _, line := range output {
+		s.logEvent("info", "automodpack-output", line)
+	}
+	s.logEvent("info", "automodpack", "Server command submitted: "+command)
 	message := "AutoModpack command submitted through Crafty."
 	if action == "publish" || action == "revert_confirm" {
 		message += " FPBPack will keep publication pending until AutoModpack's published journal advances; the server console remains authoritative if generation is rejected."
