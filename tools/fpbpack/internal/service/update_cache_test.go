@@ -7,7 +7,6 @@ import (
 
  "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/catalog"
  "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
- "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/management"
  updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
 
@@ -42,5 +41,4 @@ func TestUpdatesAfterPlacementChangeKeepsDiscoveredTarget(t *testing.T) {
  if len(result.Candidates)!=1 || result.Candidates[0].Deployment!=inventory.LocationClient || result.Candidates[0].AutoModpackGroup!="visual-client-mods" {
   t.Fatalf("placement-only change unnecessarily invalidated the update: %+v",result)
  }
- _ = management.Snapshot{}
 }
