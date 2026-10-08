@@ -582,6 +582,11 @@ func (s *Service) scanInventory(ctx context.Context) (inventory.Inventory, error
 	for _, mod := range inv.Mods {
 		if mod.Cached && mod.Modrinth != nil {
 			matches[mod.SHA512] = *mod.Modrinth
+		} else if mod.Cached && mod.ModrinthCheckedAt != nil &&
+			time.Since(*mod.ModrinthCheckedAt) < 24*time.Hour {
+			// Cache negative exact-hash matches for a day. Providers may
+			// register an older release later, so misses are not permanent.
+			continue
 		} else {
 			missing = append(missing, mod)
 		}
@@ -602,15 +607,30 @@ func (s *Service) scanInventory(ctx context.Context) (inventory.Inventory, error
 		inv.RecalculateSummary()
 	} else {
 		inventory.ApplyModrinthMatches(&inv, matches)
-		s.logEvent("info", "inventory", "Modrinth fingerprint lookup completed")
+		now := time.Now().UTC()
+		requestedHashes := make(map[string]bool, len(missing))
+		for _, mod := range missing {
+			requestedHashes[mod.SHA512] = true
+		}
+		for index := range inv.Mods {
+			if requestedHashes[inv.Mods[index].SHA512] {
+				inv.Mods[index].ModrinthCheckedAt = &now
+			}
+		}
+		s.logEvent("info", "inventory", fmt.Sprintf("Modrinth fingerprint lookup completed (%d uncached JARs)", len(missing)))
 	}
 
 	if key, _ := s.effectiveCurseForgeAPIKey(); strings.TrimSpace(key) != "" {
 		fingerprints := make([]uint32, 0, len(inv.Mods))
 		for _, mod := range inv.Mods {
-			if mod.CurseForgeFingerprint != 0 && !(mod.Cached && mod.CurseForge != nil) {
-				fingerprints = append(fingerprints, mod.CurseForgeFingerprint)
+			if mod.CurseForgeFingerprint == 0 || (mod.Cached && mod.CurseForge != nil) {
+				continue
 			}
+			if mod.Cached && mod.CurseForgeCheckedAt != nil &&
+				time.Since(*mod.CurseForgeCheckedAt) < 24*time.Hour {
+				continue
+			}
+			fingerprints = append(fingerprints, mod.CurseForgeFingerprint)
 		}
 		s.logEvent("info", "inventory", fmt.Sprintf("Querying CurseForge fingerprints for %d JARs", len(fingerprints)))
 		curseForgeCtx, cancelCurseForge := context.WithTimeout(ctx, 45*time.Second)
@@ -637,7 +657,17 @@ func (s *Service) scanInventory(ctx context.Context) (inventory.Inventory, error
 			}
 			inv.CurseForgeChecked = true
 			inv.CurseForgeError = ""
-			s.logEvent("info", "inventory", "CurseForge fingerprint lookup completed")
+			now := time.Now().UTC()
+			queried := make(map[uint32]bool, len(fingerprints))
+			for _, fingerprint := range fingerprints {
+				queried[fingerprint] = true
+			}
+			for index := range inv.Mods {
+				if queried[inv.Mods[index].CurseForgeFingerprint] {
+					inv.Mods[index].CurseForgeCheckedAt = &now
+				}
+			}
+			s.logEvent("info", "inventory", fmt.Sprintf("CurseForge fingerprint lookup completed (%d uncached JARs)", len(fingerprints)))
 		}
 		inv.RecalculateSummary()
 	}
