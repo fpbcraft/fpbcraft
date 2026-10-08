@@ -958,7 +958,18 @@ func catalogAfterPlan(current catalog.Report, plan planning.Plan) (catalog.Repor
 		}
 
 		if found >= 0 {
-			next.Managed[found] = entry
+			if strings.EqualFold(next.Managed[found].SHA512, entry.SHA512) &&
+				len(change.Operations) > 0 && change.Operations[0].Action == "add" {
+				// Two independent installs of the same release may target
+				// server/common and an AutoModpack group in one plan.
+				for _, source := range entry.SourcePaths {
+					if !sourcesContainPath(next.Managed[found].SourcePaths, source.Path) {
+						next.Managed[found].SourcePaths = append(next.Managed[found].SourcePaths, source)
+					}
+				}
+			} else {
+				next.Managed[found] = entry
+			}
 		} else {
 			// Same release bytes may be installed in multiple deployment
 			// directories. Preserve one catalog identity with all source paths.
