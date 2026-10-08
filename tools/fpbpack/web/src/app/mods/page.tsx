@@ -751,6 +751,22 @@ export default function ModsPage() {
         action={
           <div className="flex items-center gap-2">
             <button
+              className="btn btn-sm btn-outline"
+              type="button"
+              disabled={managementBusy || Boolean(state.status.refresh?.refreshing)}
+              title="Rescan installed JARs and automatically accept exact provider matches and moves"
+              onClick={() => {
+                setManagementError(null);
+                setManagementMessage('Reconciling installed JARs with verified sources and placements.');
+                void refreshInventory().catch((error: unknown) => {
+                  setManagementError(error instanceof Error ? error.message : String(error));
+                });
+              }}
+            >
+              <RefreshCw size={14} className={state.status.refresh?.refreshing ? 'animate-spin' : ''} />
+              Resolve safe matches
+            </button>
+            <button
               className="btn btn-sm btn-primary"
               type="button"
               onClick={() => setCatalogDialog({mode: 'install'})}
