@@ -1,6 +1,16 @@
 # FPBPack implementation progress
 
-Last updated: **2026-10-06**
+Last updated: **2026-10-07**
+
+## Execution console follow-up (branch: `feat/live-operation-console`)
+
+- [x] Preserve the current API and add detailed refresh-phase/provider and inventory-per-JAR logs.
+- [x] Report plan review/download/hash verification, Apply/Restore, AutoModpack command output, and NeoForge installer stdout/stderr.
+- [x] Replace the coarse Logs list with a chronological live console (1.5-second polling, filters, pause/follow, copy/download).
+- [x] Link active refresh progress to the console; retain up to 1,000 in-memory entries.
+- [x] Add regression tests for inventory callbacks, streamed output and refresh progress events.
+- [ ] Check Go tests and frontend typecheck/build in CI before merging.
+- [ ] Optional follow-up: durable per-run logs and log links embedded directly in every operation modal.
 
 ## Active slice
 

@@ -50,6 +50,7 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 			s.logEvent("info", "apply", result.Summary)
 		}
 	}()
+	s.logEvent("info", "apply", "Starting reviewed change set "+planID)
 	s.refreshMu.Lock()
 	defer s.refreshMu.Unlock()
 	s.catalogMu.Lock()
@@ -73,6 +74,7 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 			return ApplyResult{}, fmt.Errorf("reviewed changes are stale because pending changes were edited or discarded; review the current pending changes again")
 		}
 	}
+	s.logEvent("info", "apply", fmt.Sprintf("Validating %d mod changes and stopped server state", len(plan.Changes)))
 	if err := s.requireServerStopped(ctx); err != nil {
 		return ApplyResult{}, err
 	}
@@ -86,6 +88,7 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 	// Slice 2 may have persisted a ready plan without a restore manifest when
 	// only additions were involved. Slice 3 upgrades/creates it immediately
 	// before mutation.
+	s.logEvent("info", "apply", "Creating restore point for existing JARs")
 	if err := s.createRestorePoint(&plan); err != nil {
 		return ApplyResult{}, fmt.Errorf("prepare restore point: %w", err)
 	}
@@ -105,9 +108,11 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 		return ApplyResult{}, fmt.Errorf("restore point %s belongs to a different change set", manifest.ID)
 	}
 
+	s.logEvent("info", "apply", "Checking live files and verified download cache")
 	if err := s.validatePlanLiveState(plan); err != nil {
 		return ApplyResult{}, fmt.Errorf("reviewed changes are stale: %w", err)
 	}
+	s.logEvent("info", "apply", "Staging and hashing replacement JARs")
 	staged, err := s.stagePlanTargets(plan)
 	if err != nil {
 		return ApplyResult{}, err
@@ -123,6 +128,7 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 		if err == nil || !committed {
 			return
 		}
+		s.logEvent("warn", "apply", "Apply failed after filesystem mutation; restoring original JARs")
 		_ = s.rollbackPlanFiles(plan, manifest)
 		_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "state.json"), previousState)
 		_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "inventory.json"), previousSnapshot.Inventory)
@@ -133,16 +139,21 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 		s.mu.Unlock()
 	}()
 
-	if err = commitStagedOperations(s.options.ServerRoot, staged); err != nil {
+	s.logEvent("info", "apply", fmt.Sprintf("Committing %d verified file operations", len(staged)))
+	if err = commitStagedOperations(s.options.ServerRoot, staged, func(item stagedPlanOperation) {
+		s.logEvent("info", "apply", fmt.Sprintf("%s: %s -> %s", item.ChangeName, item.Operation.Action, item.Operation.TargetPath))
+	}); err != nil {
 		committed = true
 		return ApplyResult{}, fmt.Errorf("apply filesystem changes: %w", err)
 	}
 	committed = true
 
+	s.logEvent("info", "apply", "File changes committed; rebuilding accepted catalog")
 	nextCatalog, err := catalogAfterPlan(previousState.Catalog, plan)
 	if err != nil {
 		return ApplyResult{}, fmt.Errorf("update accepted catalog: %w", err)
 	}
+	s.logEvent("info", "apply", "Scanning installed JARs to verify the applied result")
 	inv, err := s.scanInventory(ctx)
 	if err != nil {
 		return ApplyResult{}, fmt.Errorf("verify post-apply inventory: %w", err)
@@ -171,6 +182,7 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 		nextState.AutoModpack.PendingPublish = true
 		nextState.AutoModpack.LastChangedAt = &stateChangedAt
 	}
+	s.logEvent("info", "apply", "Verification passed; persisting inventory and managed state")
 	if err = writeJSONAtomic(filepath.Join(s.options.StateDir, "inventory.json"), inv); err != nil {
 		return ApplyResult{}, fmt.Errorf("persist post-apply inventory: %w", err)
 	}
@@ -236,6 +248,7 @@ func (s *Service) RestoreBackup(ctx context.Context, backupID string) (result Re
 	s.catalogMu.Lock()
 	defer s.catalogMu.Unlock()
 
+	s.logEvent("info", "restore", "Starting restore point "+backupID+"; checking stopped server state")
 	if err := s.requireServerStopped(ctx); err != nil {
 		return RestoreResult{}, err
 	}
@@ -257,6 +270,7 @@ func (s *Service) RestoreBackup(ctx context.Context, backupID string) (result Re
 	if err := s.validateAppliedStateForRestore(plan); err != nil {
 		return RestoreResult{}, fmt.Errorf("restore blocked by external change: %w", err)
 	}
+	s.logEvent("info", "restore", fmt.Sprintf("Verifying %d backed-up JARs", len(manifest.Files)))
 	if err := s.validateBackupFiles(manifest); err != nil {
 		return RestoreResult{}, err
 	}
@@ -279,12 +293,14 @@ func (s *Service) RestoreBackup(ctx context.Context, backupID string) (result Re
 		s.mu.Unlock()
 	}()
 
+	s.logEvent("info", "restore", "Restoring verified backup files")
 	if err = s.restoreManifestFiles(plan, manifest); err != nil {
 		restored = true
 		return RestoreResult{}, fmt.Errorf("restore filesystem: %w", err)
 	}
 	restored = true
 
+	s.logEvent("info", "restore", "Backup files restored; verifying current inventory")
 	inv, err := s.scanInventory(ctx)
 	if err != nil {
 		return RestoreResult{}, fmt.Errorf("verify restored inventory: %w", err)
@@ -605,7 +621,7 @@ func (s *Service) stagePlanTargets(plan planning.Plan) ([]stagedPlanOperation, e
 	return staged, nil
 }
 
-func commitStagedOperations(serverRoot string, staged []stagedPlanOperation) error {
+func commitStagedOperations(serverRoot string, staged []stagedPlanOperation, onComplete func(stagedPlanOperation)) error {
 	for index := range staged {
 		item := &staged[index]
 		targetRel, err := safeRelativePath(item.Operation.TargetPath)
@@ -616,6 +632,9 @@ func commitStagedOperations(serverRoot string, staged []stagedPlanOperation) err
 		if item.Operation.Action == "remove" {
 			if err := os.Remove(target); err != nil {
 				return fmt.Errorf("%s: remove %s: %w", item.ChangeName, item.Operation.TargetPath, err)
+			}
+			if onComplete != nil {
+				onComplete(*item)
 			}
 			continue
 		}
@@ -633,6 +652,9 @@ func commitStagedOperations(serverRoot string, staged []stagedPlanOperation) err
 					return fmt.Errorf("%s: remove old artifact %s: %w", item.ChangeName, item.Operation.CurrentPath, err)
 				}
 			}
+		}
+		if onComplete != nil {
+			onComplete(*item)
 		}
 	}
 	return nil

@@ -2,11 +2,12 @@ package service
 
 import (
 	"fmt"
+	"sync"
 	"strings"
 	"time"
 )
 
-const runtimeLogLimit = 500
+const runtimeLogLimit = 1000
 
 type RuntimeLogEntry struct {
 	ID      uint64    `json:"id"`
@@ -81,4 +82,57 @@ func (s *Service) logModManagement(action string, result ModManagementResult, er
 		message = action + " completed"
 	}
 	s.logEvent("info", "mods", message)
+}
+
+// runtimeCommandWriter captures bounded error context while forwarding installer
+// stdout/stderr to the GUI as each line becomes available. Do not use for
+// commands whose output can contain credentials.
+type runtimeCommandWriter struct {
+	mu      sync.Mutex
+	pending string
+	tail    string
+	onLine  func(string)
+}
+
+func (w *runtimeCommandWriter) Write(data []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.tail += string(data)
+	if len(w.tail) > 4000 {
+		w.tail = w.tail[len(w.tail)-4000:]
+	}
+	w.pending += string(data)
+	for {
+		end := strings.IndexByte(w.pending, '\n')
+		if end < 0 {
+			break
+		}
+		w.emit(w.pending[:end])
+		w.pending = w.pending[end+1:]
+	}
+	for len(w.pending) > 2048 {
+		w.emit(w.pending[:2048] + " [continued]")
+		w.pending = w.pending[2048:]
+	}
+	return len(data), nil
+}
+
+func (w *runtimeCommandWriter) emit(line string) {
+	line = strings.TrimSpace(line)
+	if line != "" && w.onLine != nil {
+		w.onLine(line)
+	}
+}
+
+func (w *runtimeCommandWriter) Flush() {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.emit(w.pending)
+	w.pending = ""
+}
+
+func (w *runtimeCommandWriter) Tail() string {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return strings.TrimSpace(w.tail)
 }

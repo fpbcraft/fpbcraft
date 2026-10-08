@@ -24,6 +24,8 @@ type ScanOptions struct {
 	ServerModsPath      string
 	ClientModsPath      string
 	AutoModpackHostPath string
+	// OnFile reports each inspected artifact; callers may use it to display live progress.
+	OnFile func(ModFile)
 }
 
 func Scan(options ScanOptions) (Inventory, error) {
@@ -106,7 +108,7 @@ func Scan(options ScanOptions) (Inventory, error) {
 	foundDirectory := false
 	for _, target := range targets {
 		dir := filepath.Join(root, filepath.FromSlash(target.relative))
-		mods, exists, err := scanDirectory(root, dir, target.location, target.group)
+		mods, exists, err := scanDirectory(root, dir, target.location, target.group, options.OnFile)
 		if err != nil {
 			return Inventory{}, err
 		}
@@ -137,7 +139,7 @@ func Scan(options ScanOptions) (Inventory, error) {
 	return result, nil
 }
 
-func scanDirectory(root, dir string, location Location, group string) ([]ModFile, bool, error) {
+func scanDirectory(root, dir string, location Location, group string, onFile func(ModFile)) ([]ModFile, bool, error) {
 	entries, err := os.ReadDir(dir)
 	if os.IsNotExist(err) {
 		return nil, false, nil
@@ -158,16 +160,23 @@ func scanDirectory(root, dir string, location Location, group string) ([]ModFile
 			if relErr != nil {
 				relative = path
 			}
-			mods = append(mods, ModFile{
+			mod := ModFile{
 				Location: location,
 				Group:    group,
 				Path:     filepath.ToSlash(relative),
 				Filename: entry.Name(),
 				Error:    err.Error(),
-			})
+			}
+			mods = append(mods, mod)
+			if onFile != nil {
+				onFile(mod)
+			}
 			continue
 		}
 		mods = append(mods, mod)
+		if onFile != nil {
+			onFile(mod)
+		}
 	}
 	return mods, true, nil
 }

@@ -34,6 +34,7 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 
 	for index := range plan.Changes {
 		change := &plan.Changes[index]
+		s.logEvent("info", "plan", fmt.Sprintf("Checking artifact %d/%d: %s", index+1, len(plan.Changes), change.Name))
 		needsTargetArtifact := false
 		for _, operation := range change.Operations {
 			if operation.Action != "remove" {
@@ -42,6 +43,7 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 			}
 		}
 		if !needsTargetArtifact {
+			s.logEvent("info", "plan", change.Name+": no download required (removal)")
 			continue
 		}
 		cacheKey := change.Artifact.SHA512
@@ -55,6 +57,7 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 		cachePath := filepath.Join(s.options.StateDir, filepath.FromSlash(cacheRelative))
 
 		if sourcePath, ok := reusableCurrentArtifact(*change); ok {
+			s.logEvent("info", "plan", change.Name+": reusing and verifying installed JAR for placement move")
 			relative, relErr := safeRelativePath(sourcePath)
 			if relErr != nil {
 				plan.Blockers = append(plan.Blockers, planning.Finding{
@@ -112,6 +115,7 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 			for operationIndex := range change.Operations {
 				change.Operations[operationIndex].TargetSHA512 = verified.SHA512
 			}
+			s.logEvent("info", "plan", change.Name+": verified existing artifact and cached for move")
 			plan.Prefetched = append(plan.Prefetched, planning.PrefetchedArtifact{
 				Filename: change.Artifact.Filename,
 				SHA512: verified.SHA512,
@@ -122,6 +126,7 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 		}
 
 		if change.Artifact.ManualDownload {
+			s.logEvent("warn", "plan", change.Name+": manual download required before Apply")
 			message := "This artifact must be downloaded manually from the provider before Apply."
 			if change.Artifact.ManualURL != "" {
 				message += " Manual download: " + change.Artifact.ManualURL
@@ -139,6 +144,7 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 			})
 			continue
 		}
+		s.logEvent("info", "plan", change.Name+": downloading or verifying cached artifact")
 		verified, err := ensureArtifact(
 			ctx,
 			change.Artifact.URL,
@@ -148,6 +154,7 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 			cachePath,
 		)
 		if err != nil {
+			s.logEvent("error", "plan", change.Name+": artifact verification failed: "+err.Error())
 			path := change.Artifact.Filename
 			if len(change.Operations) > 0 {
 				if change.Operations[0].CurrentPath != "" {
@@ -166,6 +173,7 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 			continue
 		}
 
+		s.logEvent("info", "plan", fmt.Sprintf("%s: checksum verified (%d bytes)", change.Name, verified.Bytes))
 		change.Artifact.SHA512 = verified.SHA512
 		change.Target.SHA512 = verified.SHA512
 		if change.Artifact.SHA1 == "" {
@@ -193,6 +201,7 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 	}
 
 	if len(plan.Blockers) > 0 {
+		s.logEvent("warn", "plan", fmt.Sprintf("Verification blocked: %d issue(s)", len(plan.Blockers)))
 		plan.Status = planning.StatusBlocked
 		plan.Verified = false
 		plan.VerifiedAt = nil
@@ -201,6 +210,7 @@ func (s *Service) verifyPlanArtifacts(ctx context.Context, plan *planning.Plan) 
 	now := time.Now().UTC()
 	plan.Verified = true
 	plan.VerifiedAt = &now
+	s.logEvent("info", "plan", fmt.Sprintf("Verified %d change(s) for reviewed plan %s", len(plan.Changes), plan.ID))
 }
 
 func reusableCurrentArtifact(change planning.Change) (string, bool) {

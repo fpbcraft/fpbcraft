@@ -247,7 +247,13 @@ func (s *Service) DiscardPendingChanges() (PendingChanges, error) {
 	return clonePendingChanges(s.state.PendingChanges), nil
 }
 
-func (s *Service) ReviewPendingChanges(ctx context.Context) (planning.Plan, error) {
+func (s *Service) ReviewPendingChanges(ctx context.Context) (result planning.Plan, err error) {
+	s.logEvent("info", "plan", "Starting review of pending changes")
+	defer func() {
+		if err != nil {
+			s.logEvent("error", "plan", "Pending review failed: "+err.Error())
+		}
+	}()
 	if !s.refreshMu.TryLock() {
 		return planning.Plan{}, fmt.Errorf("provider refresh or another protected operation is in progress; retry pending review after it finishes")
 	}
@@ -276,6 +282,7 @@ func (s *Service) ReviewPendingChanges(ctx context.Context) (planning.Plan, erro
 	selected := make([]string, 0, len(pending.Changes))
 	candidates := make([]updatecheck.Candidate, 0, len(pending.Changes))
 	for _, change := range pending.Changes {
+		s.logEvent("info", "plan", fmt.Sprintf("Resolving %s: %s", change.Action, change.Name))
 		var candidate updatecheck.Candidate
 		switch change.Action {
 		case "update":
@@ -351,6 +358,7 @@ func (s *Service) ReviewPendingChanges(ctx context.Context) (planning.Plan, erro
 		return planning.Plan{}, fmt.Errorf("pending changes changed while review was being prepared; review them again")
 	}
 
+	s.logEvent("info", "plan", fmt.Sprintf("Building dependency-aware plan for %d pending change(s)", len(selected)))
 	plan, err := planning.Build(selected, exactReport, snapshot, now)
 	if err != nil {
 		return planning.Plan{}, err
@@ -359,6 +367,7 @@ func (s *Service) ReviewPendingChanges(ctx context.Context) (planning.Plan, erro
 	// snapshot records that exact revision so Apply can reject a review that
 	// became stale because the user later edited or discarded pending changes.
 	plan.PendingRevision = pending.Revision + 1
+	s.logEvent("info", "plan", "Verifying and prefetching plan "+plan.ID)
 	plan, err = s.persistPlannedChange(ctx, plan)
 	if err != nil {
 		return planning.Plan{}, err
@@ -368,6 +377,7 @@ func (s *Service) ReviewPendingChanges(ctx context.Context) (planning.Plan, erro
 		return planning.Plan{}, fmt.Errorf("persist pending revision on reviewed changes: %w", err)
 	}
 
+	s.logEvent("info", "plan", fmt.Sprintf("Review plan prepared: %s (%s, %d blocker(s)); persisting pending state", plan.ID, plan.Status, len(plan.Blockers)))
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.state.PendingChanges.Revision != pending.Revision {

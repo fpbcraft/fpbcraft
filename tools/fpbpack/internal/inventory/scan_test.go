@@ -108,3 +108,24 @@ func TestScanDiscoversAllAutoModpackGroups(t *testing.T) {
 		}
 	}
 }
+
+func TestScanReportsEveryInspectedJar(t *testing.T) {
+	root := t.TempDir()
+	serverDir := filepath.Join(root, "mods")
+	if err := os.MkdirAll(serverDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	jar := writeTestJar(t, map[string]string{"fabric.mod.json": `{"id":"testmod","version":"1"}`})
+	copyFile(t, jar, filepath.Join(serverDir, "example.jar"))
+	var paths []string
+	inv, err := Scan(ScanOptions{
+		ServerRoot: root,
+		OnFile: func(mod ModFile) { paths = append(paths, mod.Path) },
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(inv.Mods) != 1 || len(paths) != 1 || paths[0] != "mods/example.jar" {
+		t.Fatalf("unexpected per-file reports: %v (inventory: %d)", paths, len(inv.Mods))
+	}
+}

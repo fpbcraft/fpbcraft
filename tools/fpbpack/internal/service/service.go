@@ -262,7 +262,10 @@ func (s *Service) setRefreshProgress(phase, message string, current, total, perc
 		percent = 100
 	}
 	s.mu.Lock()
-	if s.refreshStatus.Refreshing {
+	active := s.refreshStatus.Refreshing
+	changed := active && (s.refreshStatus.Phase != phase || s.refreshStatus.Message != message ||
+		s.refreshStatus.Current != current || s.refreshStatus.Total != total)
+	if active {
 		s.refreshStatus.Phase = phase
 		s.refreshStatus.Message = message
 		s.refreshStatus.Current = current
@@ -270,6 +273,14 @@ func (s *Service) setRefreshProgress(phase, message string, current, total, perc
 		s.refreshStatus.Percent = percent
 	}
 	s.mu.Unlock()
+	// Emit outside the state mutex: logEvent takes the same mutex.
+	if changed {
+		detail := message
+		if total > 0 {
+			detail = fmt.Sprintf("%s (%d/%d)", message, current, total)
+		}
+		s.logEvent("info", "refresh", detail)
+	}
 }
 
 func (s *Service) finishRefresh(err error) {
@@ -542,23 +553,34 @@ func (s *Service) CheckUpdates(ctx context.Context) (err error) {
 }
 
 func (s *Service) scanInventory(ctx context.Context) (inventory.Inventory, error) {
+	s.logEvent("info", "inventory", "Scanning installed JARs and calculating fingerprints")
 	inv, err := inventory.Scan(inventory.ScanOptions{
 		ServerRoot:     s.options.ServerRoot,
 		ServerModsPath: s.options.ServerModsPath,
 		ClientModsPath: s.options.ClientModsPath,
+		OnFile: func(mod inventory.ModFile) {
+			if mod.Error != "" {
+				s.logEvent("warn", "inventory", fmt.Sprintf("Inspected %s with warning: %s", mod.Path, mod.Error))
+			} else {
+				s.logEvent("info", "inventory", "Inspected "+mod.Path)
+			}
+		},
 	})
 	if err != nil {
 		return inventory.Inventory{}, err
 	}
 
+	s.logEvent("info", "inventory", fmt.Sprintf("Scanned %d JARs; querying Modrinth fingerprints", len(inv.Mods)))
 	modrinthCtx, cancelModrinth := context.WithTimeout(ctx, 45*time.Second)
 	matches, lookupErr := (inventory.ModrinthClient{BaseURL: s.options.ModrinthBaseURL}).Match(modrinthCtx, inv.Mods)
 	cancelModrinth()
 	if lookupErr != nil {
 		inv.ModrinthError = lookupErr.Error()
+		s.logEvent("warn", "inventory", "Modrinth fingerprint lookup failed: "+lookupErr.Error())
 		inv.RecalculateSummary()
 	} else {
 		inventory.ApplyModrinthMatches(&inv, matches)
+		s.logEvent("info", "inventory", "Modrinth fingerprint lookup completed")
 	}
 
 	if key, _ := s.effectiveCurseForgeAPIKey(); strings.TrimSpace(key) != "" {
@@ -568,6 +590,7 @@ func (s *Service) scanInventory(ctx context.Context) (inventory.Inventory, error
 				fingerprints = append(fingerprints, mod.CurseForgeFingerprint)
 			}
 		}
+		s.logEvent("info", "inventory", fmt.Sprintf("Querying CurseForge fingerprints for %d JARs", len(fingerprints)))
 		curseForgeCtx, cancelCurseForge := context.WithTimeout(ctx, 45*time.Second)
 		curseForgeMatches, curseForgeErr := (&updatecheck.CurseForgeClient{
 			BaseURL: s.options.CurseForgeBaseURL,
@@ -577,6 +600,7 @@ func (s *Service) scanInventory(ctx context.Context) (inventory.Inventory, error
 		cancelCurseForge()
 		if curseForgeErr != nil {
 			inv.CurseForgeError = curseForgeErr.Error()
+			s.logEvent("warn", "inventory", "CurseForge fingerprint lookup failed: "+curseForgeErr.Error())
 		} else {
 			for index := range inv.Mods {
 				match, ok := curseForgeMatches[inv.Mods[index].CurseForgeFingerprint]
@@ -588,6 +612,7 @@ func (s *Service) scanInventory(ctx context.Context) (inventory.Inventory, error
 			}
 			inv.CurseForgeChecked = true
 			inv.CurseForgeError = ""
+			s.logEvent("info", "inventory", "CurseForge fingerprint lookup completed")
 		}
 		inv.RecalculateSummary()
 	}

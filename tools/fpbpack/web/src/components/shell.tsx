@@ -27,7 +27,7 @@ const nav = [
   {href: '/automodpack', label: 'AutoModpack', icon: Cable},
   {href: '/history', label: 'History', icon: History},
   {href: '/tools', label: 'Tools', icon: Terminal},
-  {href: '/logs', label: 'Logs', icon: ScrollText},
+  {href: '/logs', label: 'Console', icon: ScrollText},
   {href: '/settings', label: 'Settings', icon: Settings},
 ];
 
@@ -134,9 +134,14 @@ export function Shell({children}: {children: ReactNode}) {
                       : state.status.refresh.phase || 'refresh'}
                   </div>
                 </div>
-                <span className="tabular-nums text-base-content/55">
-                  {state.status.refresh.percent ?? 0}%
-                </span>
+                <div className="flex shrink-0 items-center gap-3">
+                  <Link href="/logs" className="link link-primary text-xs">
+                    View live steps
+                  </Link>
+                  <span className="tabular-nums text-base-content/55">
+                    {state.status.refresh.percent ?? 0}%
+                  </span>
+                </div>
               </div>
               <progress
                 className="progress progress-primary mt-2 h-1.5 w-full"
