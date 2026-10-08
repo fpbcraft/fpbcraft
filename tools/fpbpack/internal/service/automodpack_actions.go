@@ -26,8 +26,13 @@ type AutoModpackActionResult struct {
 	OutputError string    `json:"output_error,omitempty"`
 }
 
-func (s *Service) RunAutoModpackAction(ctx context.Context, request AutoModpackActionRequest) (AutoModpackActionResult, error) {
+func (s *Service) RunAutoModpackAction(ctx context.Context, request AutoModpackActionRequest) (result AutoModpackActionResult, err error) {
 	action := strings.TrimSpace(strings.ToLower(request.Action))
+	defer func() {
+		if err != nil {
+			s.logEvent("error", "automodpack", "Action "+action+" failed: "+err.Error())
+		}
+	}()
 	command := ""
 	notes := sanitizeAutoModpackCommandText(request.Notes)
 	switch action {
