@@ -60,6 +60,18 @@ jobs:
           source = source.replace(old, new, 1)
           path.write_text(source)
 
+          key_path = Path("envelope/common/src/main/java/io/github/mortuusars/envelope/mixin/jei/JeiKeyConflictContextMixin.java")
+          key_source = key_path.read_text()
+          replacements = {
+              "import mezz.jei.gui.input.IUserInputHandler;": "import mezz.jei.common.input.IUserInputHandler;",
+              "import mezz.jei.gui.input.UserInput;": "import mezz.jei.common.input.UserInput;",
+          }
+          for old_line, new_line in replacements.items():
+              if old_line not in key_source:
+                  raise SystemExit(f"Expected JEI key input import not found: {old_line}")
+              key_source = key_source.replace(old_line, new_line, 1)
+          key_path.write_text(key_source)
+
           props = Path("envelope/gradle.properties")
           text = props.read_text()
           old_version = "jei_version=19.25.0.322"
@@ -69,8 +81,10 @@ jobs:
           props.write_text(text.replace(old_version, new_version, 1))
           PY
 
-          echo "---- patched mixin ----"
+          echo "---- patched transfer mixin ----"
           sed -n '1,120p' envelope/common/src/main/java/io/github/mortuusars/envelope/mixin/jei/BasicRecipeTransferHandlerMixin.java
+          echo "---- patched key conflict mixin imports ----"
+          sed -n '1,60p' envelope/common/src/main/java/io/github/mortuusars/envelope/mixin/jei/JeiKeyConflictContextMixin.java
           grep '^jei_version=' envelope/gradle.properties
 
       - name: Build NeoForge jar
