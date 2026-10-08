@@ -952,7 +952,28 @@ func catalogAfterPlan(current catalog.Report, plan planning.Plan) (catalog.Repor
 		if found >= 0 {
 			next.Managed[found] = entry
 		} else {
-			next.Managed = append(next.Managed, entry)
+			// Same release bytes may be installed in multiple deployment
+			// directories. Preserve one catalog identity with all source paths.
+			duplicate := -1
+			for index, existing := range next.Managed {
+				if existing.Provider == entry.Provider &&
+					existing.ProjectID == entry.ProjectID &&
+					existing.SHA512 != "" &&
+					strings.EqualFold(existing.SHA512, entry.SHA512) {
+					duplicate = index
+					break
+				}
+			}
+			if duplicate >= 0 {
+				existing := &next.Managed[duplicate]
+				for _, source := range entry.SourcePaths {
+					if !sourcesContainPath(existing.SourcePaths, source.Path) {
+						existing.SourcePaths = append(existing.SourcePaths, source)
+					}
+				}
+			} else {
+				next.Managed = append(next.Managed, entry)
+			}
 		}
 	}
 	catalog.EnsureManagedArtifactIDs(next.Managed)
