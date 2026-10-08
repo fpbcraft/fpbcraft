@@ -53,7 +53,9 @@ type ModFile struct {
 	CurseForgeFingerprint uint32           `json:"curseforge_fingerprint,omitempty"`
 	Metadata              []ModMetadata    `json:"metadata,omitempty"`
 	Modrinth              *ModrinthMatch   `json:"modrinth,omitempty"`
+	ModrinthCheckedAt     *time.Time       `json:"modrinth_checked_at,omitempty"`
 	CurseForge            *CurseForgeMatch `json:"curseforge,omitempty"`
+	CurseForgeCheckedAt   *time.Time       `json:"curseforge_checked_at,omitempty"`
 	Error                 string           `json:"error,omitempty"`
 }
 
