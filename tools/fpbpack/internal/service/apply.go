@@ -78,9 +78,6 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 	if err := s.requireServerStopped(ctx); err != nil {
 		return ApplyResult{}, err
 	}
-	if err := s.validateCurrentManagedState(plan); err != nil {
-		return ApplyResult{}, fmt.Errorf("managed artifacts affected by this plan are not clean: %w", err)
-	}
 	if err := s.validatePlanCatalogState(plan); err != nil {
 		return ApplyResult{}, fmt.Errorf("reviewed changes no longer match accepted management state: %w", err)
 	}
@@ -384,13 +381,6 @@ func (s *Service) loadBackupManifest(backupID string) (planning.BackupManifest, 
 		return planning.BackupManifest{}, err
 	}
 	return manifest, nil
-}
-
-func (s *Service) validateCurrentManagedState(plan planning.Plan) error {
-	// Selected input bytes, catalog identities and destinations are checked
-	// independently immediately before mutation. Unrelated drift is reported
-	// by Doctor but must not veto the entire plan.
-	return nil
 }
 
 // relevantPlanDiagnostics isolates integrity errors caused by files this
