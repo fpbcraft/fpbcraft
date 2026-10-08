@@ -98,8 +98,14 @@ func (s *Service) NeoForgeStatus(ctx context.Context) (NeoForgeStatus, error) {
 	}, nil
 }
 
-func (s *Service) ChangeNeoForge(ctx context.Context, target string) (NeoForgeChangeResult, error) {
+func (s *Service) ChangeNeoForge(ctx context.Context, target string) (result NeoForgeChangeResult, err error) {
 	target = strings.TrimSpace(target)
+	s.logEvent("info", "neoforge", "Requested NeoForge change to "+target)
+	defer func() {
+		if err != nil {
+			s.logEvent("error", "neoforge", "NeoForge change failed: "+err.Error())
+		}
+	}()
 	if !validNeoForgeVersion.MatchString(target) {
 		return NeoForgeChangeResult{}, fmt.Errorf("invalid NeoForge version %q", target)
 	}
@@ -123,6 +129,7 @@ func (s *Service) ChangeNeoForge(ctx context.Context, target string) (NeoForgeCh
 	s.catalogMu.Lock()
 	defer s.catalogMu.Unlock()
 
+	s.logEvent("info", "neoforge", "Checking official NeoForge release metadata")
 	versions, err := s.listNeoForgeVersions(ctx)
 	if err != nil {
 		return NeoForgeChangeResult{}, fmt.Errorf("load NeoForge versions: %w", err)
@@ -142,6 +149,7 @@ func (s *Service) ChangeNeoForge(ctx context.Context, target string) (NeoForgeCh
 		)
 	}
 
+	s.logEvent("info", "neoforge", "Confirming the Minecraft server is stopped")
 	if err := s.requireServerStopped(ctx); err != nil {
 		return NeoForgeChangeResult{}, err
 	}
@@ -179,6 +187,7 @@ func (s *Service) ChangeNeoForge(ctx context.Context, target string) (NeoForgeCh
 		))
 	}
 
+	s.logEvent("info", "neoforge", "Downloading and verifying NeoForge "+target+" installer")
 	installer, err := s.downloadNeoForgeInstaller(ctx, target)
 	if err != nil {
 		return NeoForgeChangeResult{}, err
@@ -188,6 +197,7 @@ func (s *Service) ChangeNeoForge(ctx context.Context, target string) (NeoForgeCh
 	if err != nil {
 		return NeoForgeChangeResult{}, err
 	}
+	s.logEvent("info", "neoforge", "Running NeoForge server installer (live output follows)")
 	if err := s.runNeoForgeInstaller(ctx, installer); err != nil {
 		_ = restoreJVMArgs()
 		return NeoForgeChangeResult{}, err
@@ -195,10 +205,12 @@ func (s *Service) ChangeNeoForge(ctx context.Context, target string) (NeoForgeCh
 	if err := restoreJVMArgs(); err != nil {
 		return NeoForgeChangeResult{}, fmt.Errorf("restore user_jvm_args.txt: %w", err)
 	}
+	s.logEvent("info", "neoforge", "Verifying installed server runtime")
 	if err := s.verifyNeoForgeRuntime(target); err != nil {
 		return NeoForgeChangeResult{}, err
 	}
 
+	s.logEvent("info", "neoforge", "Updating Crafty launch configuration")
 	if err := s.updateCraftyNeoForgeConfig(ctx, nextCommand, nextExecutable); err != nil {
 		return NeoForgeChangeResult{}, err
 	}
@@ -638,17 +650,20 @@ func (s *Service) runNeoForgeInstaller(ctx context.Context, installer string) er
 	}
 	command := exec.CommandContext(installCtx, java, "-jar", installer, "--installServer")
 	command.Dir = s.options.ServerRoot
-	output, err := command.CombinedOutput()
+	writer := &runtimeCommandWriter{onLine: func(line string) {
+		s.logEvent("info", "neoforge", line)
+	}}
+	command.Stdout = writer
+	command.Stderr = writer
+	err := command.Run()
+	writer.Flush()
 	if err == nil {
 		return nil
 	}
 	if installCtx.Err() == context.DeadlineExceeded {
 		return fmt.Errorf("NeoForge installer exceeded the 10 minute timeout")
 	}
-	message := strings.TrimSpace(string(output))
-	if len(message) > 4000 {
-		message = message[len(message)-4000:]
-	}
+	message := writer.Tail()
 	if message == "" {
 		return fmt.Errorf("NeoForge installer failed: %w", err)
 	}
