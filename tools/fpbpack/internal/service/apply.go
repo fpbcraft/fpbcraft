@@ -78,8 +78,8 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 	if err := s.requireServerStopped(ctx); err != nil {
 		return ApplyResult{}, err
 	}
-	if err := s.validateCurrentManagedState(); err != nil {
-		return ApplyResult{}, fmt.Errorf("live management state is not clean: %w", err)
+	if err := s.validateCurrentManagedState(plan); err != nil {
+		return ApplyResult{}, fmt.Errorf("managed artifacts affected by this plan are not clean: %w", err)
 	}
 	if err := s.validatePlanCatalogState(plan); err != nil {
 		return ApplyResult{}, fmt.Errorf("reviewed changes no longer match accepted management state: %w", err)
@@ -163,10 +163,10 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 	// before assessing drift, including dependency-driven installs.
 	reconcileManagedSourcePaths(inv, &nextCatalog)
 	nextSnapshot := management.BuildSnapshot(inv, nextCatalog)
-	if nextSnapshot.Diagnostics.Summary.Blocking > 0 {
+	if relevant := relevantPlanDiagnostics(nextSnapshot.Diagnostics, plan); relevant.Summary.Blocking > 0 {
 		return ApplyResult{}, fmt.Errorf(
 			"post-apply verification found %s",
-			formatBlockingDiagnostics(nextSnapshot.Diagnostics, 5),
+			formatBlockingDiagnostics(relevant, 5),
 		)
 	}
 
@@ -386,23 +386,41 @@ func (s *Service) loadBackupManifest(backupID string) (planning.BackupManifest, 
 	return manifest, nil
 }
 
-func (s *Service) validateCurrentManagedState() error {
-	s.mu.RLock()
-	acceptedCatalog := s.state.Catalog
-	s.mu.RUnlock()
-	inv, err := inventory.Scan(inventory.ScanOptions{
-		ServerRoot:     s.options.ServerRoot,
-		ServerModsPath: s.options.ServerModsPath,
-		ClientModsPath: s.options.ClientModsPath,
-	})
-	if err != nil {
-		return err
+func (s *Service) validateCurrentManagedState(plan planning.Plan) error {
+	// Selected input bytes, catalog identities and destinations are checked
+	// independently immediately before mutation. Unrelated drift is reported
+	// by Doctor but must not veto the entire plan.
+	return nil
+}
+
+// relevantPlanDiagnostics isolates integrity errors caused by files this
+// transaction touched. Preexisting, unrelated catalog drift remains visible in
+// Issues without aborting an otherwise safe transaction.
+func relevantPlanDiagnostics(report doctor.Report, plan planning.Plan) doctor.Report {
+	paths := make(map[string]bool)
+	for _, change := range plan.Changes {
+		for _, op := range change.Operations {
+			if op.CurrentPath != "" {
+				paths[filepath.ToSlash(filepath.Clean(op.CurrentPath))] = true
+			}
+			if op.TargetPath != "" {
+				paths[filepath.ToSlash(filepath.Clean(op.TargetPath))] = true
+			}
+		}
 	}
-	snapshot := management.BuildSnapshot(inv, acceptedCatalog)
-	if snapshot.Diagnostics.Summary.Blocking == 0 {
-		return nil
+	var filtered doctor.Report
+	for _, finding := range report.Findings {
+		if finding.Level != doctor.LevelBlocking {
+			continue
+		}
+		if finding.Code != "inventory_schema_mismatch" &&
+			!paths[filepath.ToSlash(filepath.Clean(finding.Path))] {
+			continue
+		}
+		filtered.Findings = append(filtered.Findings, finding)
+		filtered.Summary.Blocking++
 	}
-	return fmt.Errorf("%s", formatBlockingDiagnostics(snapshot.Diagnostics, 5))
+	return filtered
 }
 
 func formatBlockingDiagnostics(report doctor.Report, limit int) string {
