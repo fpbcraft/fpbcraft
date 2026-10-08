@@ -1,0 +1,100 @@
+name: Build Envelope JEI 19.56 patch
+
+on:
+  push:
+    branches:
+      - build/envelope-jei-19.56-patch
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Clone Envelope 0.7.5 source
+        run: |
+          git clone --depth 1 --branch 1.21.1 https://github.com/mortuusars/Envelope.git envelope
+          cd envelope
+          test "$(git rev-parse HEAD)" = "9211baa3f0778763ec0de2944ea6622ae337ead4" || {
+            echo "Envelope 1.21.1 moved; refusing an unpinned build." >&2
+            exit 1
+          }
+
+      - name: Patch Envelope for JEI 19.56
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("envelope/common/src/main/java/io/github/mortuusars/envelope/mixin/jei/BasicRecipeTransferHandlerMixin.java")
+          source = path.read_text()
+
+          old_import = "import mezz.jei.api.recipe.transfer.IRecipeTransferError;"
+          new_import = "import mezz.jei.api.recipe.transfer.IRecipeTransferContext;\n" + old_import
+          if old_import not in source:
+              raise SystemExit("Expected JEI import not found")
+          source = source.replace(old_import, new_import, 1)
+
+          old = '''    @Inject(method = "transferRecipe", at = @At(value = "INVOKE", target = "Lmezz/jei/common/network/IConnectionToServer;sendPacketToServer(Lmezz/jei/common/network/packets/PlayToServerPacket;)V"))
+              private void onTransferRecipe(C container, R recipe, IRecipeSlotsView recipeSlotsView, Player player,
+                                            boolean maxTransfer, boolean doTransfer, CallbackInfoReturnable<IRecipeTransferError> cir) {
+          '''
+          new = '''    @Inject(method = "transferRecipeInternal", at = @At("HEAD"))
+              private void onTransferRecipe(C container, R recipe, IRecipeSlotsView recipeSlotsView, Player player,
+                                            boolean maxTransfer, boolean doTransfer, @Nullable IRecipeTransferContext<R, C> context,
+                                            CallbackInfoReturnable<IRecipeTransferError> cir) {
+                  if (!doTransfer) {
+                      return;
+                  }
+          '''
+          if old not in source:
+              raise SystemExit("Expected Envelope JEI mixin body not found")
+          source = source.replace(old, new, 1)
+          path.write_text(source)
+
+          props = Path("envelope/gradle.properties")
+          text = props.read_text()
+          old_version = "jei_version=19.25.0.322"
+          new_version = "jei_version=19.56.0.441"
+          if old_version not in text:
+              raise SystemExit("Expected Envelope JEI version not found")
+          props.write_text(text.replace(old_version, new_version, 1))
+          PY
+
+          echo "---- patched mixin ----"
+          sed -n '1,120p' envelope/common/src/main/java/io/github/mortuusars/envelope/mixin/jei/BasicRecipeTransferHandlerMixin.java
+          grep '^jei_version=' envelope/gradle.properties
+
+      - name: Build NeoForge jar
+        run: |
+          cd envelope
+          chmod +x gradlew
+          ./gradlew :neoforge:build --no-daemon --stacktrace
+
+      - name: Stage patched jar
+        run: |
+          mkdir -p artifact
+          JAR="$(find envelope/neoforge/build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*sources*' ! -name '*dev*' | head -n 1)"
+          if [ -z "$JAR" ]; then
+            echo "No NeoForge release jar found" >&2
+            find envelope/neoforge/build/libs -maxdepth 1 -type f -print || true
+            exit 1
+          fi
+          cp "$JAR" artifact/envelope-neoforge-1.21.1-0.7.5-fpbcraft-jei19.56.jar
+          sha256sum artifact/*.jar | tee artifact/SHA256SUMS.txt
+          unzip -t artifact/envelope-neoforge-1.21.1-0.7.5-fpbcraft-jei19.56.jar
+
+      - name: Upload patched jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: envelope-neoforge-1.21.1-0.7.5-fpbcraft-jei19.56
+          path: artifact/
+          if-no-files-found: error
