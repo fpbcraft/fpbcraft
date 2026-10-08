@@ -46,12 +46,16 @@ type ModFile struct {
 	Path                  string           `json:"path"`
 	Filename              string           `json:"filename"`
 	Size                  int64            `json:"size"`
+	ModifiedUnixNano      int64            `json:"modified_unix_nano,omitempty"`
+	Cached                bool             `json:"-"`
 	SHA1                  string           `json:"sha1"`
 	SHA512                string           `json:"sha512"`
 	CurseForgeFingerprint uint32           `json:"curseforge_fingerprint,omitempty"`
 	Metadata              []ModMetadata    `json:"metadata,omitempty"`
 	Modrinth              *ModrinthMatch   `json:"modrinth,omitempty"`
+	ModrinthCheckedAt     *time.Time       `json:"modrinth_checked_at,omitempty"`
 	CurseForge            *CurseForgeMatch `json:"curseforge,omitempty"`
+	CurseForgeCheckedAt   *time.Time       `json:"curseforge_checked_at,omitempty"`
 	Error                 string           `json:"error,omitempty"`
 }
 

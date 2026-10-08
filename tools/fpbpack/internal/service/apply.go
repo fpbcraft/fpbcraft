@@ -78,9 +78,6 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 	if err := s.requireServerStopped(ctx); err != nil {
 		return ApplyResult{}, err
 	}
-	if err := s.validateCurrentManagedState(); err != nil {
-		return ApplyResult{}, fmt.Errorf("live management state is not clean: %w", err)
-	}
 	if err := s.validatePlanCatalogState(plan); err != nil {
 		return ApplyResult{}, fmt.Errorf("reviewed changes no longer match accepted management state: %w", err)
 	}
@@ -158,11 +155,15 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 	if err != nil {
 		return ApplyResult{}, fmt.Errorf("verify post-apply inventory: %w", err)
 	}
+	// A managed artifact may intentionally be present in both server/common and
+	// an AutoModpack group (or multiple groups). Reconcile exact matching bytes
+	// before assessing drift, including dependency-driven installs.
+	reconcileManagedSourcePaths(inv, &nextCatalog)
 	nextSnapshot := management.BuildSnapshot(inv, nextCatalog)
-	if nextSnapshot.Diagnostics.Summary.Blocking > 0 {
+	if relevant := relevantPlanDiagnostics(nextSnapshot.Diagnostics, plan); relevant.Summary.Blocking > 0 {
 		return ApplyResult{}, fmt.Errorf(
 			"post-apply verification found %s",
-			formatBlockingDiagnostics(nextSnapshot.Diagnostics, 5),
+			formatBlockingDiagnostics(relevant, 5),
 		)
 	}
 
@@ -382,23 +383,34 @@ func (s *Service) loadBackupManifest(backupID string) (planning.BackupManifest, 
 	return manifest, nil
 }
 
-func (s *Service) validateCurrentManagedState() error {
-	s.mu.RLock()
-	acceptedCatalog := s.state.Catalog
-	s.mu.RUnlock()
-	inv, err := inventory.Scan(inventory.ScanOptions{
-		ServerRoot:     s.options.ServerRoot,
-		ServerModsPath: s.options.ServerModsPath,
-		ClientModsPath: s.options.ClientModsPath,
-	})
-	if err != nil {
-		return err
+// relevantPlanDiagnostics isolates integrity errors caused by files this
+// transaction touched. Preexisting, unrelated catalog drift remains visible in
+// Issues without aborting an otherwise safe transaction.
+func relevantPlanDiagnostics(report doctor.Report, plan planning.Plan) doctor.Report {
+	paths := make(map[string]bool)
+	for _, change := range plan.Changes {
+		for _, op := range change.Operations {
+			if op.CurrentPath != "" {
+				paths[filepath.ToSlash(filepath.Clean(op.CurrentPath))] = true
+			}
+			if op.TargetPath != "" {
+				paths[filepath.ToSlash(filepath.Clean(op.TargetPath))] = true
+			}
+		}
 	}
-	snapshot := management.BuildSnapshot(inv, acceptedCatalog)
-	if snapshot.Diagnostics.Summary.Blocking == 0 {
-		return nil
+	var filtered doctor.Report
+	for _, finding := range report.Findings {
+		if finding.Level != doctor.LevelBlocking {
+			continue
+		}
+		if finding.Code != "inventory_schema_mismatch" &&
+			!paths[filepath.ToSlash(filepath.Clean(finding.Path))] {
+			continue
+		}
+		filtered.Findings = append(filtered.Findings, finding)
+		filtered.Summary.Blocking++
 	}
-	return fmt.Errorf("%s", formatBlockingDiagnostics(snapshot.Diagnostics, 5))
+	return filtered
 }
 
 func formatBlockingDiagnostics(report doctor.Report, limit int) string {
@@ -946,9 +958,41 @@ func catalogAfterPlan(current catalog.Report, plan planning.Plan) (catalog.Repor
 		}
 
 		if found >= 0 {
-			next.Managed[found] = entry
+			if strings.EqualFold(next.Managed[found].SHA512, entry.SHA512) &&
+				len(change.Operations) > 0 && change.Operations[0].Action == "add" {
+				// Two independent installs of the same release may target
+				// server/common and an AutoModpack group in one plan.
+				for _, source := range entry.SourcePaths {
+					if !sourcesContainPath(next.Managed[found].SourcePaths, source.Path) {
+						next.Managed[found].SourcePaths = append(next.Managed[found].SourcePaths, source)
+					}
+				}
+			} else {
+				next.Managed[found] = entry
+			}
 		} else {
-			next.Managed = append(next.Managed, entry)
+			// Same release bytes may be installed in multiple deployment
+			// directories. Preserve one catalog identity with all source paths.
+			duplicate := -1
+			for index, existing := range next.Managed {
+				if existing.Provider == entry.Provider &&
+					existing.ProjectID == entry.ProjectID &&
+					existing.SHA512 != "" &&
+					strings.EqualFold(existing.SHA512, entry.SHA512) {
+					duplicate = index
+					break
+				}
+			}
+			if duplicate >= 0 {
+				existing := &next.Managed[duplicate]
+				for _, source := range entry.SourcePaths {
+					if !sourcesContainPath(existing.SourcePaths, source.Path) {
+						existing.SourcePaths = append(existing.SourcePaths, source)
+					}
+				}
+			} else {
+				next.Managed = append(next.Managed, entry)
+			}
 		}
 	}
 	catalog.EnsureManagedArtifactIDs(next.Managed)

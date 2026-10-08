@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestScanPreservesServerAndClientLocations(t *testing.T) {
@@ -127,5 +128,50 @@ func TestScanReportsEveryInspectedJar(t *testing.T) {
 	}
 	if len(inv.Mods) != 1 || len(paths) != 1 || paths[0] != "mods/example.jar" {
 		t.Fatalf("unexpected per-file reports: %v (inventory: %d)", paths, len(inv.Mods))
+	}
+}
+
+func TestScanReusesCachedInspectionAndInvalidatesOnChange(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "mods")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	jar := writeTestJar(t, map[string]string{"fabric.mod.json": `{"id":"cached","version":"1"}`})
+	path := filepath.Join(dir, "cached.jar")
+	copyFile(t, jar, path)
+
+	initial, err := Scan(ScanOptions{ServerRoot: root})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(initial.Mods) != 1 || initial.Mods[0].ModifiedUnixNano == 0 {
+		t.Fatalf("missing inspection metadata: %+v", initial.Mods)
+	}
+
+	reused, err := Scan(ScanOptions{ServerRoot: root, Previous: &initial})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reused.Mods[0].Cached || reused.Mods[0].SHA512 != initial.Mods[0].SHA512 {
+		t.Fatalf("expected cache hit for unchanged JAR: %+v", reused.Mods[0])
+	}
+
+	updated := writeTestJar(t, map[string]string{"fabric.mod.json": `{"id":"cached","version":"2"}`})
+	copyFile(t, updated, path)
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Force mtime to change even on filesystems with coarse timestamps.
+	if err := os.Chtimes(path, info.ModTime().Add(2*time.Second), info.ModTime().Add(2*time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	changed, err := Scan(ScanOptions{ServerRoot: root, Previous: &initial})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if changed.Mods[0].Cached || changed.Mods[0].SHA512 == initial.Mods[0].SHA512 {
+		t.Fatalf("modified artifact was incorrectly reused: %+v", changed.Mods[0])
 	}
 }

@@ -242,7 +242,7 @@ func TestApplyAndRestoreMovesPreferredPlacementSafely(t *testing.T) {
 	}
 }
 
-func TestApplyBlocksWhenUnrelatedManagedArtifactDrifts(t *testing.T) {
+func TestApplyAllowsUnrelatedManagedArtifactDrift(t *testing.T) {
 	serverRoot := t.TempDir()
 	stateDir := t.TempDir()
 	firstPath := filepath.Join(serverRoot, "mods", "first.jar")
@@ -331,13 +331,17 @@ func TestApplyBlocksWhenUnrelatedManagedArtifactDrifts(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	svc.options.ModrinthBaseURL = newEmptyModrinthServer(t).URL
 	_ = writeServiceTestJar(t, secondPath, "second", "1.0.1-manual")
-	_, err = svc.ApplyPlan(context.Background(), plan.ID)
-	if err == nil || !strings.Contains(err.Error(), "live management state is not clean") {
-		t.Fatalf("apply error = %v, want unrelated-drift blocker", err)
+	result, err := svc.ApplyPlan(context.Background(), plan.ID)
+	if err != nil {
+		t.Fatalf("unrelated managed drift blocked a valid plan: %v", err)
 	}
-	if got, hashErr := sha512File(firstPath); hashErr != nil || !strings.EqualFold(got, firstSHA) {
-		t.Fatalf("selected artifact changed despite preflight failure: %q err=%v", got, hashErr)
+	if result.Status != "success" {
+		t.Fatalf("apply status = %q", result.Status)
+	}
+	if got, hashErr := sha512File(filepath.Join(serverRoot, "mods", "first-2.jar")); hashErr != nil || !strings.EqualFold(got, targetSHA) {
+		t.Fatalf("selected update was not installed: %q err=%v", got, hashErr)
 	}
 }
 

@@ -308,8 +308,25 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 		)
 	}
 
+	// Only diagnostics that affect this plan should block it. Unrelated
+	// externally installed or unresolved artifacts remain visible in Issues.
+	affectedPaths := map[string]bool{}
+	for _, change := range plan.Changes {
+		for _, operation := range change.Operations {
+			if operation.CurrentPath != "" {
+				affectedPaths[filepath.ToSlash(filepath.Clean(operation.CurrentPath))] = true
+			}
+			if operation.TargetPath != "" {
+				affectedPaths[filepath.ToSlash(filepath.Clean(operation.TargetPath))] = true
+			}
+		}
+	}
 	for _, finding := range snapshot.Diagnostics.Findings {
 		if finding.Level != "blocking" {
+			continue
+		}
+		if finding.Code != "inventory_schema_mismatch" &&
+			!affectedPaths[filepath.ToSlash(filepath.Clean(finding.Path))] {
 			continue
 		}
 		message := finding.Message

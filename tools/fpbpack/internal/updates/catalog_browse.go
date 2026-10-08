@@ -169,12 +169,8 @@ func (client *ModrinthClient) CatalogCandidate(
 		Environment:    version.Environment,
 		Installed:      installedRelease,
 		Target:         &release,
-		Classification: ClassificationReview,
+		Classification: ClassificationSafe,
 		Intent:         intent,
-		Reasons: []Reason{{
-			Code:    "explicit_version_selection",
-			Message: "This exact Modrinth version was selected explicitly in Catalog Management.",
-		}},
 	}
 	if strictEnvironmentMismatch(deployment, version.Environment) {
 		promote(&candidate, ClassificationBlocked, Reason{
@@ -374,12 +370,8 @@ func (client *CurseForgeClient) CatalogCandidate(
 		Deployment:     deployment,
 		Installed:      installedRelease,
 		Target:         &release,
-		Classification: ClassificationReview,
+		Classification: ClassificationSafe,
 		Intent:         intent,
-		Reasons: []Reason{{
-			Code:    "explicit_version_selection",
-			Message: "This exact CurseForge file was selected explicitly in Catalog Management.",
-		}},
 	}
 	if loader := loadersByFile[targetFile.ID]; loader != "" &&
 		!strings.EqualFold(loader, opts.Loader) {
