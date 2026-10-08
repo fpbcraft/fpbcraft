@@ -158,6 +158,10 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 	if err != nil {
 		return ApplyResult{}, fmt.Errorf("verify post-apply inventory: %w", err)
 	}
+	// A managed artifact may intentionally be present in both server/common and
+	// an AutoModpack group (or multiple groups). Reconcile exact matching bytes
+	// before assessing drift, including dependency-driven installs.
+	reconcileManagedSourcePaths(inv, &nextCatalog)
 	nextSnapshot := management.BuildSnapshot(inv, nextCatalog)
 	if nextSnapshot.Diagnostics.Summary.Blocking > 0 {
 		return ApplyResult{}, fmt.Errorf(
