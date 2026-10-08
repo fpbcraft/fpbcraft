@@ -211,13 +211,14 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 		return ApplyResult{}, fmt.Errorf("persist apply history: %w", err)
 	}
 
-	nextUpdates := updatecheck.Report{
-		GeneratedAt: now,
-		Minecraft: s.options.Minecraft,
-		Loader: s.options.Loader,
-		Candidates: []updatecheck.Candidate{},
+	// Preserve discovery for unrelated mods. Changed projects must be queried
+	// again, but clearing the entire cache makes every restart appear empty.
+	nextUpdates := updatesAfterCatalogMutation(previousState.Catalog, nextCatalog, s.updates, s.hasUpdate)
+	if s.hasUpdate {
+		if err = writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), nextUpdates); err != nil {
+			return ApplyResult{}, fmt.Errorf("persist update cache: %w", err)
+		}
 	}
-	_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), nextUpdates)
 	s.mu.Lock()
 	s.state = nextState
 	s.snapshot = nextSnapshot
@@ -344,13 +345,12 @@ func (s *Service) RestoreBackup(ctx context.Context, backupID string) (result Re
 		return RestoreResult{}, err
 	}
 
-	nextUpdates := updatecheck.Report{
-		GeneratedAt: now,
-		Minecraft: s.options.Minecraft,
-		Loader: s.options.Loader,
-		Candidates: []updatecheck.Candidate{},
+	nextUpdates := updatesAfterCatalogMutation(previousState.Catalog, nextState.Catalog, s.updates, s.hasUpdate)
+	if s.hasUpdate {
+		if err = writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), nextUpdates); err != nil {
+			return RestoreResult{}, fmt.Errorf("persist update cache: %w", err)
+		}
 	}
-	_ = writeJSONAtomic(filepath.Join(s.options.StateDir, "updates.json"), nextUpdates)
 	s.mu.Lock()
 	s.state = nextState
 	s.snapshot = nextSnapshot
@@ -1028,4 +1028,42 @@ func planTouchesAutoModpack(plan planning.Plan) bool {
 		}
 	}
 	return false
+}
+
+func updatesAfterCatalogMutation(before, after catalog.Report, cached updatecheck.Report, available bool) updatecheck.Report {
+	if !available {
+		return cached
+	}
+	beforeKeys := make(map[string]catalog.Entry, len(before.Managed))
+	afterKeys := make(map[string]catalog.Entry, len(after.Managed))
+	for _, entry := range before.Managed {
+		beforeKeys[catalog.EntryKey(entry)] = entry
+	}
+	for _, entry := range after.Managed {
+		afterKeys[catalog.EntryKey(entry)] = entry
+	}
+	filtered := make([]updatecheck.Candidate, 0, len(cached.Candidates))
+	for _, candidate := range cached.Candidates {
+		old, existed := beforeKeys[candidate.Key]
+		current, exists := afterKeys[candidate.Key]
+		if !existed || !exists {
+			continue
+		}
+		if !strings.EqualFold(old.SHA512, current.SHA512) ||
+			old.VersionID != current.VersionID || old.FileID != current.FileID ||
+			old.Repository != current.Repository || old.Tag != current.Tag {
+			continue
+		}
+		candidate.Deployment = current.Deployment
+		candidate.AutoModpackGroup = normalizeAutoModpackGroup(current.Deployment, current.AutoModpackGroup)
+		inheritClientDependencyGroups(candidate.Dependencies, candidate.AutoModpackGroup)
+		candidate.Side = current.Side
+		if strings.TrimSpace(current.Name) != "" {
+			candidate.Name = current.Name
+		}
+		filtered = append(filtered, candidate)
+	}
+	cached.Candidates = filtered
+	cached.RecalculateSummary()
+	return cached
 }
