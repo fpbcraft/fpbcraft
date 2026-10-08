@@ -13,6 +13,7 @@ import (
 )
 
 func (s *Service) CreatePlan(ctx context.Context, candidateKeys []string) (planning.Plan, error) {
+	s.logEvent("info", "plan", fmt.Sprintf("Building change plan for %d requested mod(s)", len(candidateKeys)))
 	// Planning captures accepted state, live inventory, provider metadata,
 	// verified artifacts, and a restore point as one deterministic snapshot.
 	// Serialize it with refresh/reconciliation so those inputs cannot change
@@ -43,13 +44,16 @@ func (s *Service) persistPlannedChange(ctx context.Context, plan planning.Plan) 
 	var existing planning.Plan
 	if err := readJSON(planPath, &existing); err == nil {
 		if s.persistedPlanReady(existing) {
+			s.logEvent("info", "plan", "Reusing existing verified plan "+existing.ID)
 			return existing, nil
 		}
 	} else if !os.IsNotExist(err) {
 		return planning.Plan{}, fmt.Errorf("read existing plan: %w", err)
 	}
 
+	s.logEvent("info", "plan", fmt.Sprintf("Verifying download/cache state for %d change(s) in %s", len(plan.Changes), plan.ID))
 	s.verifyPlanArtifacts(ctx, &plan)
+	s.logEvent("info", "plan", "Preparing restore point for "+plan.ID)
 	if err := s.createRestorePoint(&plan); err != nil {
 		plan.Status = planning.StatusBlocked
 		plan.Blockers = append(plan.Blockers, planning.Finding{
@@ -57,6 +61,7 @@ func (s *Service) persistPlannedChange(ctx context.Context, plan planning.Plan) 
 			Message: err.Error(),
 		})
 	}
+	s.logEvent("info", "plan", fmt.Sprintf("Saving plan %s (status: %s, blockers: %d)", plan.ID, plan.Status, len(plan.Blockers)))
 	if err := writeJSONAtomic(planPath, plan); err != nil {
 		return planning.Plan{}, fmt.Errorf("persist plan: %w", err)
 	}
