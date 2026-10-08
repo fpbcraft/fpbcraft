@@ -24,6 +24,8 @@ type ScanOptions struct {
 	ServerModsPath      string
 	ClientModsPath      string
 	AutoModpackHostPath string
+	// Cached inventory entries are reused only if both size and modification time match.
+	Previous *Inventory
 	// OnFile reports each inspected artifact; callers may use it to display live progress.
 	OnFile func(ModFile)
 }
@@ -105,10 +107,17 @@ func Scan(options ScanOptions) (Inventory, error) {
 		return Inventory{}, fmt.Errorf("read AutoModpack group directory %s: %w", hostRoot, readErr)
 	}
 
+	previous := make(map[string]ModFile)
+	if options.Previous != nil && options.Previous.ServerRoot == root {
+		for _, mod := range options.Previous.Mods {
+			previous[mod.Path] = mod
+		}
+	}
+
 	foundDirectory := false
 	for _, target := range targets {
 		dir := filepath.Join(root, filepath.FromSlash(target.relative))
-		mods, exists, err := scanDirectory(root, dir, target.location, target.group, options.OnFile)
+		mods, exists, err := scanDirectory(root, dir, target.location, target.group, previous, options.OnFile)
 		if err != nil {
 			return Inventory{}, err
 		}
@@ -139,7 +148,7 @@ func Scan(options ScanOptions) (Inventory, error) {
 	return result, nil
 }
 
-func scanDirectory(root, dir string, location Location, group string, onFile func(ModFile)) ([]ModFile, bool, error) {
+func scanDirectory(root, dir string, location Location, group string, previous map[string]ModFile, onFile func(ModFile)) ([]ModFile, bool, error) {
 	entries, err := os.ReadDir(dir)
 	if os.IsNotExist(err) {
 		return nil, false, nil
@@ -154,7 +163,26 @@ func scanDirectory(root, dir string, location Location, group string, onFile fun
 			continue
 		}
 		path := filepath.Join(dir, entry.Name())
-		mod, err := inspectFile(root, path, location, group)
+		relative, relErr := filepath.Rel(root, path)
+		if relErr != nil {
+			return nil, true, relErr
+		}
+		relative = filepath.ToSlash(relative)
+		var mod ModFile
+		var err error
+		if info, statErr := entry.Info(); statErr == nil {
+			if old, ok := previous[relative]; ok && old.SHA512 != "" && old.ModifiedUnixNano != 0 &&
+				old.Size == info.Size() && old.ModifiedUnixNano == info.ModTime().UnixNano() {
+				mod = old
+				mod.Location = location
+				mod.Group = group
+				mod.Cached = true
+			} else {
+				mod, err = inspectFile(root, path, location, group)
+			}
+		} else {
+			mod, err = inspectFile(root, path, location, group)
+		}
 		if err != nil {
 			relative, relErr := filepath.Rel(root, path)
 			if relErr != nil {
@@ -217,6 +245,7 @@ func inspectFile(root, path string, location Location, group string) (ModFile, e
 		Path:                  filepath.ToSlash(relative),
 		Filename:              filepath.Base(path),
 		Size:                  info.Size(),
+		ModifiedUnixNano:      info.ModTime().UnixNano(),
 		SHA1:                  hex.EncodeToString(sha1Hash.Sum(nil)),
 		SHA512:                hex.EncodeToString(sha512Hash.Sum(nil)),
 		CurseForgeFingerprint: curseForgeFingerprint,
