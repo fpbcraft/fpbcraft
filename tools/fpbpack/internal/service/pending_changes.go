@@ -247,8 +247,13 @@ func (s *Service) DiscardPendingChanges() (PendingChanges, error) {
 	return clonePendingChanges(s.state.PendingChanges), nil
 }
 
-func (s *Service) ReviewPendingChanges(ctx context.Context) (planning.Plan, error) {
+func (s *Service) ReviewPendingChanges(ctx context.Context) (result planning.Plan, err error) {
 	s.logEvent("info", "plan", "Starting review of pending changes")
+	defer func() {
+		if err != nil {
+			s.logEvent("error", "plan", "Pending review failed: "+err.Error())
+		}
+	}()
 	if !s.refreshMu.TryLock() {
 		return planning.Plan{}, fmt.Errorf("provider refresh or another protected operation is in progress; retry pending review after it finishes")
 	}
@@ -372,7 +377,7 @@ func (s *Service) ReviewPendingChanges(ctx context.Context) (planning.Plan, erro
 		return planning.Plan{}, fmt.Errorf("persist pending revision on reviewed changes: %w", err)
 	}
 
-	s.logEvent("info", "plan", fmt.Sprintf("Review completed: %s (%s, %d blocker(s))", plan.ID, plan.Status, len(plan.Blockers)))
+	s.logEvent("info", "plan", fmt.Sprintf("Review plan prepared: %s (%s, %d blocker(s)); persisting pending state", plan.ID, plan.Status, len(plan.Blockers)))
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.state.PendingChanges.Revision != pending.Revision {
