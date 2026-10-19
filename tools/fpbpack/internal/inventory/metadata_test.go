@@ -2,6 +2,8 @@ package inventory
 
 import (
 	"archive/zip"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -165,5 +167,58 @@ func TestReadDeclaredEmbeddedMod(t *testing.T) {
 	metadata, err := ReadMetadata(parent)
 	if err != nil || len(metadata) != 2 || !metadata[1].Embedded || metadata[1].ModID != "library" {
 		t.Fatalf("embedded library not discovered: %v %+v", err, metadata)
+	}
+}
+
+func TestNeoForgeProvidesArePreserved(t *testing.T) {
+	path := writeTestJar(t, map[string]string{"META-INF/neoforge.mods.toml": "[[mods]]\nmodId='fabric_api'\nversion='1'\nprovides=['fabric-api','fabric']\n"})
+	mods, err := ReadMetadata(path)
+	if err != nil || len(mods) != 1 || len(mods[0].Provides) != 2 {
+		t.Fatalf("lost declared aliases: %v %+v", err, mods)
+	}
+}
+
+func TestMetadataOnlyWrapperWithFortyFiveModules(t *testing.T) {
+	library := writeTestJar(t, map[string]string{"META-INF/neoforge.mods.toml": "[[mods]]\nmodId='module'\nversion='1'\n"})
+	data, err := os.ReadFile(library)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{}
+	jars := []map[string]string{}
+	for index := 0; index < 45; index++ {
+		path := fmt.Sprintf("META-INF/jars/module-%d.jar", index)
+		files[path] = string(data)
+		jars = append(jars, map[string]string{"path": path})
+	}
+	descriptor, err := json.Marshal(map[string]any{"jars": jars})
+	if err != nil {
+		t.Fatal(err)
+	}
+	files["META-INF/jarjar/metadata.json"] = string(descriptor)
+	mods, err := ReadMetadata(writeTestJar(t, files))
+	if err != nil || len(mods) != 45 {
+		t.Fatalf("legitimate bundle was rejected: %v mods=%d", err, len(mods))
+	}
+	for _, mod := range mods {
+		if !mod.Embedded {
+			t.Fatal("wrapper child must be identified as nested")
+		}
+	}
+}
+
+func TestNestedReadFailurePreservesVerifiedRoot(t *testing.T) {
+	path := writeTestJar(t, map[string]string{"META-INF/neoforge.mods.toml": "[[mods]]\nmodId='txnilib'\nversion='1'\n", "META-INF/jarjar/metadata.json": `{"jars":[{"path":"missing.jar"}]}`})
+	mods, err := ReadMetadata(path)
+	if err == nil || len(mods) != 1 || mods[0].ModID != "txnilib" {
+		t.Fatalf("lost valid root metadata: %v %+v", err, mods)
+	}
+}
+
+func TestUniversalSelectorReportsUnverifiedMetadata(t *testing.T) {
+	path := writeTestJar(t, map[string]string{"fabric.mod.json": `{"id":"selector","version":"1","depends":{"implementation":"*"}}`, "META-INF/forgix/multiversion/marker": "runtime selector"})
+	mods, err := ReadMetadata(path)
+	if !RuntimeMetadataUnverified(err) || len(mods) != 1 {
+		t.Fatalf("runtime-specific metadata must be explicit: %v %+v", err, mods)
 	}
 }

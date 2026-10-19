@@ -18,7 +18,7 @@ type Requirement struct {
 	Side     string   `json:"side,omitempty"`
 }
 
-const MetadataVersion = 2
+const MetadataVersion = 3
 
 type ModMetadata struct {
 	Dependencies []Requirement `json:"dependencies,omitempty"`

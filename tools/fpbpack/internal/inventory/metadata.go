@@ -17,7 +17,16 @@ func ReadMetadata(path string) ([]ModMetadata, error) {
 	}
 	defer reader.Close()
 
-	return readArchiveMetadata(reader.File, 0, &embeddedBudget{remaining: 128 << 20, count: 64})
+	mods, err := readArchiveMetadata(reader.File, 0, &embeddedBudget{remaining: 128 << 20, count: 512})
+	if err != nil {
+		return mods, err
+	}
+	for _, entry := range reader.File {
+		if strings.HasPrefix(entry.Name, "META-INF/forgix/multiversion/") {
+			return mods, &RuntimeMetadataError{Detail: "universal JAR contains runtime-selected implementations; static dependency metadata is unverified"}
+		}
+	}
+	return mods, nil
 }
 
 func readArchiveMetadata(files []*zip.File, depth int, budget *embeddedBudget) ([]ModMetadata, error) {
@@ -66,7 +75,7 @@ func readArchiveMetadata(files []*zip.File, depth int, budget *embeddedBudget) (
 		return nil, fmt.Errorf("invalid fabric.mod.json")
 	}
 
-	return nil, nil
+	return withEmbeddedMetadata(nil, entries, depth, budget)
 }
 
 func readZipText(entry *zip.File) (string, error) {

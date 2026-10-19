@@ -70,7 +70,6 @@ func copyFile(t *testing.T, source, destination string) {
 	}
 }
 
-
 func TestScanDiscoversAllAutoModpackGroups(t *testing.T) {
 	root := t.TempDir()
 	for _, group := range []string{"main", "performance", "visual"} {
@@ -121,7 +120,7 @@ func TestScanReportsEveryInspectedJar(t *testing.T) {
 	var paths []string
 	inv, err := Scan(ScanOptions{
 		ServerRoot: root,
-		OnFile: func(mod ModFile) { paths = append(paths, mod.Path) },
+		OnFile:     func(mod ModFile) { paths = append(paths, mod.Path) },
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -173,5 +172,31 @@ func TestScanReusesCachedInspectionAndInvalidatesOnChange(t *testing.T) {
 	}
 	if changed.Mods[0].Cached || changed.Mods[0].SHA512 == initial.Mods[0].SHA512 {
 		t.Fatalf("modified artifact was incorrectly reused: %+v", changed.Mods[0])
+	}
+}
+
+func TestScanKeepsRootMetadataWhenNestedInspectionFails(t *testing.T) {
+	root := t.TempDir()
+	dir := filepath.Join(root, "mods")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	jar := writeTestJar(t, map[string]string{"META-INF/neoforge.mods.toml": "[[mods]]\nmodId='txnilib'\nversion='1'\n", "META-INF/jarjar/metadata.json": `{"jars":[{"path":"missing.jar"}]}`})
+	copyFile(t, jar, filepath.Join(dir, "library.jar"))
+	inv, err := Scan(ScanOptions{ServerRoot: root})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(inv.Mods) != 1 || len(inv.Mods[0].Metadata) != 1 || inv.Mods[0].Metadata[0].ModID != "txnilib" || inv.Mods[0].Error == "" {
+		t.Fatalf("valid parent identity must survive incomplete children: %+v", inv.Mods)
+	}
+	inv.Mods[0].MetadataVersion = MetadataVersion - 1
+	inv.Mods[0].Metadata = nil
+	rescanned, err := Scan(ScanOptions{ServerRoot: root, Previous: &inv})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rescanned.Mods[0].Cached || len(rescanned.Mods[0].Metadata) != 1 {
+		t.Fatal("old metadata cache must be reparsed")
 	}
 }
