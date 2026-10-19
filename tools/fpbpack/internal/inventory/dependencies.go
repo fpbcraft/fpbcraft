@@ -11,9 +11,10 @@ import (
 func parseModsTOML(content, loader, sourceEntry, manifestVersion string) ([]ModMetadata, error) {
 	var raw struct {
 		Mods []struct {
-			ModID   string `toml:"modId"`
-			Name    string `toml:"displayName"`
-			Version string `toml:"version"`
+			ModID    string   `toml:"modId"`
+			Name     string   `toml:"displayName"`
+			Version  string   `toml:"version"`
+			Provides []string `toml:"provides"`
 		} `toml:"mods"`
 		Dependencies map[string][]struct {
 			ModID        string `toml:"modId"`
@@ -34,7 +35,7 @@ func parseModsTOML(content, loader, sourceEntry, manifestVersion string) ([]ModM
 		if m.Version == "${file.jarVersion}" && manifestVersion != "" {
 			m.Version = manifestVersion
 		}
-		mod := ModMetadata{Loader: loader, ModID: m.ModID, Name: m.Name, Version: m.Version, SourceEntry: sourceEntry}
+		mod := ModMetadata{Loader: loader, ModID: m.ModID, Name: m.Name, Version: m.Version, SourceEntry: sourceEntry, Provides: m.Provides}
 		for _, dep := range raw.Dependencies[m.ModID] {
 			kind := dep.Type
 			if kind == "" {

@@ -49,7 +49,9 @@ func (s *Service) validateProposedDependencies(plan *planning.Plan) {
 				continue
 			}
 			metadata, err := inventory.ReadMetadata(caches[strings.ToLower(operation.TargetSHA512)])
-			if err != nil {
+			if inventory.RuntimeMetadataUnverified(err) {
+				plan.Warnings = append(plan.Warnings, planning.Finding{Code: "dependency_metadata_unverified", CandidateKey: change.CandidateKey, Name: change.Name, Path: operation.TargetPath, Message: err.Error()})
+			} else if err != nil {
 				plan.Blockers = append(plan.Blockers, planning.Finding{Code: "dependency_metadata_unreadable", CandidateKey: change.CandidateKey, Name: change.Name, Path: operation.TargetPath, Message: fmt.Sprintf("Cannot inspect target JAR dependencies: %v", err)})
 				continue
 			}
@@ -57,6 +59,10 @@ func (s *Service) validateProposedDependencies(plan *planning.Plan) {
 			file.Path = operation.TargetPath
 			file.Filename = change.Artifact.Filename
 			file.SHA512 = operation.TargetSHA512
+			file.Error = ""
+			if err != nil {
+				file.Error = err.Error()
+			}
 			file.Metadata = metadata
 			if file.Location == "" || filepath.Dir(operation.CurrentPath) != filepath.Dir(operation.TargetPath) {
 				file.Location = inventory.Location(change.Artifact.Deployment)

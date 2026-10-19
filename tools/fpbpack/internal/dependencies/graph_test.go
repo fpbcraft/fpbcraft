@@ -109,3 +109,64 @@ func TestEmbeddedDependencyDoesNotInstallSecondJar(t *testing.T) {
 		t.Fatalf("embedded library incorrectly missing: %+v", got)
 	}
 }
+
+func TestBundledLibrariesSatisfyOtherInstalledMods(t *testing.T) {
+	consumer := testFile("mods/aeroencasedpipe.jar", "aeroencasedpipe", "1", inventory.LocationServer, "", inventory.Requirement{ModID: "aeronautics", Type: "required", Versions: []string{"[1,)"}})
+	provider := testFile("mods/aeronautics-bundled.jar", "aeronautics_bundled", "1", inventory.LocationServer, "")
+	provider.Metadata = append(provider.Metadata, inventory.ModMetadata{ModID: "aeronautics", Version: "1.3.2", Loader: "neoforge", Embedded: true})
+	if findings := Analyze([]inventory.ModFile{consumer, provider}); len(findings) != 0 {
+		t.Fatalf("installed bundled mod should satisfy external dependents: %+v", findings)
+	}
+	provider.Location = inventory.LocationClient
+	provider.Group = "optional"
+	if !hasCode(Analyze([]inventory.ModFile{consumer, provider}), "required_mod_missing") {
+		t.Fatal("bundled mod from another runtime must not satisfy server dependency")
+	}
+}
+
+func TestDeclaredNeoForgeAliasesSatisfyFabricDependencies(t *testing.T) {
+	consumer := testFile("mods/bmm.jar", "bmmarker", "1", inventory.LocationServer, "", inventory.Requirement{ModID: "fabric-api-base", Type: "required", Versions: []string{"*"}})
+	consumer.Metadata[0].Loader = "fabric"
+	api := testFile("mods/fabric-api.jar", "fabric_api", "1", inventory.LocationServer, "")
+	api.Metadata = append(api.Metadata, inventory.ModMetadata{ModID: "fabric_api_base", Provides: []string{"fabric-api-base"}, Version: "1", Loader: "neoforge", Embedded: true})
+	if got := Analyze([]inventory.ModFile{consumer, api}); len(got) != 0 {
+		t.Fatalf("declared alias ignored: %+v", got)
+	}
+}
+
+func TestConnectorIDMappingRequiresConnectorInRuntime(t *testing.T) {
+	consumer := testFile("mods/indypets.jar", "indypets", "1", inventory.LocationServer, "", inventory.Requirement{ModID: "cloth-config", Type: "required", Versions: []string{"*"}})
+	consumer.Metadata[0].Loader = "fabric"
+	cloth := testFile("mods/cloth.jar", "cloth_config", "15.0.140", inventory.LocationServer, "")
+	connector := testFile("mods/connector.jar", "connector", "2", inventory.LocationServer, "")
+	if got := Analyze([]inventory.ModFile{consumer, cloth, connector}); len(got) != 0 {
+		t.Fatalf("Connector alias was not resolved: %+v", got)
+	}
+	if !hasCode(Analyze([]inventory.ModFile{consumer, cloth}), "required_mod_missing") {
+		t.Fatal("must not guess underscore aliases without Connector")
+	}
+}
+
+func TestIncompleteMetadataDoesNotProveDependencyIsMissing(t *testing.T) {
+	consumer := testFile("mods/consumer.jar", "consumer", "1", inventory.LocationServer, "", inventory.Requirement{ModID: "library", Type: "required", Versions: []string{"*"}})
+	unknown := testFile("mods/selector.jar", "selector", "1", inventory.LocationServer, "")
+	unknown.Error = "runtime-selected metadata cannot be established"
+	findings := Analyze([]inventory.ModFile{consumer, unknown})
+	if hasCode(findings, "required_mod_missing") || !hasCode(findings, "dependency_metadata_unverified") {
+		t.Fatalf("uncertain absence must be a warning: %+v", findings)
+	}
+	if !hasCode(Analyze([]inventory.ModFile{consumer}), "required_mod_missing") {
+		t.Fatal("genuinely missing library must still block")
+	}
+}
+
+func TestAmbiguousEmbeddedVersionSelectionNeedsReview(t *testing.T) {
+	consumer := testFile("mods/consumer.jar", "consumer", "1", inventory.LocationServer, "", inventory.Requirement{ModID: "library", Type: "required", Versions: []string{"[1,2)"}})
+	a := testFile("mods/bundle-a.jar", "bundle_a", "1", inventory.LocationServer, "")
+	a.Metadata = append(a.Metadata, inventory.ModMetadata{ModID: "library", Version: "1.5", Embedded: true})
+	b := testFile("mods/bundle-b.jar", "bundle_b", "1", inventory.LocationServer, "")
+	b.Metadata = append(b.Metadata, inventory.ModMetadata{ModID: "library", Version: "2.5", Embedded: true})
+	if !hasCode(Analyze([]inventory.ModFile{consumer, a, b}), "dependency_constraint_unverified") {
+		t.Fatal("must not guess which nested version the loader will select")
+	}
+}

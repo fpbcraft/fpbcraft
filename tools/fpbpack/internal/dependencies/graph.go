@@ -61,10 +61,7 @@ func Analyze(files []inventory.ModFile) []Finding {
 			}
 			visible := []node{}
 			possible := false
-			for _, supplied := range byID[requirement.ModID] {
-				if supplied.mod.Embedded && supplied.file.Path != n.file.Path {
-					continue
-				}
+			for _, supplied := range requirementProviders(byID, requirement.ModID, n) {
 				if visibleTo(supplied.file, n.file) {
 					visible = append(visible, supplied)
 				} else if n.file.Location == inventory.LocationClient && supplied.file.Location == inventory.LocationServer {
@@ -76,7 +73,9 @@ func Analyze(files []inventory.ModFile) []Finding {
 					continue
 				}
 				code, level, message := "required_mod_missing", "blocking", fmt.Sprintf("%s requires %s in %s.", n.mod.ModID, requirement.ModID, scope(n.file))
-				if possible {
+				if scopeMetadataIncomplete(files, n.file) {
+					code, level, message = "dependency_metadata_unverified", "warning", fmt.Sprintf("%s requires %s, but its availability in %s is unverified because some JAR metadata is incomplete or runtime-selected.", n.mod.ModID, requirement.ModID, scope(n.file))
+				} else if possible {
 					code, level, message = "dependency_delivery_unverified", "warning", fmt.Sprintf("%s requires %s; only a server/common copy is known. Verify AutoModpack delivery to %s.", n.mod.ModID, requirement.ModID, scope(n.file))
 				}
 				findings = append(findings, Finding{code, level, n.mod.ModID, n.file.Path, message})
@@ -84,12 +83,16 @@ func Analyze(files []inventory.ModFile) []Finding {
 			}
 			matched := false
 			unknown := false
+			allMatched := true
+			hasEmbedded := false
 			for _, supplied := range visible {
 				ok, err := Matches(supplied.mod.Version, requirement.Versions, n.mod.Loader)
 				matched = matched || ok
-				unknown = unknown || err != nil
+				allMatched = allMatched && ok
+				hasEmbedded = hasEmbedded || supplied.mod.Embedded
+				unknown = unknown || err != nil || supplied.file.Error != ""
 			}
-			if unknown && !matched {
+			if unknown || (hasEmbedded && matched && !allMatched) {
 				findings = append(findings, Finding{"dependency_constraint_unverified", "warning", n.mod.ModID, n.file.Path, fmt.Sprintf("Cannot verify %s requirement %s %v with the installed version metadata.", n.mod.ModID, requirement.ModID, requirement.Versions)})
 				continue
 			}

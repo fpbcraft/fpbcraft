@@ -254,10 +254,9 @@ func inspectFile(root, path string, location Location, group string) (ModFile, e
 
 	mod.MetadataVersion = MetadataVersion
 	metadata, err := ReadMetadata(path)
+	mod.Metadata = metadata
 	if err != nil {
 		mod.Error = err.Error()
-	} else {
-		mod.Metadata = metadata
 	}
 	return mod, nil
 }

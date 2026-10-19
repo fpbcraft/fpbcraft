@@ -393,8 +393,11 @@ automatically searching every possible combination.
 Client dependencies must be available in `main` or their own optional group. A copy
 found only in server/common produces a delivery warning, because the source file
 alone does not prove that AutoModpack distributes it. The validator does not infer
-all possible combinations of independent optional groups. Nested libraries are
-recognized within their declaring JAR; cross-JAR nested-library selection remains
+all possible combinations of independent optional groups. Declared nested libraries and NeoForge `provides` aliases satisfy other mods in
+the same runtime/group. Connector's underscore-to-hyphen ID mapping is used for
+Fabric dependencies only when Connector is visible in that runtime. Conflicting
+embedded versions and runtime-selected universal JARs produce unverified warnings
+rather than guessed missing dependencies; final nested-version selection remains
 the loader's responsibility. Minecraft/Java/loader runtime version constraints and
 non-semantic Maven qualifiers still require runtime validation. Unsupported version
 syntax and unavailable provider metadata are shown as unverified findings rather
