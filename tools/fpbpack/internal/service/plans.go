@@ -43,7 +43,7 @@ func (s *Service) persistPlannedChange(ctx context.Context, plan planning.Plan) 
 	planPath := filepath.Join(s.options.StateDir, "plans", plan.ID+".json")
 	var existing planning.Plan
 	if err := readJSON(planPath, &existing); err == nil {
-		if s.persistedPlanReady(existing) {
+		if s.persistedPlanReady(existing) && s.validateDependencySnapshot(existing) == nil {
 			s.logEvent("info", "plan", "Reusing existing verified plan "+existing.ID)
 			return existing, nil
 		}
@@ -53,6 +53,13 @@ func (s *Service) persistPlannedChange(ctx context.Context, plan planning.Plan) 
 
 	s.logEvent("info", "plan", fmt.Sprintf("Verifying download/cache state for %d change(s) in %s", len(plan.Changes), plan.ID))
 	s.verifyPlanArtifacts(ctx, &plan)
+	s.validateProposedDependencies(&plan)
+	s.validateProviderRequirements(ctx, &plan)
+	if len(plan.Blockers) > 0 {
+		plan.Status = planning.StatusBlocked
+		plan.Verified = false
+		plan.VerifiedAt = nil
+	}
 	s.logEvent("info", "plan", "Preparing restore point for "+plan.ID)
 	if err := s.createRestorePoint(&plan); err != nil {
 		plan.Status = planning.StatusBlocked
@@ -155,7 +162,7 @@ func validPlanID(id string) bool {
 }
 
 func (s *Service) persistedPlanReady(plan planning.Plan) bool {
-	if plan.Status != planning.StatusReady || !plan.Verified {
+	if plan.SchemaVersion != planning.SchemaVersion || plan.Status != planning.StatusReady || !plan.Verified {
 		return false
 	}
 	if !plan.RequiresBackup {

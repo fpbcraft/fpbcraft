@@ -97,8 +97,10 @@ type Report struct {
 }
 
 type Entry struct {
+	PlacementSourcePath string             `json:"placement_source_path,omitempty"`
 	Provider    string             `json:"provider"`
 	ProjectID   string             `json:"project_id"`
+	Aliases             []string           `json:"aliases,omitempty"`
 	ArtifactID  string             `json:"artifact_id,omitempty"`
 	VersionID   string             `json:"version_id,omitempty"`
 	FileID      uint32             `json:"file_id,omitempty"`
@@ -171,6 +173,7 @@ func EnsureManagedArtifactIDs(entries []Entry) bool {
 }
 
 func (r *Report) RecalculateSummary() {
+	r.CoalesceManaged()
 	EnsureManagedArtifactIDs(r.Managed)
 
 	// Placement warnings are derived state. Rebuild them from the accepted
@@ -552,7 +555,6 @@ func sha256Hex(content []byte) string {
 	sum := sha256.Sum256(content)
 	return hex.EncodeToString(sum[:])
 }
-
 
 func normalizedAutoModpackGroup(location inventory.Location, group string) string {
 	if location != inventory.LocationClient {

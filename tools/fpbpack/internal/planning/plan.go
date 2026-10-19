@@ -16,7 +16,7 @@ import (
 	updatecheck "github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/updates"
 )
 
-const SchemaVersion = 1
+const SchemaVersion = 2
 
 var ErrNotFound = errors.New("plan not found")
 
@@ -80,6 +80,7 @@ type PrefetchedArtifact struct {
 }
 
 type Plan struct {
+	DependencyInventory  map[string]string    `json:"dependency_inventory,omitempty"`
 	SchemaVersion        int                  `json:"schema_version"`
 	ID                   string               `json:"id"`
 	CreatedAt            time.Time            `json:"created_at"`
@@ -140,25 +141,7 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 	for _, candidate := range report.Candidates {
 		candidates[candidate.Key] = candidate
 	}
-	mods := make(map[string]management.Mod, len(snapshot.Mods)*2)
-	projectCounts := map[string]int{}
-	for _, mod := range snapshot.Mods {
-		if mod.Provider != "" && mod.ProjectID != "" {
-			projectCounts[mod.Provider+":"+mod.ProjectID]++
-		}
-	}
-	for _, mod := range snapshot.Mods {
-		if mod.Provider == "" || mod.ProjectID == "" {
-			continue
-		}
-		base := mod.Provider + ":" + mod.ProjectID
-		if strings.TrimSpace(mod.ID) != "" {
-			mods[mod.ID] = mod
-		}
-		if projectCounts[base] == 1 || strings.TrimSpace(mod.ID) == "" {
-			mods[base] = mod
-		}
-	}
+	mods := indexManagedMods(snapshot.Mods)
 
 	changeIndex := map[string]int{}
 	closureVisited := map[string]bool{}
@@ -179,6 +162,14 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 			intent = "update"
 		}
 		mod, installed := mods[candidate.Key]
+		if candidate.SourcePath != "" {
+			for _, file := range snapshot.Mods {
+				if file.Path == candidate.SourcePath {
+					mod, installed = file, true
+					break
+				}
+			}
+		}
 
 		if intent == "remove" {
 			if !installed {
@@ -219,6 +210,22 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 					TargetPath: mod.Path,
 					CurrentSHA512: mod.SHA512,
 				}},
+			}
+			if len(candidate.SourcePaths) > 0 {
+				change.Operations = nil
+				for _, path := range candidate.SourcePaths {
+					found := false
+					for _, file := range snapshot.Mods {
+						if file.Path == path && file.Provider == candidate.Provider && file.ProjectID == candidate.ProjectID {
+							change.Operations = append(change.Operations, FileOperation{Action: "remove", CurrentPath: file.Path, TargetPath: file.Path, CurrentSHA512: file.SHA512})
+							found = true
+							break
+						}
+					}
+					if !found {
+						addBlocker(&plan, "installed_artifact_missing", key, "A selected removal path is no longer installed: "+path)
+					}
+				}
 			}
 			appendChange(&plan, change, changeIndex)
 			plan.Warnings = append(plan.Warnings, Finding{
@@ -325,6 +332,9 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 		if finding.Level != "blocking" {
 			continue
 		}
+		if finding.Code == "runtime_mod_duplicate" || finding.Code == "required_mod_missing" || finding.Code == "required_mod_version" || finding.Code == "incompatible_mod_installed" {
+			continue
+		}
 		if finding.Code != "inventory_schema_mismatch" &&
 			!affectedPaths[filepath.ToSlash(filepath.Clean(finding.Path))] {
 			continue
@@ -347,7 +357,10 @@ func Build(selected []string, report updatecheck.Report, snapshot management.Sna
 		}
 		return plan.Changes[i].CandidateKey < plan.Changes[j].CandidateKey
 	})
+	expandArtifactPlacements(&plan, candidates, snapshot.Mods)
+	validateArtifactSources(&plan, snapshot)
 	coalesceSatisfiedManagedAdds(&plan, snapshot.Mods)
+	coalescePlacementTargets(&plan, snapshot.Mods)
 	validateOperationCollisions(&plan, snapshot.Mods)
 	annotateFindingContexts(&plan, snapshot)
 	plan.Warnings = uniqueFindings(plan.Warnings)
@@ -447,7 +460,7 @@ func appendDependencyClosure(
 				})
 				continue
 			}
-			if installed && dependency.Action == "add" && aliasProvider {
+			if installed && aliasProvider && !dependencyRequirementSatisfied(dependency, target, mod, inv) {
 				plan.Blockers = append(plan.Blockers, Finding{
 					Code:         "dependency_cross_provider_version_mismatch",
 					CandidateKey: depKey,
@@ -507,8 +520,12 @@ func appendDependencyClosure(
 				}
 			}
 
+			installedKey := depKey
+			if installed && mod.ID != "" {
+				installedKey = mod.ID
+			}
 			change := Change{
-				CandidateKey: depKey,
+				CandidateKey:     installedKey,
 				Name: name,
 				DependencyDriven: true,
 				Classification: updatecheck.ClassificationReview,
@@ -987,12 +1004,14 @@ func uniqueFindings(findings []Finding) []Finding {
 
 func planID(plan Plan) string {
 	payload := struct {
+		SchemaVersion        int       `json:"schema_version"`
 		InventoryGeneratedAt time.Time `json:"inventory_generated_at"`
 		UpdatesGeneratedAt   time.Time `json:"updates_generated_at"`
 		Selected             []string  `json:"selected"`
 		Changes              []Change  `json:"changes"`
 		Blockers             []Finding `json:"blockers"`
 	}{
+		SchemaVersion:        plan.SchemaVersion,
 		InventoryGeneratedAt: plan.InventoryGeneratedAt,
 		UpdatesGeneratedAt: plan.UpdatesGeneratedAt,
 		Selected: plan.Selected,

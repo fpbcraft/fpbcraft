@@ -60,6 +60,9 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 	if err != nil {
 		return ApplyResult{}, err
 	}
+	if plan.SchemaVersion != planning.SchemaVersion {
+		return ApplyResult{}, fmt.Errorf("this review uses an older planning format; review the pending changes again")
+	}
 	if plan.Status != planning.StatusReady || !plan.Verified {
 		return ApplyResult{}, fmt.Errorf("reviewed changes %s are not ready and verified", plan.ID)
 	}
@@ -108,6 +111,9 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 	s.logEvent("info", "apply", "Checking live files and verified download cache")
 	if err := s.validatePlanLiveState(plan); err != nil {
 		return ApplyResult{}, fmt.Errorf("reviewed changes are stale: %w", err)
+	}
+	if err := s.validateDependencySnapshot(plan); err != nil {
+		return ApplyResult{}, fmt.Errorf("dependency inventory changed after review: %w", err)
 	}
 	s.logEvent("info", "apply", "Staging and hashing replacement JARs")
 	staged, err := s.stagePlanTargets(plan)
@@ -178,6 +184,7 @@ func (s *Service) ApplyPlan(ctx context.Context, planID string) (result ApplyRes
 			Changes:       []PendingChange{},
 		}
 	}
+	normalizeArtifactReferences(&nextState)
 	nextState.UpdatedAt = stateChangedAt
 	if planTouchesAutoModpack(plan) {
 		nextState.AutoModpack.PendingPublish = true
@@ -469,6 +476,9 @@ func (s *Service) validatePlanCatalogState(plan planning.Plan) error {
 	managed := make(map[string]catalog.Entry, len(accepted))
 	for _, entry := range accepted {
 		managed[catalog.EntryKey(entry)] = entry
+		for _, alias := range entry.Aliases {
+			managed[alias] = entry
+		}
 	}
 	for _, change := range plan.Changes {
 		for _, operation := range change.Operations {
@@ -890,22 +900,38 @@ func catalogAfterPlan(current catalog.Report, plan planning.Plan) (catalog.Repor
 	for _, change := range plan.Changes {
 		found := -1
 		for index, entry := range next.Managed {
-			if catalog.EntryKey(entry) == change.CandidateKey {
+			if catalog.MatchesKey(entry, change.CandidateKey) {
 				found = index
 				break
 			}
 		}
 
-		isRemoval := false
+		remaining := []catalog.Source{}
+		removedPaths := map[string]bool{}
+		writes := false
 		for _, operation := range change.Operations {
-			if operation.Action == "remove" {
-				isRemoval = true
-				break
+			removedPaths[normalizeCatalogPath(operation.CurrentPath)] = true
+			if operation.Action != "remove" {
+				writes = true
 			}
 		}
-		if isRemoval {
+		if found >= 0 {
+			for _, source := range next.Managed[found].SourcePaths {
+				if !removedPaths[normalizeCatalogPath(source.Path)] {
+					remaining = append(remaining, source)
+				}
+			}
+		}
+		if !writes {
 			if found >= 0 {
-				next.Managed = append(next.Managed[:found], next.Managed[found+1:]...)
+				if len(remaining) == 0 {
+					next.Managed = append(next.Managed[:found], next.Managed[found+1:]...)
+				} else {
+					next.Managed[found].SourcePaths = remaining
+					next.Managed[found].Deployment = remaining[0].Location
+					next.Managed[found].AutoModpackGroup = remaining[0].Group
+					next.Managed[found].PlacementSourcePath = ""
+				}
 			}
 			continue
 		}
@@ -931,6 +957,8 @@ func catalogAfterPlan(current catalog.Report, plan planning.Plan) (catalog.Repor
 		if found >= 0 {
 			previous := next.Managed[found]
 			entry.ArtifactID = previous.ArtifactID
+			entry.Aliases = previous.Aliases
+			entry.PlacementSourcePath = previous.PlacementSourcePath
 			entry.Side = previous.Side
 			if strings.TrimSpace(entry.Environment) == "" {
 				entry.Environment = previous.Environment
@@ -949,12 +977,21 @@ func catalogAfterPlan(current catalog.Report, plan planning.Plan) (catalog.Repor
 			}
 			entry.FileID = uint32(value)
 		}
+		entry.SourcePaths = remaining
 		for _, operation := range change.Operations {
-			entry.SourcePaths = append(entry.SourcePaths, catalog.Source{
-				Location: entry.Deployment,
-				Group: entry.AutoModpackGroup,
-				Path: filepath.ToSlash(operation.TargetPath),
-			})
+			if operation.Action == "remove" {
+				continue
+			}
+			location := entry.Deployment
+			group := entry.AutoModpackGroup
+			if found >= 0 {
+				for _, source := range next.Managed[found].SourcePaths {
+					if normalizeCatalogPath(source.Path) == normalizeCatalogPath(operation.CurrentPath) && filepath.Dir(operation.CurrentPath) == filepath.Dir(operation.TargetPath) {
+						location, group = source.Location, source.Group
+					}
+				}
+			}
+			entry.SourcePaths = append(entry.SourcePaths, catalog.Source{Location: location, Group: group, Path: filepath.ToSlash(operation.TargetPath)})
 		}
 
 		if found >= 0 {
@@ -1011,7 +1048,6 @@ func (s *Service) persistHistoryEvent(event planning.HistoryEvent) error {
 	}
 	return s.pruneHistory(s.Settings().RetentionCount)
 }
-
 
 func planTouchesAutoModpack(plan planning.Plan) bool {
 	for _, change := range plan.Changes {

@@ -73,8 +73,13 @@ func (s *Service) CreatePlacementPlan(ctx context.Context, path string) (plannin
 	if normalizeCatalogPath(targetRel) == normalizeCatalogPath(currentRel) {
 		return planning.Plan{}, fmt.Errorf("preferred placement resolves to the current path")
 	}
+	targetPresent := false
 	if _, err := os.Stat(filepath.Join(s.options.ServerRoot, targetRel)); err == nil {
-		return planning.Plan{}, fmt.Errorf("preferred placement target is already occupied: %s", targetPath)
+		targetHash, hashErr := sha512File(filepath.Join(s.options.ServerRoot, targetRel))
+		if hashErr != nil || !strings.EqualFold(targetHash, actual) || !sourcesContainPath(entry.SourcePaths, targetPath) {
+			return planning.Plan{}, fmt.Errorf("preferred placement target is already occupied: %s", targetPath)
+		}
+		targetPresent = true
 	} else if !os.IsNotExist(err) {
 		return planning.Plan{}, err
 	}
@@ -129,6 +134,11 @@ func (s *Service) CreatePlacementPlan(ctx context.Context, path string) (plannin
 			}},
 		}},
 	}
+	if targetPresent {
+		plan.Changes[0].Operations[0].Action = "remove"
+		plan.Changes[0].Operations[0].TargetPath = filepath.ToSlash(currentRel)
+		plan.Changes[0].Operations[0].TargetSHA512 = ""
+	}
 	plan.ID = placementPlanID(key, currentRel, targetRel, actual)
 
 	cacheRel := filepath.ToSlash(filepath.Join("cache", "placement", plan.ID, mod.Filename))
@@ -147,6 +157,10 @@ func (s *Service) CreatePlacementPlan(ctx context.Context, path string) (plannin
 		Bytes: bytes,
 	}}
 
+	s.validateProposedDependencies(&plan)
+	if plan.Status == planning.StatusBlocked {
+		return plan, fmt.Errorf("placement would leave unsatisfied dependencies")
+	}
 	if err := s.createRestorePoint(&plan); err != nil {
 		return planning.Plan{}, fmt.Errorf("create placement restore point: %w", err)
 	}
@@ -206,7 +220,6 @@ func placementPlanID(candidateKey, currentPath, targetPath, sha512Value string) 
 	}, "\x00")))
 	return "plan-" + hex.EncodeToString(sum[:8])
 }
-
 
 func placementLabel(location inventory.Location, group string) string {
 	if location == inventory.LocationClient {

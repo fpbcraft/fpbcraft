@@ -357,3 +357,50 @@ Crafty integration uses API v2 with bearer-token authentication. Start/Stop rema
 The left navigation includes **Tools** and an **Execution console**. The console updates every 1.5 seconds, displays operations chronologically, can filter by subsystem/severity/text, and supports pause/follow, copy, and download. It includes per-JAR scan and provider progress, per-artifact plan verification, Apply/Restore file operations, AutoModpack command responses, and live NeoForge installer stdout/stderr. The latest 1,000 entries are kept in memory (not persisted across service restarts). While a refresh is active, its progress banner links directly to the console. Tools exposes the practical running-server equivalents of `inventory`, `doctor`, `updates`, and a full refresh, plus JSON views for inventory, accepted catalog, diagnostics, updates, and status/version. The legacy catalog-migration workspace generator remains CLI-only because it accepts arbitrary output paths and an external Packwiz helper.
 
 If a managed JAR is changed manually outside FPBPack, the next inventory/full refresh reports drift instead of silently accepting it. **Adopt current JAR** is the explicit recovery path for intentional manual replacement: FPBPack verifies the replacement against the same Modrinth project, CurseForge project, or GitHub repository before updating accepted state. A replacement that cannot be proven to belong to the accepted source remains blocked.
+
+### Releases in multiple locations and dependency review
+
+FPBPack tracks a managed release separately from its physical locations. Exact
+same-project/SHA-512 catalog records are coalesced on startup and refresh, retaining
+all locations and aliases for their old keys. Pins, ignores and editable pending
+references migrate to the surviving identity; a frozen review must be prepared
+again when its references change. Different release bytes and independent assets
+from the same repository remain distinct.
+
+The Mods table groups identical releases and shows their locations in the details
+dialog. Version updates replace every intended copy. **Stage removal** beside a
+location removes only that file in the reviewed, backed-up transaction; the
+remaining locations stay managed. Moving onto an already-correct identical managed
+copy removes the redundant source instead of overwriting the destination. Distinct
+occupied targets remain blocked. FPBPack does not automatically delete staging
+copies merely because matching bytes also exist in server/common.
+
+Diagnostics use runtime mod IDs to flag duplicate loaded mods and cross-location
+version mismatches. Fresh scans rebuild duplicate-file lists rather than counting
+historical migration data. JAR dependency metadata is refreshed once when upgrading
+from older inventory caches.
+
+Reviewed changes validate the complete proposed JAR set, including unchanged and
+unmanaged mods. NeoForge/Forge dependency tables, Fabric dependencies and aliases,
+optional installed dependencies, incompatibilities, and declared nested JAR metadata
+are inspected. Numeric Maven intervals/unions/exact constraints and common Fabric
+semantic-version expressions are checked. Modrinth's installed-version dependency
+metadata also constrains library updates, including requirements from mods outside
+the selected batch. The existing provider dependency closure still supplies proposed
+additions and updates; validation can require choosing another version rather than
+automatically searching every possible combination.
+
+Client dependencies must be available in `main` or their own optional group. A copy
+found only in server/common produces a delivery warning, because the source file
+alone does not prove that AutoModpack distributes it. The validator does not infer
+all possible combinations of independent optional groups. Nested libraries are
+recognized within their declaring JAR; cross-JAR nested-library selection remains
+the loader's responsibility. Minecraft/Java/loader runtime version constraints and
+non-semantic Maven qualifiers still require runtime validation. Unsupported version
+syntax and unavailable provider metadata are shown as unverified findings rather
+than guessed compatible.
+
+A dependency review records the exact source JAR set. Apply rejects it if any JAR was
+added, removed or changed afterward, including an unselected mod. Older frozen plan
+formats must be reviewed again; existing backups remain restorable. Manual provider
+uploads pass through the same final dependency checks before becoming ready.

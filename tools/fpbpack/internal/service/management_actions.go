@@ -748,6 +748,7 @@ func (s *Service) setPreferredPlacement(path, placement string, autoModpackGroup
 	updated := false
 	for index := range s.state.Catalog.Managed {
 		if sourcesContainPath(s.state.Catalog.Managed[index].SourcePaths, path) {
+			s.state.Catalog.Managed[index].PlacementSourcePath = path
 			s.state.Catalog.Managed[index].Deployment = target
 			s.state.Catalog.Managed[index].AutoModpackGroup = group
 			updated = true

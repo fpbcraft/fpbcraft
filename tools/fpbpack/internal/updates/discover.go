@@ -42,16 +42,14 @@ func Discover(ctx context.Context, cat catalog.Report, opts Options) Report {
 		Loader:      opts.Loader,
 	}
 
-	installedModrinth := map[string]catalog.Entry{}
-	installedCurseForge := map[string]catalog.Entry{}
+	installedModrinth := catalog.UniqueProjects(cat.Managed, "modrinth")
+	installedCurseForge := catalog.UniqueProjects(cat.Managed, "curseforge")
 	projectIDs := make([]string, 0)
 	for _, entry := range cat.Managed {
 		switch entry.Provider {
 		case "modrinth":
-			installedModrinth[entry.ProjectID] = entry
 			projectIDs = append(projectIDs, entry.ProjectID)
 		case "curseforge":
-			installedCurseForge[entry.ProjectID] = entry
 		}
 	}
 
@@ -559,6 +557,11 @@ func (r dependencyResolver) resolve(
 	}
 
 	installedEntry, exists := r.installed[result.ProjectID]
+	if exists && installedEntry.SHA512 == "" && installedEntry.VersionID == "" {
+		result.Action = "conflict"
+		promote(candidate, ClassificationBlocked, Reason{Code: "ambiguous_installed_dependency", Message: "Resolve the multiple installed versions of " + result.ProjectID + " before dependency planning."})
+		return result
+	}
 	if exists {
 		result.InstalledVersion = installedEntry.VersionID
 		result.Name = installedEntry.Name

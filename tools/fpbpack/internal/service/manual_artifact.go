@@ -145,6 +145,13 @@ func (s *Service) AcceptManualArtifact(
 		plan.Status = planning.StatusReady
 		plan.Verified = true
 		plan.VerifiedAt = &now
+		s.validateProposedDependencies(&plan)
+		s.validateProviderRequirements(ctx, &plan)
+		if len(plan.Blockers) > 0 {
+			plan.Status = planning.StatusBlocked
+			plan.Verified = false
+			plan.VerifiedAt = nil
+		}
 		if err := s.createRestorePoint(&plan); err != nil {
 			plan.Status = planning.StatusBlocked
 			plan.Verified = false

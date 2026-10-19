@@ -18,6 +18,7 @@ type Source struct {
 }
 
 type Snapshot struct {
+	Catalog     catalog.Report      `json:"-"`
 	Inventory   inventory.Inventory `json:"inventory"`
 	Diagnostics doctor.Report       `json:"diagnostics"`
 	Mods        []Mod               `json:"mods"`
@@ -36,6 +37,7 @@ type Status struct {
 }
 
 type Mod struct {
+	Aliases                   []string           `json:"aliases,omitempty"`
 	ID               string             `json:"id"`
 	Name             string             `json:"name"`
 	Filename         string             `json:"filename"`
@@ -89,7 +91,7 @@ func BuildSnapshot(inv inventory.Inventory, cat catalog.Report) Snapshot {
 		Diagnostics:          diagnostics.Summary,
 	}
 	return Snapshot{
-		Inventory:   inv,
+		Catalog: cat, Inventory: inv,
 		Diagnostics: diagnostics,
 		Mods:        mods,
 		Status:      status,
@@ -162,6 +164,11 @@ func BuildMods(inv inventory.Inventory, cat catalog.Report) []Mod {
 		switch {
 		case isManaged:
 			mod.Management = "managed"
+			mod.Aliases = managed.Aliases
+			if len(managed.SourcePaths) > 1 && managed.PlacementSourcePath != file.Path {
+				managed.Deployment = file.Location
+				managed.AutoModpackGroup = currentGroup
+			}
 			if managed.Deployment != "" {
 				mod.PreferredDeployment = managed.Deployment
 			}

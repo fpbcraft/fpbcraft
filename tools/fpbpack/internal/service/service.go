@@ -123,12 +123,14 @@ func New(ctx context.Context, options Options) (*Service, error) {
 	if err := service.loadOrBootstrapState(ctx); err != nil {
 		return nil, err
 	}
+	identitiesChanged := service.state.Catalog.CoalesceManaged()
 	artifactIDsChanged := catalog.EnsureManagedArtifactIDs(service.state.Catalog.Managed)
+	referencesChanged := normalizeArtifactReferences(&service.state)
 	autoModpackGroupsChanged := normalizeCatalogAutoModpackGroups(service.state.Catalog.Managed)
 	placementWarningsBefore, _ := json.Marshal(service.state.Catalog.Placement)
 	service.state.Catalog.RecalculateSummary()
 	placementWarningsAfter, _ := json.Marshal(service.state.Catalog.Placement)
-	if artifactIDsChanged || autoModpackGroupsChanged || string(placementWarningsBefore) != string(placementWarningsAfter) {
+	if referencesChanged || identitiesChanged || artifactIDsChanged || autoModpackGroupsChanged || string(placementWarningsBefore) != string(placementWarningsAfter) {
 		service.state.UpdatedAt = time.Now().UTC()
 		if err := service.persistState(); err != nil {
 			return nil, fmt.Errorf("persist catalog state normalization: %w", err)
@@ -158,6 +160,7 @@ func (s *Service) loadRuntimeCaches() {
 
 	var report updatecheck.Report
 	if err := readJSON(filepath.Join(s.options.StateDir, "updates.json"), &report); err == nil {
+		reconcileUpdateReportToCatalog(&report, s.state.Catalog)
 		s.applyUpdateRules(&report)
 		s.updates = report
 		s.hasUpdate = true
@@ -353,13 +356,22 @@ func reconcileUpdateReportToCatalog(report *updatecheck.Report, current catalog.
 	managed := make(map[string]catalog.Entry, len(current.Managed))
 	for _, entry := range current.Managed {
 		managed[catalog.EntryKey(entry)] = entry
+		for _, alias := range entry.Aliases {
+			managed[alias] = entry
+		}
 	}
 	filtered := report.Candidates[:0]
+	seen := map[string]bool{}
 	for _, candidate := range report.Candidates {
 		entry, ok := managed[candidate.Key]
 		if !ok {
 			continue
 		}
+		candidate.Key = catalog.EntryKey(entry)
+		if seen[candidate.Key] {
+			continue
+		}
+		seen[candidate.Key] = true
 		candidate.Deployment = entry.Deployment
 		candidate.AutoModpackGroup = normalizeAutoModpackGroup(entry.Deployment, entry.AutoModpackGroup)
 		inheritClientDependencyGroups(candidate.Dependencies, candidate.AutoModpackGroup)

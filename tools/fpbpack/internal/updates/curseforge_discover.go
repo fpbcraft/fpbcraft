@@ -175,6 +175,11 @@ func (r curseForgeDependencyResolver) resolve(
 	}
 
 	installedEntry, exists := r.installed[projectID]
+	if exists && installedEntry.SHA512 == "" && installedEntry.FileID == 0 {
+		result.Action = "conflict"
+		promote(candidate, ClassificationBlocked, Reason{Code: "ambiguous_installed_dependency", Message: "Resolve the multiple installed versions of " + projectID + " before dependency planning."})
+		return result
+	}
 	if exists {
 		result.InstalledVersion = strconv.FormatUint(uint64(installedEntry.FileID), 10)
 		result.Name = installedEntry.Name

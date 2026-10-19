@@ -2,18 +2,13 @@ package inventory
 
 import (
 	"archive/zip"
-	"encoding/json"
 	"fmt"
 	"io"
 	"path/filepath"
-	"regexp"
 	"strings"
 )
 
 const metadataReadLimit = 1 << 20 // 1 MiB per metadata file
-
-var tomlStringValue = regexp.MustCompile(`^\s*([A-Za-z0-9_.-]+)\s*=\s*"([^"]*)"\s*(?:#.*)?$`)
-var tomlSingleQuotedValue = regexp.MustCompile(`^\s*([A-Za-z0-9_.-]+)\s*=\s*'([^']*)'\s*(?:#.*)?$`)
 
 func ReadMetadata(path string) ([]ModMetadata, error) {
 	reader, err := zip.OpenReader(path)
@@ -22,8 +17,12 @@ func ReadMetadata(path string) ([]ModMetadata, error) {
 	}
 	defer reader.Close()
 
-	entries := make(map[string]*zip.File, len(reader.File))
-	for _, entry := range reader.File {
+	return readArchiveMetadata(reader.File, 0, &embeddedBudget{remaining: 128 << 20, count: 64})
+}
+
+func readArchiveMetadata(files []*zip.File, depth int, budget *embeddedBudget) ([]ModMetadata, error) {
+	entries := make(map[string]*zip.File, len(files))
+	for _, entry := range files {
 		entries[filepath.ToSlash(entry.Name)] = entry
 	}
 
@@ -46,9 +45,12 @@ func ReadMetadata(path string) ([]ModMetadata, error) {
 			if err != nil {
 				return nil, fmt.Errorf("read %s: %w", candidate.name, err)
 			}
-			mods := parseModsTOML(content, candidate.loader, candidate.name, manifestVersion)
+			mods, err := parseModsTOML(content, candidate.loader, candidate.name, manifestVersion)
+			if err != nil {
+				return nil, fmt.Errorf("parse %s: %w", candidate.name, err)
+			}
 			if len(mods) > 0 {
-				return mods, nil
+				return withEmbeddedMetadata(mods, entries, depth, budget)
 			}
 		}
 	}
@@ -59,8 +61,9 @@ func ReadMetadata(path string) ([]ModMetadata, error) {
 			return nil, fmt.Errorf("read fabric.mod.json: %w", err)
 		}
 		if mod, ok := parseFabricJSON(content); ok {
-			return []ModMetadata{mod}, nil
+			return withEmbeddedMetadata([]ModMetadata{mod}, entries, depth, budget)
 		}
+		return nil, fmt.Errorf("invalid fabric.mod.json")
 	}
 
 	return nil, nil
@@ -84,56 +87,6 @@ func readZipText(entry *zip.File) (string, error) {
 	return string(content), nil
 }
 
-func parseModsTOML(content, loader, sourceEntry, manifestVersion string) []ModMetadata {
-	var mods []ModMetadata
-	var current *ModMetadata
-
-	flush := func() {
-		if current == nil || current.ModID == "" {
-			return
-		}
-		if current.Version == "${file.jarVersion}" && manifestVersion != "" {
-			current.Version = manifestVersion
-		}
-		mods = append(mods, *current)
-	}
-
-	for _, line := range strings.Split(content, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "[") {
-			if trimmed == "[[mods]]" {
-				flush()
-				current = &ModMetadata{Loader: loader, SourceEntry: sourceEntry}
-			} else {
-				flush()
-				current = nil
-			}
-			continue
-		}
-		if current == nil {
-			continue
-		}
-		match := tomlStringValue.FindStringSubmatch(line)
-		if match == nil {
-			match = tomlSingleQuotedValue.FindStringSubmatch(line)
-		}
-		if match == nil {
-			continue
-		}
-		key, value := match[1], match[2]
-		switch key {
-		case "modId":
-			current.ModID = value
-		case "displayName":
-			current.Name = value
-		case "version":
-			current.Version = value
-		}
-	}
-	flush()
-	return mods
-}
-
 func readManifestVersion(content string) string {
 	for _, line := range strings.Split(strings.ReplaceAll(content, "\r\n", "\n"), "\n") {
 		if value, ok := strings.CutPrefix(line, "Implementation-Version:"); ok {
@@ -141,24 +94,4 @@ func readManifestVersion(content string) string {
 		}
 	}
 	return ""
-}
-
-func parseFabricJSON(content string) (ModMetadata, bool) {
-	var raw struct {
-		ID      string          `json:"id"`
-		Name    string          `json:"name"`
-		Version json.RawMessage `json:"version"`
-	}
-	if err := json.Unmarshal([]byte(content), &raw); err != nil || raw.ID == "" {
-		return ModMetadata{}, false
-	}
-	version := ""
-	_ = json.Unmarshal(raw.Version, &version)
-	return ModMetadata{
-		Loader:      "fabric",
-		ModID:       raw.ID,
-		Name:        raw.Name,
-		Version:     version,
-		SourceEntry: "fabric.mod.json",
-	}, true
 }
