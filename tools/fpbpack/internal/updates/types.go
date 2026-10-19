@@ -120,6 +120,8 @@ type Candidate struct {
 	MetadataStale  bool               `json:"metadata_stale,omitempty"`
 	RefreshError   string             `json:"refresh_error,omitempty"`
 	Rejected       []RejectedVersion  `json:"rejected,omitempty"`
+	SourcePaths        []string           `json:"source_paths,omitempty"`
+	SourcePath         string             `json:"source_path,omitempty"`
 	Intent         string             `json:"intent,omitempty"`
 }
 

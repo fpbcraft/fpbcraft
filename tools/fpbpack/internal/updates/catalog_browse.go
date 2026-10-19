@@ -409,13 +409,7 @@ func (client *CurseForgeClient) CatalogCandidate(
 }
 
 func installedEntriesForProvider(cat catalog.Report, provider string) map[string]catalog.Entry {
-	result := map[string]catalog.Entry{}
-	for _, entry := range cat.Managed {
-		if entry.Provider == provider && strings.TrimSpace(entry.ProjectID) != "" {
-			result[entry.ProjectID] = entry
-		}
-	}
-	return result
+	return catalog.UniqueProjects(cat.Managed, provider)
 }
 
 func installedReleaseFromCatalog(entry catalog.Entry) Release {

@@ -53,6 +53,10 @@ function normalizePath(value?: string) {
   return (value ?? '').replaceAll('\\', '/').replace(/^\.\//, '');
 }
 
+function artifactKey(mod: ManagementMod) {
+  return mod.id + ':' + (mod.sha512 || mod.path);
+}
+
 function normalizedGroup(mod: ManagementMod, preferred = false) {
   const deployment = preferred ? mod.preferred_deployment : mod.deployment;
   if (deployment !== 'client') return '';
@@ -322,6 +326,27 @@ export default function ModsPage() {
     [state.mods],
   );
 
+  const artifactLocations = useMemo(() => {
+    const locations = new Map<string, ManagementMod[]>();
+    for (const mod of state.mods) {
+      const key = artifactKey(mod);
+      locations.set(key, [...(locations.get(key) ?? []), mod]);
+    }
+    return locations;
+  }, [state.mods]);
+
+  const attentionPaths = useMemo(() => {
+    const paths = new Set<string>();
+    for (const finding of state.diagnostics.findings) {
+      if (!finding.actionable) continue;
+      if (finding.path) paths.add(normalizePath(finding.path));
+      else for (const mod of state.mods) {
+        if (finding.mod === mod.filename || finding.mod === mod.name) paths.add(normalizePath(mod.path));
+      }
+    }
+    return paths;
+  }, [state.diagnostics.findings, state.mods]);
+
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return state.mods.filter((mod) => {
@@ -344,7 +369,7 @@ export default function ModsPage() {
         (updateStatus === 'blocked' && candidate?.classification === 'blocked') ||
         (updateStatus === 'up_to_date' && candidate?.classification === 'up_to_date');
       const needsAttention =
-        blockerPaths.has(normalizePath(mod.path)) ||
+        (artifactLocations.get(artifactKey(mod)) ?? [mod]).some((file) => attentionPaths.has(normalizePath(file.path))) ||
         mod.management === 'unresolved' ||
         mod.management === 'external';
 
@@ -369,6 +394,8 @@ export default function ModsPage() {
   }, [
     state.mods,
     candidatesByKey,
+    attentionPaths,
+    artifactLocations,
     blockerPaths,
     blockerRank,
     q,
@@ -380,9 +407,28 @@ export default function ModsPage() {
     attentionOnly,
   ]);
 
+  const projectVersions = useMemo(() => {
+    const projects = new Map<string, Set<string>>();
+    for (const mod of state.mods) {
+      if (!mod.provider || !mod.project_id) continue;
+      const key = mod.provider + ':' + mod.project_id;
+      const versions = projects.get(key) ?? new Set<string>();
+      versions.add(mod.installed_version || mod.sha512 || mod.path);
+      projects.set(key, versions);
+    }
+    return projects;
+  }, [state.mods]);
+
   const tableRows = useMemo<ModTableRow[]>(() => {
+    const seen = new Set<string>();
+    const artifacts = filtered.filter((mod) => {
+      const key = artifactKey(mod);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
     const combined: ModTableRow[] = [
-      ...filtered.map((mod) => ({kind: 'mod' as const, mod})),
+      ...artifacts.map((mod) => ({kind: 'mod' as const, mod})),
       ...diagnosticRows,
     ];
     return combined.sort((a, b) => {
@@ -413,7 +459,7 @@ export default function ModsPage() {
   const visibleRemovableIDs = rows
     .filter((row): row is Extract<ModTableRow, {kind: 'mod'}> => row.kind === 'mod')
     .filter((row) => isRemovableMod(row.mod))
-    .map((row) => row.mod.id);
+    .map((row) => row.mod.path);
   const allVisibleRemovableSelected =
     visibleRemovableIDs.length > 0 &&
     visibleRemovableIDs.every((id) => selectedForRemoval.has(id));
@@ -443,6 +489,15 @@ export default function ModsPage() {
     setter(value);
     setPage(1);
   };
+
+  const selectedLocations = selectedMod ? artifactLocations.get(artifactKey(selectedMod)) ?? [selectedMod] : [];
+
+  const selectedWarnings = selectedMod ? state.diagnostics.findings.filter((finding) =>
+    finding.level === 'warning' && (
+      selectedLocations.some((location) => normalizePath(location.path) === normalizePath(finding.path)) ||
+      (!finding.path && (finding.mod === selectedMod.filename || finding.mod === selectedMod.name))
+    ),
+  ) : [];
 
   const selectedCandidate = selectedMod ? candidatesByKey.get(selectedMod.id) : undefined;
   const selectedTargetGroup =
@@ -493,7 +548,7 @@ export default function ModsPage() {
     );
     setReplacementPath('');
     const params = new URLSearchParams(window.location.search);
-    params.set('mod', mod.id);
+    params.set('mod', mod.path);
     const query = params.toString();
     window.history.replaceState(null, '', window.location.pathname + (query ? '?' + query : ''));
   };
@@ -658,7 +713,7 @@ export default function ModsPage() {
       });
       setSelectedForRemoval((current) => {
         const next = new Set(current);
-        next.delete(mod.id);
+        next.delete(mod.path);
         return next;
       });
       setManagementMessage(mod.name + ' removal added to pending changes.');
@@ -673,7 +728,7 @@ export default function ModsPage() {
 
   const stageSelectedRemovals = async () => {
     const selectedMods = state.mods.filter(
-      (mod) => selectedForRemoval.has(mod.id) && isRemovableMod(mod),
+      (mod) => selectedForRemoval.has(mod.path) && isRemovableMod(mod),
     );
     if (!selectedMods.length) return;
 
@@ -1100,7 +1155,7 @@ export default function ModsPage() {
                 const mod = row.mod;
                 const candidate = candidatesByKey.get(mod.id);
                 const needsAttention =
-                  blockerPaths.has(normalizePath(mod.path)) ||
+                  (artifactLocations.get(artifactKey(mod)) ?? [mod]).some((file) => attentionPaths.has(normalizePath(file.path))) ||
                   mod.management === 'unresolved' ||
                   mod.management === 'external';
                 return (
@@ -1114,9 +1169,9 @@ export default function ModsPage() {
                         <input
                           type="checkbox"
                           className="checkbox checkbox-xs"
-                          checked={selectedForRemoval.has(mod.id)}
+                          checked={selectedForRemoval.has(mod.path)}
                           disabled={managementBusy}
-                          onChange={() => toggleRemovalSelection(mod.id)}
+                          onChange={() => toggleRemovalSelection(mod.path)}
                           aria-label={'Select ' + mod.name + ' for removal'}
                         />
                       ) : null}
@@ -1133,6 +1188,12 @@ export default function ModsPage() {
                         <div>
                           <div className="flex items-center gap-2 font-medium">
                             {mod.name}
+                            {(artifactLocations.get(artifactKey(mod))?.length ?? 0) > 1 ? (
+                              <Pill tone="neutral">{artifactLocations.get(artifactKey(mod))!.length} locations</Pill>
+                            ) : null}
+                            {(projectVersions.get((mod.provider ?? '') + ':' + (mod.project_id ?? ''))?.size ?? 0) > 1 ? (
+                              <Pill tone="warn">multiple releases</Pill>
+                            ) : null}
                             {needsAttention ? <Wrench size={12} className="text-error" /> : null}
                           </div>
                           <div className="mono mt-0.5 text-base-content/35">{mod.filename}</div>
@@ -1295,6 +1356,39 @@ export default function ModsPage() {
               <div className="alert alert-info mt-4 py-2 text-xs">{managementMessage}</div>
             ) : null}
 
+            {selectedLocations.length > 1 ? (
+              <div className="mt-4 rounded-lg border border-base-300 p-3 text-xs">
+                <div className="font-semibold">This release has {selectedLocations.length} locations</div>
+                <p className="mt-1 text-base-content/60">
+                  Version updates include every location. Remove a location only after verifying client delivery.
+                </p>
+                <ul className="mt-2 space-y-2">
+                  {selectedLocations.map((location) => (
+                    <li key={location.path} className="flex items-center justify-between gap-2">
+                      <button className="min-w-0 text-left" type="button" onClick={() => openMod(location)}>
+                        <span className="font-medium">{placementLabel(location)}</span>
+                        <span className="mono mt-0.5 block break-all text-base-content/50">{location.path}</span>
+                      </button>
+                      {isRemovableMod(location) ? (
+                        <button className="btn btn-xs btn-outline shrink-0" type="button" disabled={managementBusy}
+                          onClick={() => void stageRemoval(location)}>
+                          Stage removal
+                        </button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {selectedWarnings.length ? (
+              <div className="alert alert-warning mt-4 py-3 text-xs">
+                <ul className="space-y-1">{selectedWarnings.map((finding) => (
+                  <li key={finding.code + ':' + finding.path + ':' + finding.message}>{finding.message}</li>
+                ))}</ul>
+              </div>
+            ) : null}
+
             {selectedBlockers.length ? (
               <div className="alert alert-error mt-4 items-start py-3 text-xs">
                 <Wrench size={15} className="mt-0.5 shrink-0" />
@@ -1377,7 +1471,7 @@ export default function ModsPage() {
                         disabled={managementBusy}
                         onClick={() => void stageRemoval(selectedMod)}
                       >
-                        <PackageMinus size={14} /> Add removal to pending changes
+                        <PackageMinus size={14} /> {selectedLocations.length > 1 ? 'Remove this location' : 'Add removal to pending changes'}
                       </button>
                     </>
                   ) : null}

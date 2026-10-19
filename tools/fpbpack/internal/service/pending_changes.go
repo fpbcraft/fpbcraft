@@ -102,6 +102,9 @@ func (s *Service) StagePendingCatalogChange(
 		return PendingChanges{}, err
 	}
 	change := pendingChangeFromCandidate(candidate, normalized.Action, &normalized)
+	if normalized.Action == "remove" {
+		change.ID += ":" + normalized.Path
+	}
 	if normalized.Path != "" {
 		change.Path = normalized.Path
 	}
@@ -293,6 +296,7 @@ func (s *Service) ReviewPendingChanges(ctx context.Context) (result planning.Pla
 			if !ok {
 				return planning.Plan{}, fmt.Errorf("%s is no longer present in the current update report; remove or restage that pending change", change.Name)
 			}
+			current.SourcePath = change.Path
 			current.Deployment = change.Placement
 			current.AutoModpackGroup = normalizeAutoModpackGroup(change.Placement, change.AutoModpackGroup)
 			inheritClientDependencyGroups(current.Dependencies, current.AutoModpackGroup)
@@ -312,6 +316,20 @@ func (s *Service) ReviewPendingChanges(ctx context.Context) (result planning.Pla
 				return planning.Plan{}, fmt.Errorf("resolve pending %s for %s: %w", change.Action, change.Name, err)
 			}
 			candidate = resolved
+		}
+		if candidate.Intent == "remove" {
+			candidate.SourcePaths = []string{candidate.SourcePath}
+			merged := false
+			for index := range candidates {
+				if candidates[index].Key == candidate.Key && candidates[index].Intent == "remove" {
+					candidates[index].SourcePaths = append(candidates[index].SourcePaths, candidate.SourcePath)
+					merged = true
+					break
+				}
+			}
+			if merged {
+				continue
+			}
 		}
 		selected = append(selected, candidate.Key)
 		candidates = append(candidates, candidate)
@@ -403,7 +421,7 @@ func pendingPlacementCandidate(
 	if !ok {
 		return updatecheck.Candidate{}, fmt.Errorf("managed artifact %q was not found", change.Path)
 	}
-	if catalog.EntryKey(entry) != change.CandidateKey {
+	if !catalog.MatchesKey(entry, change.CandidateKey) {
 		return updatecheck.Candidate{}, fmt.Errorf("managed artifact identity changed after the move was staged")
 	}
 	targetGroup := normalizeAutoModpackGroup(change.Placement, change.AutoModpackGroup)
@@ -457,6 +475,7 @@ func pendingPlacementCandidate(
 		Target:           &release,
 		Classification:   updatecheck.ClassificationSafe,
 		Intent:           "placement",
+		SourcePath:       change.Path,
 		Reasons: []updatecheck.Reason{{
 			Code: "placement_change",
 			Message: fmt.Sprintf(
@@ -576,4 +595,3 @@ func clonePendingChanges(value PendingChanges) PendingChanges {
 	}
 	return value
 }
-

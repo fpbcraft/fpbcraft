@@ -11,7 +11,20 @@ const (
 	LocationClient Location = "client"
 )
 
+type Requirement struct {
+	ModID    string   `json:"mod_id"`
+	Type     string   `json:"type"`
+	Versions []string `json:"versions,omitempty"`
+	Side     string   `json:"side,omitempty"`
+}
+
+const MetadataVersion = 2
+
 type ModMetadata struct {
+	Dependencies []Requirement `json:"dependencies,omitempty"`
+	Provides     []string      `json:"provides,omitempty"`
+	Environment  string        `json:"environment,omitempty"`
+	Embedded     bool          `json:"embedded,omitempty"`
 	Loader      string `json:"loader,omitempty"`
 	ModID       string `json:"mod_id,omitempty"`
 	Name        string `json:"name,omitempty"`
@@ -41,6 +54,7 @@ type CurseForgeMatch struct {
 }
 
 type ModFile struct {
+	MetadataVersion       int              `json:"metadata_version,omitempty"`
 	Location              Location         `json:"location"`
 	Group                 string           `json:"group,omitempty"`
 	Path                  string           `json:"path"`

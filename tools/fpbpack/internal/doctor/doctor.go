@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/catalog"
+	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/dependencies"
 	"github.com/fpbcraft/fpbcraft/tools/fpbpack/internal/inventory"
 )
 
@@ -215,6 +216,10 @@ func Analyze(inv inventory.Inventory, cat catalog.Report) Report {
 			Mod:        displayModName(mod),
 			Path:       mod.Path,
 		})
+	}
+
+	for _, finding := range dependencies.Analyze(inv.Mods) {
+		add(Finding{Code: finding.Code, Level: Level(finding.Level), Actionable: true, Message: finding.Message, Mod: finding.Mod, Path: finding.Path})
 	}
 
 	sort.SliceStable(findings, func(i, j int) bool {

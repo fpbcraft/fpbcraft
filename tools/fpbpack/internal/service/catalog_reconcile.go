@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"sort"
 	"strings"
 	"time"
@@ -101,10 +102,40 @@ func sameSources(left, right []catalog.Source) bool {
 func (s *Service) reconcileCatalogWithInventory(inv inventory.Inventory) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	changed := reconcileManagedSourcePaths(inv, &s.state.Catalog)
+	changed := 0
+	if s.state.Catalog.CoalesceManaged() {
+		changed++
+	}
+	if normalizeArtifactReferences(&s.state) {
+		changed++
+	}
+	changed += reconcileManagedSourcePaths(inv, &s.state.Catalog)
 	changed += adoptExactInventoryMatches(inv, &s.state.Catalog)
 	if changed > 0 {
 		changed += reconcileManagedSourcePaths(inv, &s.state.Catalog)
+	}
+	oldDuplicates, _ := json.Marshal(s.state.Catalog.Duplicates)
+	byHash := map[string][]catalog.Source{}
+	for _, mod := range inv.Mods {
+		if mod.SHA512 != "" {
+			hash := strings.ToLower(mod.SHA512)
+			byHash[hash] = append(byHash[hash], catalog.Source{Location: mod.Location, Group: mod.Group, Path: normalizeCatalogPath(mod.Path)})
+		}
+	}
+	var duplicates []catalog.Duplicate
+	for hash, sources := range byHash {
+		if len(sources) > 1 {
+			sortSources(sources)
+			duplicates = append(duplicates, catalog.Duplicate{SHA512: hash, Files: sources})
+		}
+	}
+	sort.Slice(duplicates, func(i, j int) bool { return duplicates[i].SHA512 < duplicates[j].SHA512 })
+	freshDuplicates, _ := json.Marshal(duplicates)
+	if string(oldDuplicates) != string(freshDuplicates) || s.state.Catalog.Summary.InventoryJARs != len(inv.Mods) {
+		s.state.Catalog.Duplicates = duplicates
+		s.state.Catalog.RecalculateSummary()
+		s.state.Catalog.Summary.InventoryJARs = len(inv.Mods)
+		changed++
 	}
 	if changed == 0 {
 		return 0, nil

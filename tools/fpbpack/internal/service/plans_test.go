@@ -44,6 +44,7 @@ func TestPersistedPlanReadyRequiresRestorePoint(t *testing.T) {
 	stateDir := t.TempDir()
 	s := &Service{options: Options{StateDir: stateDir}}
 	plan := planning.Plan{
+		SchemaVersion:  planning.SchemaVersion,
 		ID: "plan-0123456789abcdef",
 		Status: planning.StatusReady,
 		Verified: true,

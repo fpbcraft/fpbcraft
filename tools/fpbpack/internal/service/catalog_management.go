@@ -279,6 +279,7 @@ func (s *Service) catalogCandidateForPlanRequest(
 		if strings.TrimSpace(group) == "" {
 			group = entry.AutoModpackGroup
 		}
+		candidate.SourcePath = request.Path
 		request.Provider = entry.Provider
 		request.ProjectID = entry.ProjectID
 		request.Placement = placement
@@ -296,7 +297,21 @@ func (s *Service) catalogCandidateForPlanRequest(
 				"safe removal currently requires Modrinth or CurseForge dependency metadata",
 			)
 		}
-		requiredBy, err := s.currentRequiredBy(ctx, entry, cat)
+		remaining := false
+		for _, accepted := range cat.Managed {
+			if accepted.Provider == entry.Provider && accepted.ProjectID == entry.ProjectID {
+				for _, source := range accepted.SourcePaths {
+					if normalizeCatalogPath(source.Path) != request.Path {
+						remaining = true
+					}
+				}
+			}
+		}
+		var requiredBy []string
+		var err error
+		if !remaining {
+			requiredBy, err = s.currentRequiredBy(ctx, entry, cat)
+		}
 		if err != nil {
 			return updatecheck.Candidate{}, request, err
 		}
@@ -328,6 +343,7 @@ func (s *Service) catalogCandidateForPlanRequest(
 			},
 			Classification: updatecheck.ClassificationReview,
 			Intent:         "remove",
+			SourcePath:     request.Path,
 			RequiredBy:     requiredBy,
 			Reasons: []updatecheck.Reason{{
 				Code:    "catalog_remove",

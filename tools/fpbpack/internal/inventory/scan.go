@@ -20,6 +20,7 @@ const (
 )
 
 type ScanOptions struct {
+	AllowEmpty          bool
 	ServerRoot          string
 	ServerModsPath      string
 	ClientModsPath      string
@@ -131,7 +132,7 @@ func Scan(options ScanOptions) (Inventory, error) {
 		result.Mods = append(result.Mods, mods...)
 	}
 
-	if !foundDirectory {
+	if !foundDirectory && !options.AllowEmpty {
 		return Inventory{}, fmt.Errorf("neither configured mod directory exists under %s", root)
 	}
 
@@ -171,7 +172,7 @@ func scanDirectory(root, dir string, location Location, group string, previous m
 		var mod ModFile
 		var err error
 		if info, statErr := entry.Info(); statErr == nil {
-			if old, ok := previous[relative]; ok && old.SHA512 != "" && old.ModifiedUnixNano != 0 &&
+			if old, ok := previous[relative]; ok && old.MetadataVersion == MetadataVersion && old.SHA512 != "" && old.ModifiedUnixNano != 0 &&
 				old.Size == info.Size() && old.ModifiedUnixNano == info.ModTime().UnixNano() {
 				mod = old
 				mod.Location = location
@@ -251,6 +252,7 @@ func inspectFile(root, path string, location Location, group string) (ModFile, e
 		CurseForgeFingerprint: curseForgeFingerprint,
 	}
 
+	mod.MetadataVersion = MetadataVersion
 	metadata, err := ReadMetadata(path)
 	if err != nil {
 		mod.Error = err.Error()
@@ -259,7 +261,6 @@ func inspectFile(root, path string, location Location, group string) (ModFile, e
 	}
 	return mod, nil
 }
-
 
 func clientGroupFromModsPath(clientModsPath, hostPath string) string {
 	clientModsPath = filepath.ToSlash(filepath.Clean(clientModsPath))
